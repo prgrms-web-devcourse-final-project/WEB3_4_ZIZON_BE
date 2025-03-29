@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="quickstart"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+    <description>Custom ruleset for PMD</description>
+
+    <!-- 메인 클래스는 검사에서 제외 -->
+    <exclude-pattern>.*Application.java</exclude-pattern>
+
+    <!-- 기본 Java 규칙 포함 -->
+    <rule ref="category/java/bestpractices.xml"/>
+    <!-- <rule ref="category/java/codestyle.xml"/> --> <!-- Checkstyle로 대체 -->
+    <rule ref="category/java/design.xml"/>
+    <rule ref="category/java/documentation.xml"/>
+    <!-- <rule ref="category/java/errorprone.xml"/> --> <!-- SpotBugs로 대체 -->
+    <rule ref="category/java/multithreading.xml"/>
+    <rule ref="category/java/performance.xml"/>
+    <!-- <rule ref="category/java/security.xml"/> --> <!-- SpotBugs로 대체 -->
+
+</ruleset>

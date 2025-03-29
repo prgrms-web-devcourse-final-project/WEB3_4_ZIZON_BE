@@ -1,0 +1,157 @@
+name: Feature Branch Push
+
+permissions:
+  contents: read
+  checks: write
+
+on:
+  push:
+    branches:
+      - 'feat/**'
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'adopt'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Validate Gradle wrapper
+        uses: gradle/wrapper-validation-action@v1
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # 모든 시크릿을 환경변수로 변환하는 단계
+      - name: Export secrets as environment variables
+        run: |
+          # GitHub 시크릿을 JSON으로 변환하고 파싱하여 GitHub 환경 파일에 추가
+          echo '${{ toJSON(secrets) }}' | jq -r 'to_entries | .[] | select(.key != "github_token" and .key != "EC2_SSH_KEY") | "\(.key)=\(.value)"' >> $GITHUB_ENV
+          
+          # 확인 메시지 (실제 값은 표시되지 않음)
+          echo "환경변수가 성공적으로 설정되었습니다."
+          echo "설정된 변수 목록 (값은 보안상 표시되지 않음):"
+          echo '${{ toJSON(secrets) }}' | jq -r 'to_entries | .[] | select(.key != "github_token" and .key != "EC2_SSH_KEY") | .key'
+
+      - name: Build and Test Backend
+        id: build
+        run: |
+          # 테스트 환경에 환경변수를 시스템 속성으로 전달
+          ./gradlew build test -Dorg.gradle.project.systemProp.spring.profiles.active=test
+        continue-on-error: true
+
+      # 빌드 결과물 저장 (code-quality 작업에서 사용)
+      - name: Upload build artifacts for quality checks
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            build/
+            .gradle/
+
+  code-quality:
+    needs: build-test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tool: [ checkstyle, pmd, spotbugs, jacoco ]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'adopt'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # 빌드 결과물 다운로드 (build-test 작업에서 생성된 것)
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ./
+
+      # 모든 시크릿을 환경변수로 변환하는 단계
+      - name: Export secrets as environment variables
+        run: |
+          # GitHub 시크릿을 JSON으로 변환하고 파싱하여 GitHub 환경 파일에 추가
+          echo '${{ toJSON(secrets) }}' | jq -r 'to_entries | .[] | select(.key != "GITHUB_TOKEN" and .key != "EC2_SSH_KEY") | "\(.key)=\(.value)"' >> $GITHUB_ENV
+          
+          # 확인 메시지 (실제 값은 표시되지 않음)
+          echo "환경변수가 성공적으로 설정되었습니다."
+          echo "설정된 변수 목록 (값은 보안상 표시되지 않음):"
+          echo '${{ toJSON(secrets) }}' | jq -r 'to_entries | .[] | select(.key != "GITHUB_TOKEN" and .key != "EC2_SSH_KEY") | .key'
+
+      - name: Run Checkstyle
+        if: matrix.tool == 'checkstyle'
+        run: ./gradlew checkstyleMain checkstyleTest -Dorg.gradle.project.systemProp.spring.profiles.active=test
+
+      - name: Publish Checkstyle report
+        if: matrix.tool == 'checkstyle'
+        uses: lcollins/checkstyle-github-action@v3.1.0
+        with:
+          path: '**/build/reports/checkstyle/**.xml'
+          title: 📝 Checkstyle report
+
+      - name: Run PMD
+        if: matrix.tool == 'pmd'
+        run: ./gradlew pmdMain pmdTest -Dorg.gradle.project.systemProp.spring.profiles.active=test
+
+      - name: Publish PMD report
+        if: matrix.tool == 'pmd'
+        uses: lcollins/pmd-github-action@v3.1.0
+        with:
+          path: '**/build/reports/pmd/**.xml'
+          title: 🔍 PMD report
+
+      - name: Run SpotBugs
+        if: matrix.tool == 'spotbugs'
+        run: ./gradlew spotbugsMain spotbugsTest -Dorg.gradle.project.systemProp.spring.profiles.active=test
+
+      - name: Publish SpotBugs report
+        if: matrix.tool == 'spotbugs'
+        uses: lcollins/spotbugs-github-action@v3.1.0
+        with:
+          path: '**/build/reports/spotbugs/**.xml'
+          title: 🐞 SpotBugs report
+
+      - name: Run JaCoCo
+        if: matrix.tool == 'jacoco'
+        run: ./gradlew jacocoTestReport -Dorg.gradle.project.systemProp.spring.profiles.active=test
+
+      - name: Publish JaCoCo report
+        if: matrix.tool == 'jacoco'
+        uses: PavanMudigonda/jacoco-reporter@v5.0
+        with:
+          coverage_results_path: 'build/reports/jacoco/test/jacocoTestReport.xml'
+          coverage_report_name: Coverage
+          coverage_report_title: 📖 JaCoCo Coverage Report

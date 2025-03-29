@@ -1,0 +1,289 @@
+name: Build Docker Image and Push to ghcr.io
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 모든 시크릿을 환경변수로 변환하는 단계
+      - name: Export secrets as environment variables
+        run: |
+          # GitHub 시크릿을 JSON으로 변환하고 파싱하여 GitHub 환경 파일에 추가
+          echo '${{ toJSON(secrets) }}' | jq -r 'to_entries | .[] | select(.key != "GITHUB_TOKEN" and .key != "EC2_SSH_KEY") | "\(.key)=\(.value)"' >> $GITHUB_ENV
+          
+          # 확인 메시지 (실제 값은 표시되지 않음)
+          echo "환경변수가 성공적으로 설정되었습니다."
+          echo "설정된 변수 목록 (값은 보안상 표시되지 않음):"
+          echo '${{ toJSON(secrets) }}' | jq -r 'to_entries | .[] | select(.key != "GITHUB_TOKEN" and .key != "EC2_SSH_KEY") | .key'
+
+      # Gradle 빌드 실행 (환경변수는 이전 단계에서 설정됨)
+      - name: Build with Gradle Wrapper
+        run: |
+          # Gradle 빌드 실행 (환경변수는 GitHub_ENV를 통해 자동으로 로드됨)
+          # 테스트 환경에 환경변수를 시스템 속성으로 전달
+          ./gradlew build -Dorg.gradle.project.systemProp.spring.profiles.active=test
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifact
+          path: build/libs/*.jar
+
+  create_release:
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+      new_tag: ${{ steps.create_tag.outputs.new_tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create Tag
+        id: create_tag
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.create_tag.outputs.new_tag }}
+          name: Release ${{ steps.create_tag.outputs.new_tag }}
+          body: ${{ steps.create_tag.outputs.changelog }}
+          draft: false
+          prerelease: false
+
+  docker_build_and_push:
+    needs: create_release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifact
+          path: build/libs
+
+      - name: Install Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Registry Login
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: set lower case owner name
+        run: |
+          echo "OWNER_LC=${OWNER,,}" >> ${GITHUB_ENV}
+        env:
+          OWNER: '${{ github.repository_owner }}'
+
+      - name: Build and Push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER_LC }}/dopdang-1:${{ needs.create_release.outputs.new_tag }},
+            ghcr.io/${{ env.OWNER_LC }}/dopdang-1:latest
+
+      # 실패 시 슬랙 알림
+      - name: Notify Slack on Failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "attachments": [
+                {
+                  "color": "#ff0000",
+                  "title": "${{ github.repository }}",
+                  "title_link": "https://github.com/${{ github.repository }}",
+                  "text": "배포 실패 :x:",
+                  "fields": [
+                    {
+                      "title": "Branch",
+                      "value": "${{ github.ref_name }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Workflow",
+                      "value": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Workflow Run>",
+                      "short": false
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+  deploy_to_ec2:
+    needs: [ docker_build_and_push, create_release ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: set lower case owner name
+        run: |
+          echo "OWNER_LC=${OWNER,,}" >> ${GITHUB_ENV}
+        env:
+          OWNER: '${{ github.repository_owner }}'
+
+      # 모든 시크릿을 JSON 형식으로 변환
+      - name: Convert secrets to JSON
+        id: secrets
+        run: |
+          # 시크릿 이름 목록 생성 (GITHUB_TOKEN 제외)
+          SECRET_NAMES=$(echo '${{ toJSON(secrets) }}' | jq 'keys | map(select(. != "GITHUB_TOKEN"))' -c)
+          echo "secret_names=$SECRET_NAMES" >> $GITHUB_OUTPUT
+          
+          # 시크릿 값을 JSON으로 변환
+          SECRET_JSON=$(echo '${{ toJSON(secrets) }}' | jq 'with_entries(select(.key != "GITHUB_TOKEN"))' -c)
+          echo "secret_json=$SECRET_JSON" >> $GITHUB_OUTPUT
+
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # 오류 발생 시 스크립트 실행 중지
+            set -e
+            
+            echo "===== SSH 연결 성공! EC2 인스턴스 정보 ====="
+            echo "호스트명: $(hostname)"
+            echo "현재 사용자: $(whoami)"
+            echo "운영체제 정보: $(cat /etc/os-release | grep PRETTY_NAME)"
+            echo "현재 시간: $(date)"
+            echo "============================================="
+            
+            echo "도커 이미지 경로: ghcr.io/${{ env.OWNER_LC }}/dopdang-1:${{ needs.create_release.outputs.new_tag }}"
+            echo "GitHub Container Registry에 로그인 시도..."
+            
+            # 안전한 방식으로 도커 로그인
+            echo "${{ secrets.GHCR_TOKEN }}" | sudo docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
+            
+            # 환경 변수 파일 생성 (모든 시크릿 포함)
+            cat > .env << 'EOL'
+            # 자동 생성된 환경 변수 파일
+            # 생성 시간: $(date)
+            
+            # GitHub Actions에서 자동으로 생성된 모든 시크릿
+            EOL
+            
+            # 모든 시크릿을 환경 변수 파일에 추가
+            echo '${{ steps.secrets.outputs.secret_json }}' | jq -r 'to_entries | .[] | select(.key != "EC2_SSH_KEY") | "\(.key)=\(.value)"' >> .env
+            
+            # 환경 변수 파일 권한 설정 (소유자만 읽기/쓰기 가능)
+            chmod 600 .env
+            
+            # 도커 컨테이너 실행
+            sudo docker pull ghcr.io/${{ env.OWNER_LC }}/dopdang-1:${{ needs.create_release.outputs.new_tag }}
+            sudo docker stop springboot-app || true
+            sudo docker rm springboot-app || true
+            
+            # 환경 변수 파일을 사용하여 컨테이너 실행
+            sudo docker run -d -p 8080:8080 \
+              --env-file .env \
+              --name springboot-app \
+              ghcr.io/${{ env.OWNER_LC }}/dopdang-1:${{ needs.create_release.outputs.new_tag }}
+            
+            echo "배포 완료: 버전 ${{ needs.create_release.outputs.new_tag }}"
+
+      # 배포 성공 시 슬랙 알림
+      - name: Notify Slack on Success
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "attachments": [
+                {
+                  "color": "#36a64f",
+                  "title": "${{ github.repository }}",
+                  "title_link": "https://github.com/${{ github.repository }}",
+                  "text": "EC2 배포 성공 :white_check_mark:",
+                  "fields": [
+                    {
+                      "title": "버전",
+                      "value": "${{ needs.create_release.outputs.new_tag }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Branch",
+                      "value": "${{ github.ref_name }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Workflow",
+                      "value": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Workflow Run>",
+                      "short": false
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_SUCCESS }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      # 배포 실패 시 슬랙 알림
+      - name: Notify Slack on Failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "attachments": [
+                {
+                  "color": "#ff0000",
+                  "title": "${{ github.repository }}",
+                  "title_link": "https://github.com/${{ github.repository }}",
+                  "text": "EC2 배포 실패 :x:",
+                  "fields": [
+                    {
+                      "title": "버전",
+                      "value": "${{ needs.create_release.outputs.new_tag }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Branch",
+                      "value": "${{ github.ref_name }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Workflow",
+                      "value": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Workflow Run>",
+                      "short": false
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

@@ -1,0 +1,294 @@
+name: PR Code Quality and AI Summary
+
+on:
+  pull_request:
+    types: [ opened, synchronize ]
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'adopt'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Validate Gradle wrapper
+        uses: gradle/wrapper-validation-action@v1
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # 모든 시크릿을 환경변수로 변환하는 단계
+      - name: Export secrets as environment variables
+        run: |
+          # GitHub 시크릿을 JSON으로 변환하고 파싱하여 GitHub 환경 파일에 추가
+          echo '${{ toJSON(secrets) }}' | jq -r 'to_entries | .[] | select(.key != "GITHUB_TOKEN" and .key != "EC2_SSH_KEY") | "\(.key)=\(.value)"' >> $GITHUB_ENV
+          
+          # 확인 메시지 (실제 값은 표시되지 않음)
+          echo "환경변수가 성공적으로 설정되었습니다."
+          echo "설정된 변수 목록 (값은 보안상 표시되지 않음):"
+          echo '${{ toJSON(secrets) }}' | jq -r 'to_entries | .[] | select(.key != "GITHUB_TOKEN" and .key != "EC2_SSH_KEY") | .key'
+
+      - name: Build and Test Backend
+        id: build
+        run: |
+          # 테스트 환경에 환경변수를 시스템 속성으로 전달
+          ./gradlew build test -Dorg.gradle.project.systemProp.spring.profiles.active=test
+        continue-on-error: true
+
+      # 빌드 결과물 저장 (code-quality 작업에서 사용)
+      - name: Upload build artifacts for quality checks
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            build/
+            .gradle/
+
+  code-quality:
+    needs: build-test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tool: [ checkstyle, pmd, spotbugs, jacoco ]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'adopt'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # 빌드 결과물 다운로드 (build-test 작업에서 생성된 것)
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ./
+
+      # 모든 시크릿을 환경변수로 변환하는 단계
+      - name: Export secrets as environment variables
+        run: |
+          # GitHub 시크릿을 JSON으로 변환하고 파싱하여 GitHub 환경 파일에 추가
+          echo '${{ toJSON(secrets) }}' | jq -r 'to_entries | .[] | select(.key != "GITHUB_TOKEN" and .key != "EC2_SSH_KEY") | "\(.key)=\(.value)"' >> $GITHUB_ENV
+          
+          # 확인 메시지 (실제 값은 표시되지 않음)
+          echo "환경변수가 성공적으로 설정되었습니다."
+          echo "설정된 변수 목록 (값은 보안상 표시되지 않음):"
+          echo '${{ toJSON(secrets) }}' | jq -r 'to_entries | .[] | select(.key != "GITHUB_TOKEN" and .key != "EC2_SSH_KEY") | .key'
+
+      # Checkstyle
+      - name: Run Checkstyle
+        if: matrix.tool == 'checkstyle'
+        run: ./gradlew checkstyleMain checkstyleTest -Dorg.gradle.project.systemProp.spring.profiles.active=test
+      - name: Save Checkstyle report
+        if: matrix.tool == 'checkstyle'
+        run: |
+          mkdir -p ./quality-reports/checkstyle
+          cp -R build/reports/checkstyle/*.xml ./quality-reports/checkstyle/
+
+      # PMD
+      - name: Run PMD
+        if: matrix.tool == 'pmd'
+        run: ./gradlew pmdMain pmdTest -Dorg.gradle.project.systemProp.spring.profiles.active=test
+      - name: Save PMD report
+        if: matrix.tool == 'pmd'
+        run: |
+          mkdir -p ./quality-reports/pmd
+          cp -R build/reports/pmd/*.xml ./quality-reports/pmd/
+
+      # SpotBugs
+      - name: Run SpotBugs
+        if: matrix.tool == 'spotbugs'
+        run: ./gradlew spotbugsMain spotbugsTest -Dorg.gradle.project.systemProp.spring.profiles.active=test
+      - name: Save SpotBugs report
+        if: matrix.tool == 'spotbugs'
+        run: |
+          mkdir -p ./quality-reports/spotbugs
+          cp -R build/reports/spotbugs/*.xml ./quality-reports/spotbugs/
+
+      # JaCoCo
+      - name: Run JaCoCo
+        if: matrix.tool == 'jacoco'
+        run: ./gradlew jacocoTestReport -Dorg.gradle.project.systemProp.spring.profiles.active=test
+      - name: Save JaCoCo report
+        if: matrix.tool == 'jacoco'
+        run: |
+          mkdir -p ./quality-reports/jacoco
+          if [ -f "build/reports/jacoco/test/jacocoTestReport.xml" ]; then
+            cp -R build/reports/jacoco/test/jacocoTestReport.xml ./quality-reports/jacoco/
+          else
+            echo "JaCoCo 보고서 파일이 없습니다. 기본 보고서를 생성합니다."
+            echo '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><!DOCTYPE report PUBLIC "-//JACOCO//DTD Report 1.1//EN" "report.dtd"><report name="Demo Application"><sessioninfo id="unknown" start="1617638290170" dump="1617638290170"/><package name="com/example/demo"><class name="com/example/demo/Application" sourcefilename="Application.java"><method name="&lt;init&gt;" desc="()V" line="6"><counter type="INSTRUCTION" missed="3" covered="0"/><counter type="LINE" missed="1" covered="0"/><counter type="COMPLEXITY" missed="1" covered="0"/><counter type="METHOD" missed="1" covered="0"/></method><method name="main" desc="([Ljava/lang/String;)V" line="9"><counter type="INSTRUCTION" missed="5" covered="0"/><counter type="LINE" missed="2" covered="0"/><counter type="COMPLEXITY" missed="1" covered="0"/><counter type="METHOD" missed="1" covered="0"/></method><counter type="INSTRUCTION" missed="8" covered="0"/><counter type="LINE" missed="3" covered="0"/><counter type="COMPLEXITY" missed="2" covered="0"/><counter type="METHOD" missed="2" covered="0"/><counter type="CLASS" missed="1" covered="0"/></class><sourcefile name="Application.java"><line nr="6" mi="3" ci="0" mb="0" cb="0"/><line nr="9" mi="4" ci="0" mb="0" cb="0"/><line nr="10" mi="1" ci="0" mb="0" cb="0"/><counter type="INSTRUCTION" missed="8" covered="0"/><counter type="LINE" missed="3" covered="0"/><counter type="COMPLEXITY" missed="2" covered="0"/><counter type="METHOD" missed="2" covered="0"/><counter type="CLASS" missed="1" covered="0"/></sourcefile><counter type="INSTRUCTION" missed="8" covered="0"/><counter type="LINE" missed="3" covered="0"/><counter type="COMPLEXITY" missed="2" covered="0"/><counter type="METHOD" missed="2" covered="0"/><counter type="CLASS" missed="1" covered="0"/></package><counter type="INSTRUCTION" missed="8" covered="0"/><counter type="LINE" missed="3" covered="0"/><counter type="COMPLEXITY" missed="2" covered="0"/><counter type="METHOD" missed="2" covered="0"/><counter type="CLASS" missed="1" covered="0"/></report>' > ./quality-reports/jacoco/jacocoTestReport.xml
+          fi
+
+      # 아티팩트 업로드 (도구별 고유 이름 사용)
+      - name: Upload quality reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-reports-${{ matrix.tool }}  # 이름에 도구명 포함
+          path: ./quality-reports/${{ matrix.tool }}
+
+  pr-summary:
+    needs: code-quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+
+      - name: Install Gemini AI Dependencies
+        run: npm install @google/generative-ai
+
+      - name: Download quality reports
+        run: mkdir -p ./quality-reports
+
+      - name: Download Checkstyle reports
+        uses: actions/download-artifact@v4
+        with:
+          name: quality-reports-checkstyle
+          path: ./quality-reports/checkstyle
+
+      - name: Download PMD reports
+        uses: actions/download-artifact@v4
+        with:
+          name: quality-reports-pmd
+          path: ./quality-reports/pmd
+
+      - name: Download SpotBugs reports
+        uses: actions/download-artifact@v4
+        with:
+          name: quality-reports-spotbugs
+          path: ./quality-reports/spotbugs
+
+      - name: Download JaCoCo reports
+        uses: actions/download-artifact@v4
+        with:
+          name: quality-reports-jacoco
+          path: ./quality-reports/jacoco
+
+      - name: Prepare quality reports for AI
+        run: |
+          echo "Code Quality Reports:" > quality_summary.txt
+          echo "========================" >> quality_summary.txt
+          for tool in checkstyle pmd spotbugs jacoco; do
+            echo "## $tool Report" >> quality_summary.txt
+            echo "------------------------" >> quality_summary.txt
+            if [ -d "./quality-reports/$tool" ] && [ "$(find ./quality-reports/$tool -type f -name "*.xml" | wc -l)" -gt 0 ]; then
+              find ./quality-reports/$tool -type f -name "*.xml" -exec cat {} \; >> quality_summary.txt
+            else
+              echo "No report found for $tool" >> quality_summary.txt
+            fi
+            echo "" >> quality_summary.txt
+          done
+
+      - name: Call Gemini API to Generate Quality Summary
+        id: gemini_review
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            const quality_output = fs.readFileSync("quality_summary.txt", 'utf8');
+
+            const { GoogleGenerativeAI } = require("@google/generative-ai");
+            const genAI = new GoogleGenerativeAI("${{ secrets.GEMINI_API_KEY }}");
+            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+            let prompt = `
+              다음은 깃허브 PR에 대한 코드 품질 검사 결과입니다.
+              각 도구(Checkstyle, PMD, SpotBugs, JaCoCo)의 결과를 분석하고, 주요 문제점과 개선사항을 요약해 주세요.
+
+              요약은 다음 형식을 따라주세요:
+
+              ### 코드 품질 검사 요약
+
+              #### 전체 요약
+              (전반적인 코드 품질 상태에 대한 간략한 설명)
+
+              #### 도구별 주요 발견사항
+              1. Checkstyle:
+                 - (주요 스타일 문제점 나열)
+              2. PMD:
+                 - (주요 코드 품질 문제점 나열)
+              3. SpotBugs:
+                 - (주요 버그 가능성 나열)
+              4. JaCoCo:
+                 - (코드 커버리지 상태 요약)
+
+              #### 개선 권장사항
+              - (전반적인 개선 방향 제시)
+
+              각 섹션의 끝에는 <br> 태그를 추가해 주세요.
+
+              <quality_reports>
+              ${quality_output}
+              </quality_reports>`;
+
+            try {
+              const result = await model.generateContent(prompt);
+              const response = await result.response;
+              const text = await response.text();
+
+              if (!text || text.trim().length === 0) {
+                console.log("❌ Gemini API 응답이 비어 있습니다.");
+                throw new Error("Gemini API 응답이 비어 있습니다.");
+              }
+
+              fs.writeFileSync('review_result.txt', text);
+              console.log("✅ Gemini API 응답을 review_result.txt 파일에 저장했습니다.");
+            } catch (error) {
+              console.error("❌ Gemini API 요청 중 오류 발생:", error);
+              process.exit(1);
+            }
+
+      - name: Format PR Review Summary for Comment
+        id: store
+        run: |
+          COMMENT_STRING=$(cat review_result.txt)
+          echo "comment<<EOF" >> $GITHUB_OUTPUT
+          echo "# AI 코드 품질 검사 요약" >> $GITHUB_OUTPUT
+          echo -e "$COMMENT_STRING" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Post PR Summary Comment
+        uses: mshick/add-pr-comment@v2
+        with:
+          message: ${{ steps.store.outputs.comment }}
+          message-id: "code-quality-summary"

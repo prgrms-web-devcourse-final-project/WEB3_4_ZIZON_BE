@@ -1,0 +1,134 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.4.4'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'checkstyle'
+    id 'pmd'
+    id 'com.github.spotbugs' version '5.0.14'
+    id 'jacoco'
+}
+
+group = 'com.ll'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+//    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    compileOnly 'org.projectlombok:lombok'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    runtimeOnly 'com.mysql:mysql-connector-j'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+tasks.withType(Checkstyle).configureEach {
+    reports {
+        xml.required = true // XML 보고서 생성
+        html.required = true // HTML 보고서 생성
+    }
+}
+
+checkstyle {
+    ignoreFailures = true
+    configFile = file("config/checkstyle/naver-checkstyle-rules.xml") // 규칙 파일 위치
+    configProperties = ["suppressionFile": "checkstyle/naver-checkstyle-suppressions.xml"] // 제외 규칙 파일
+}
+
+
+tasks.withType(Pmd).configureEach {
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+pmd {
+    ignoreFailures = true
+    toolVersion = "7.0.0"
+    ruleSetFiles = files("config/pmd/ruleset.xml")
+}
+
+tasks.withType(com.github.spotbugs.snom.SpotBugsTask).configureEach {
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+spotbugs {
+    ignoreFailures = true
+}
+
+jacocoTestReport {
+    dependsOn test // 테스트 실행 후 리포트 생성
+    reports {
+        xml.required = true
+        html.required = true
+    }
+
+    // JaCoCo가 생성하는 report에서 entity와 dto 클래스를 제외
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                    '**/entity/**',
+                    '**/dto/**',
+                    '**/*Application*',
+            ])
+        }))
+    }
+}
+
+jacocoTestCoverageVerification {
+    // 커버리지의 범위와 퍼센테이지를 설정
+    violationRules {
+        rule {
+            enabled = true // 규칙 활성화 여부
+            element = 'CLASS' // 커버리지를 체크할 단위 설정
+
+            // 코드 커버리지를 측정할 때 사용되는 지표
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.80
+            }
+
+            limit {
+                counter = 'BRANCH'
+                value = 'COVEREDRATIO'
+                minimum = 0.70
+            }
+
+            // 커버리지 검증 과정에서 entity와 dto 클래스를 제외
+            excludes = [
+                    '**.entity.**',
+                    '**.dto.**',
+                    '**.*Application*',  // 메인 애플리케이션 클래스
+            ]
+        }
+    }
+}
