@@ -37,6 +37,9 @@ public class TokenManagementService {
 	@Getter
 	private String accessToken;
 
+	@Getter
+	private Cookie refreshTokenCookie;
+
 	public void createAndStoreTokens(CustomUserDetails userDetails, HttpServletResponse response) {
 		String accessToken = jwtUtil.createAccessToken(userDetails, accessExpiration);
 		String refreshToken = jwtUtil.createRefreshToken(userDetails, refreshExpiration);
