@@ -8,4 +8,8 @@ import com.ll.dopdang.domain.member.entity.Member;
 
 public interface MemberRepository extends JpaRepository<Member, Long> {
 	Optional<Member> findByEmail(String email);
+
+	Optional<Member> findByMemberId(String memberId);
+
+	Optional<Member> findById(Long id);
 }

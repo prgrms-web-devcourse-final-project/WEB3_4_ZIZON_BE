@@ -77,4 +77,15 @@ public class Member {
 			this.uniqueKey = UUID.randomUUID().toString();
 		}
 	}
+
+	public Member update(String name, String profileImage) {
+		this.name = name;
+		this.profileImage = profileImage;
+		return this;
+	}
+
+	public void assignMemberId(String memberId) {
+		this.memberId = memberId;
+	}
+
 }
