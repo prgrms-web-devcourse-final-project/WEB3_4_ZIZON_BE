@@ -8,6 +8,7 @@ import java.util.Map;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -16,15 +17,37 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ll.dopdang.global.security.jwt.filter.JwtAuthenticationFilter;
+import com.ll.dopdang.global.security.jwt.filter.JwtAuthorizationFilter;
+import com.ll.dopdang.global.security.jwt.handler.JwtLogoutHandler;
+import com.ll.dopdang.global.security.jwt.handler.JwtLogoutSuccessHandler;
+import com.ll.dopdang.global.security.jwt.service.TokenManagementService;
+import com.ll.dopdang.global.security.jwt.service.TokenService;
+import com.ll.dopdang.global.security.oauth2.handler.OAuth2LoginFailureHandler;
+import com.ll.dopdang.global.security.oauth2.handler.OAuth2LoginSuccessHandler;
+import com.ll.dopdang.global.security.oauth2.service.CustomOAuth2UserService;
+import com.ll.dopdang.standard.util.AuthResponseUtil;
+import com.ll.dopdang.standard.util.JwtUtil;
+
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
+	private final JwtUtil jwtUtil;
+	private final ObjectMapper objectMapper;
+	private final CustomOAuth2UserService customOAuth2UserService;
+	private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+	private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
+	private final TokenService tokenService;
+	private final TokenManagementService tokenManagementService;
 
 	@Bean
 	public PasswordEncoder passwordEncoder() {
@@ -43,13 +66,26 @@ public class SecurityConfig {
 	// 허용 URL 리스트
 	static {
 		PUBLIC_URLS.put(HttpMethod.GET, Arrays.asList(
-			"/h2-console/**"
+			"/h2-console/**",
+			"/login/oauth2/code/kakao",
+			"/login/oauth2/code/google",
+			"/login/oauth2/code/naver",
+			"/oauth2/authorization/kakao",
+			"/oauth2/authorization/google",
+			"/oauth2/authorization/naver"
 		));
 	}
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationConfiguration configuration) throws
 		Exception {
+		JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(
+			tokenManagementService, objectMapper, authenticationManager(configuration));
+		jwtAuthenticationFilter.setFilterProcessesUrl("users/login");
+
+		JwtAuthorizationFilter jwtAuthorizationFilter = new JwtAuthorizationFilter(
+			jwtUtil, tokenManagementService, objectMapper);
+
 		http.headers(head -> head
 				.frameOptions(option -> option.sameOrigin()))
 			.csrf(csrf -> csrf.disable())
@@ -59,8 +95,32 @@ public class SecurityConfig {
 					urls.forEach(url -> authorizeRequests.requestMatchers(method, url).permitAll()));
 
 				authorizeRequests.anyRequest().authenticated();
-			});
-
+			})
+			.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+			.addFilterBefore(jwtAuthorizationFilter, UsernamePasswordAuthenticationFilter.class)
+			.exceptionHandling(exception -> exception
+				.authenticationEntryPoint((request, response, authException) -> {
+					AuthResponseUtil.failLogin(
+						response, (ResponseEntity<?>)ResponseEntity.badRequest(), HttpServletResponse.SC_UNAUTHORIZED,
+						objectMapper
+					);
+				}))
+			.exceptionHandling(exception -> exception
+				.accessDeniedHandler((request, response, authException) -> {
+					AuthResponseUtil.failLogin(
+						response, (ResponseEntity<?>)ResponseEntity.badRequest(), HttpServletResponse.SC_FORBIDDEN,
+						objectMapper
+					);
+				}))
+			.logout(logout -> logout
+				.logoutUrl("/users/logout")
+				.addLogoutHandler(new JwtLogoutHandler(jwtUtil, tokenService, tokenManagementService))
+				.logoutSuccessHandler(new JwtLogoutSuccessHandler(objectMapper)))
+			.oauth2Login(oauth2 -> oauth2
+				.userInfoEndpoint(userInfo -> userInfo
+					.userService(customOAuth2UserService))
+				.successHandler(oAuth2LoginSuccessHandler)
+				.failureHandler(oAuth2LoginFailureHandler));
 		return http.build();
 	}
 
