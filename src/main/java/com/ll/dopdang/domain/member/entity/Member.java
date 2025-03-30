@@ -1,6 +1,7 @@
 package com.ll.dopdang.domain.member.entity;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -12,6 +13,7 @@ import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.validation.constraints.Email;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -66,4 +68,13 @@ public class Member {
 	@Column(name = "member_id", nullable = false)
 	private String memberId;
 
+	@Column(name = "unique_key", nullable = false, updatable = false, unique = true)
+	private String uniqueKey;
+
+	@PrePersist
+	protected void onCreate() {
+		if (this.uniqueKey == null) {
+			this.uniqueKey = UUID.randomUUID().toString();
+		}
+	}
 }
