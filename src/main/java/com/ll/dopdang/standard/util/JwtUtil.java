@@ -9,7 +9,10 @@ import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.ll.dopdang.global.security.custom.CustomUserDetails;
+
 import io.jsonwebtoken.Jwts;
+import jakarta.servlet.http.Cookie;
 
 @Component
 public class JwtUtil {
@@ -64,5 +67,45 @@ public class JwtUtil {
 			.parseSignedClaims(token)
 			.getPayload()
 			.getExpiration();
+	}
+
+	public String createAccessToken(CustomUserDetails customUserDetails, long expiration) {
+		long currentTime = System.currentTimeMillis();
+
+		return Jwts.builder()
+			.claim("subject", "access")
+			.claim("id", customUserDetails.getMember().getId())
+			.claim("username", customUserDetails.getUsername())
+			.claim("role", customUserDetails.getMember().getUserRole())
+			.claim("status", customUserDetails.getMember().getStatus())
+			.issuedAt(new Date(currentTime))
+			.expiration(new Date(currentTime + expiration))
+			.signWith(secretKey)
+			.compact();
+	}
+
+	public String createRefreshToken(CustomUserDetails customUserDetails, long expiration) {
+		long currentTime = System.currentTimeMillis();
+
+		return Jwts.builder()
+			.claim("subject", "refresh")
+			.claim("id", customUserDetails.getMember().getId())
+			.claim("username", customUserDetails.getUsername())
+			.claim("role", customUserDetails.getMember().getUserRole())
+			.issuedAt(new Date(currentTime))
+			.expiration(new Date(currentTime + expiration))
+			.signWith(secretKey)
+			.compact();
+	}
+
+	public Cookie setJwtCookie(String key, String value, long expiration) {
+
+		Cookie cookie = new Cookie(key, value);
+		cookie.setMaxAge((int)expiration / 1000);
+		cookie.setSecure(false);
+		cookie.setPath("/");
+		cookie.setHttpOnly(true);
+
+		return cookie;
 	}
 }
