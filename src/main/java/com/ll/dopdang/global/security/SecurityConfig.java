@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -22,6 +23,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ll.dopdang.global.security.custom.CustomUserDetailsService;
 import com.ll.dopdang.global.security.jwt.filter.JwtAuthenticationFilter;
 import com.ll.dopdang.global.security.jwt.filter.JwtAuthorizationFilter;
 import com.ll.dopdang.global.security.jwt.handler.JwtLogoutHandler;
@@ -73,6 +75,8 @@ public class SecurityConfig {
 	 */
 	private final TokenManagementService tokenManagementService;
 
+	private final CustomUserDetailsService userDetailsService;
+
 	/**
 	 * 비밀번호 인코딩
 	 * @return {@link PasswordEncoder}
@@ -95,6 +99,15 @@ public class SecurityConfig {
 		return authenticationConfiguration.getAuthenticationManager();
 	}
 
+	@Bean
+	public DaoAuthenticationProvider authenticationProvider() {
+		DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+		provider.setUserDetailsService(userDetailsService);
+		provider.setPasswordEncoder(passwordEncoder());
+		provider.setHideUserNotFoundExceptions(false);
+		return provider;
+	}
+
 	/**
 	 * 권한이 필요 없는 공개 URL 리스트
 	 */
@@ -113,6 +126,10 @@ public class SecurityConfig {
 			"/oauth2/authorization/google",
 			"/oauth2/authorization/naver"
 		));
+		PUBLIC_URLS.put(HttpMethod.POST, Arrays.asList(
+			"/users/login",
+			"/users/signup"
+		));
 	}
 
 	/**
@@ -127,7 +144,7 @@ public class SecurityConfig {
 		Exception {
 		JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(
 			tokenManagementService, objectMapper, authenticationManager(configuration));
-		jwtAuthenticationFilter.setFilterProcessesUrl("users/login");
+		jwtAuthenticationFilter.setFilterProcessesUrl("/users/login");
 
 		JwtAuthorizationFilter jwtAuthorizationFilter = new JwtAuthorizationFilter(
 			jwtUtil, tokenManagementService, objectMapper);
@@ -166,7 +183,8 @@ public class SecurityConfig {
 				.userInfoEndpoint(userInfo -> userInfo
 					.userService(customOAuth2UserService))
 				.successHandler(oAuth2LoginSuccessHandler)
-				.failureHandler(oAuth2LoginFailureHandler));
+				.failureHandler(oAuth2LoginFailureHandler))
+			.authenticationProvider(authenticationProvider());
 		return http.build();
 	}
 
