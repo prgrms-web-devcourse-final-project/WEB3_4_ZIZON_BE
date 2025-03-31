@@ -37,23 +37,57 @@ import com.ll.dopdang.standard.util.JwtUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * SecurityConfig
+ */
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
+	/**
+	 * jwt 유틸리티
+	 */
 	private final JwtUtil jwtUtil;
+	/**
+	 * Object mapper
+	 */
 	private final ObjectMapper objectMapper;
+	/**
+	 * 소셜 유저 서비스
+	 */
 	private final CustomOAuth2UserService customOAuth2UserService;
+	/**
+	 * 소셜 로그인 성공 핸들러
+	 */
 	private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+	/**
+	 * 소셜 로그인 실패 핸들러
+	 */
 	private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
+	/**
+	 * 토큰 서비스
+	 */
 	private final TokenService tokenService;
+	/**
+	 * 토큰 관리 서비스
+	 */
 	private final TokenManagementService tokenManagementService;
 
+	/**
+	 * 비밀번호 인코딩
+	 * @return {@link PasswordEncoder}
+	 */
 	@Bean
 	public PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
 	}
 
+	/**
+	 *
+	 * @param authenticationConfiguration auth
+	 * @return {@link AuthenticationManager}
+	 * @throws Exception 예외 처리
+	 */
 	@Bean
 	public AuthenticationManager authenticationManager(
 		AuthenticationConfiguration authenticationConfiguration
@@ -61,9 +95,14 @@ public class SecurityConfig {
 		return authenticationConfiguration.getAuthenticationManager();
 	}
 
+	/**
+	 * 권한이 필요 없는 공개 URL 리스트
+	 */
 	private static final Map<HttpMethod, List<String>> PUBLIC_URLS = new HashMap<>();
 
-	// 허용 URL 리스트
+	/**
+	 * 권한이 필요 없는 공개 URL 리스트
+	 */
 	static {
 		PUBLIC_URLS.put(HttpMethod.GET, Arrays.asList(
 			"/h2-console/**",
@@ -76,6 +115,13 @@ public class SecurityConfig {
 		));
 	}
 
+	/**
+	 *
+	 * @param http HttpSecurity
+	 * @param configuration AuthenticationConfiguration
+	 * @return {@link SecurityFilterChain}
+	 * @throws Exception 예외
+	 */
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationConfiguration configuration) throws
 		Exception {
@@ -124,6 +170,10 @@ public class SecurityConfig {
 		return http.build();
 	}
 
+	/**
+	 *
+	 * @return {@link UrlBasedCorsConfigurationSource}
+	 */
 	@Bean
 	public UrlBasedCorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration configuration = new CorsConfiguration();
@@ -153,6 +203,10 @@ public class SecurityConfig {
 		return source;
 	}
 
+	/**
+	 * 공개 URL 리스트 가져오기
+	 * @return {@link Map}
+	 */
 	public static Map<HttpMethod, List<String>> getPublicUrls() {
 		return PUBLIC_URLS;
 	}

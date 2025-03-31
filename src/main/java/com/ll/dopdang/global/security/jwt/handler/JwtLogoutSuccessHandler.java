@@ -13,10 +13,24 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * JwtLogoutSuccessHandler
+ */
 @RequiredArgsConstructor
 public class JwtLogoutSuccessHandler implements LogoutSuccessHandler {
+	/**
+	 * ObjectMapper
+	 */
 	private final ObjectMapper objectMapper;
 
+	/**
+	 * 로그아웃 성공을 다루는 메서드
+	 * @param req HttpServletRequest
+	 * @param resp HttpServletResponse
+	 * @param auth Authentication
+	 * @throws IOException 예외
+	 * @throws ServletException 예외
+	 */
 	@Override
 	public void onLogoutSuccess(HttpServletRequest req, HttpServletResponse resp, Authentication auth) throws
 		IOException, ServletException {

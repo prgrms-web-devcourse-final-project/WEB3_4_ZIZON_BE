@@ -11,16 +11,46 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
 
+/**
+ * 소셜 로그인 유저 정보 dto
+ */
 @Getter
 @ToString(exclude = "attributes")
 public class OAuthAttributes {
-	private String name;
-	private String profileImage;
-	private String memberId;
-	private String email;
-	private String provider;
-	private Map<String, Object> attributes;
+	/**
+	 * 이름
+	 */
+	private final String name;
+	/**
+	 * 프로필 사진
+	 */
+	private final String profileImage;
+	/**
+	 * 소셜 ID
+	 */
+	private final String memberId;
+	/**
+	 * 이메일
+	 */
+	private final String email;
+	/**
+	 * 소셜 로그인 제공자
+	 */
+	private final String provider;
+	/**
+	 * 소셜 로그인 유저 정보
+	 */
+	private final Map<String, Object> attributes;
 
+	/**
+	 *
+	 * @param name 이름
+	 * @param profileImage 프로필 사진
+	 * @param memberId 소셜 ID
+	 * @param email 이메일
+	 * @param provider 소셜 로그인 제공자
+	 * @param attributes 소셜 로그인 유저 정보
+	 */
 	@Builder
 	public OAuthAttributes(String name, String profileImage, String memberId, String email, String provider,
 		Map<String, Object> attributes) {
@@ -32,6 +62,10 @@ public class OAuthAttributes {
 		this.attributes = attributes;
 	}
 
+	/**
+	 * 엔티티로 변환
+	 * @return {@link Member}
+	 */
 	public Member toEntity() {
 		String userEmail = email;
 		if (userEmail == null) {

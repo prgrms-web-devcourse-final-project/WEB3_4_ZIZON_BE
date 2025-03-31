@@ -11,11 +11,23 @@ import com.ll.dopdang.domain.member.repository.MemberRepository;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * CustomUserDetailsService
+ */
 @Service
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
+	/**
+	 * 유저 repository
+	 */
 	private final MemberRepository memberRepository;
 
+	/**
+	 *
+	 * @param email 이메일
+	 * @return {@link UserDetails}
+	 * @throws UsernameNotFoundException 예외
+	 */
 	@Override
 	public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
 		Member member = memberRepository.findByEmail(email)

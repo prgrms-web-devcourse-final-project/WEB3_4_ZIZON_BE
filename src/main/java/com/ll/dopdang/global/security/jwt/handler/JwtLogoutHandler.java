@@ -11,12 +11,30 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * JwtLogoutHandler
+ */
 @RequiredArgsConstructor
 public class JwtLogoutHandler implements LogoutHandler {
+	/**
+	 * jwt 유틸리티
+	 */
 	private final JwtUtil jwtUtil;
+	/**
+	 * 토큰 서비스
+	 */
 	private final TokenService tokenService;
+	/**
+	 * 토큰 관리 서비스
+	 */
 	private final TokenManagementService tokenManagementService;
 
+	/**
+	 * 로그아웃 메서드
+	 * @param req HttpServletRequest
+	 * @param resp HttpServletResponse
+	 * @param auth Authentication
+	 */
 	@Override
 	public void logout(HttpServletRequest req, HttpServletResponse resp, Authentication auth) {
 		String authorization = req.getHeader("Authorization");

@@ -20,26 +20,58 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * TokenManagementService (토큰 관리 서비스)
+ */
 @Service
 @RequiredArgsConstructor
 public class TokenManagementService {
+	/**
+	 * jwt 유틸리티
+	 */
 	private final JwtUtil jwtUtil;
+	/**
+	 * redis repository
+	 */
 	private final RedisRepository redisRepository;
+	/**
+	 * 토큰 서비스
+	 */
 	private final TokenService tokenService;
+	/**
+	 * ObjectMapper
+	 */
 	private final ObjectMapper objectMapper;
 
+	/**
+	 * 엑세스 토큰 유효 기간
+	 */
 	@Value("${jwt.token.access-expiration}")
 	private long accessExpiration;
 
+	/**
+	 * 리프레시 토큰 유효 기간
+	 */
 	@Value("${jwt.token.refresh-expiration}")
 	private long refreshExpiration;
 
+	/**
+	 * 엑세스 토큰
+	 */
 	@Getter
 	private String accessToken;
 
+	/**
+	 * 리프레시 토큰
+	 */
 	@Getter
 	private Cookie refreshTokenCookie;
 
+	/**
+	 * 토큰 생성 및 저장
+	 * @param userDetails CustomUserDetails
+	 * @param response HttpServletResponse
+	 */
 	public void createAndStoreTokens(CustomUserDetails userDetails, HttpServletResponse response) {
 		String accessToken = jwtUtil.createAccessToken(userDetails, accessExpiration);
 		String refreshToken = jwtUtil.createRefreshToken(userDetails, refreshExpiration);
@@ -53,6 +85,12 @@ public class TokenManagementService {
 		this.accessToken = accessToken;
 	}
 
+	/**
+	 * 토큰 재발급
+	 * @param request HttpServletRequest
+	 * @param response HttpServletResponse
+	 * @throws IOException 예외
+	 */
 	public void reissueTokens(HttpServletRequest request, HttpServletResponse response) throws IOException {
 		String refreshToken = tokenService.getRefreshToken(request);
 
@@ -94,6 +132,11 @@ public class TokenManagementService {
 			objectMapper);
 	}
 
+	/**
+	 * 토큰 블랙리스트 추가
+	 * @param username 이메일
+	 * @param accessToken 엑세스 토큰
+	 */
 	public void invalidateTokens(String username, String accessToken) {
 		if (accessToken != null) {
 			try {

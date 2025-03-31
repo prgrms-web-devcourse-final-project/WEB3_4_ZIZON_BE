@@ -12,6 +12,9 @@ import com.ll.dopdang.standard.util.JwtUtil;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * TokenValidationService (토큰 유효성 검증 서비스)
+ */
 @Service
 @RequiredArgsConstructor
 public class TokenValidationService {

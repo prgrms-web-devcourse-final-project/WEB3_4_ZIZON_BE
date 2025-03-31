@@ -22,6 +22,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Member 엔티티
+ */
 @Entity
 @Getter
 @Builder
@@ -29,48 +32,86 @@ import lombok.Setter;
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
 public class Member {
-
+	/**
+	 * 유저 고유 ID
+	 */
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
+	/**
+	 * 이메일
+	 */
 	@Email
 	@Column(unique = true, nullable = false)
 	private String email;
 
+	/**
+	 * 비밀번호
+	 */
 	@Column(nullable = false)
 	private String password;
 
+	/**
+	 * 이름
+	 */
 	@Column(nullable = false)
 	private String name;
 
+	/**
+	 * 전화번호
+	 */
 	@Column(nullable = true)
 	private String phone;
 
+	/**
+	 * 프로필 사진
+	 */
 	@Column(name = "profile_image")
 	private String profileImage;
 
+	/**
+	 * 생성 일자
+	 */
 	@CreatedDate
 	@Column(name = "create_at")
 	private LocalDateTime createdAt;
 
+	/**
+	 * 수정 일자
+	 */
 	@LastModifiedDate
 	@Column(name = "updated_at")
 	private LocalDateTime updatedAt;
 
+	/**
+	 * 유저 상태
+	 */
 	@Column(nullable = false)
 	private String status;
 
+	/**
+	 * 유저 역할
+	 */
 	@Column(name = "user_role")
 	private String userRole;
 
+	/**
+	 * 유저 소셜 ID
+	 */
 	@Setter(AccessLevel.PRIVATE)
 	@Column(name = "member_id", nullable = false)
 	private String memberId;
 
+	/**
+	 * 사용자 고유 번호
+	 */
 	@Column(name = "unique_key", nullable = false, updatable = false, unique = true)
 	private String uniqueKey;
 
+	/**
+	 * 유저 생성 시, 자동으로 uniqueKey를 생성해주는 메서드
+	 */
 	@PrePersist
 	protected void onCreate() {
 		if (this.uniqueKey == null) {
@@ -78,12 +119,22 @@ public class Member {
 		}
 	}
 
+	/**
+	 * 소셜 로그인 시, 내용을 업데이트 하기 위한 메서드
+	 * @param name 유저 이름
+	 * @param profileImage 유저 프로필 사진
+	 * @return {@link Member}
+	 */
 	public Member update(String name, String profileImage) {
 		this.name = name;
 		this.profileImage = profileImage;
 		return this;
 	}
 
+	/**
+	 * 소셜 ID를 설정하기 위한 메서드
+	 * @param memberId 소셜 ID
+	 */
 	public void assignMemberId(String memberId) {
 		this.memberId = memberId;
 	}

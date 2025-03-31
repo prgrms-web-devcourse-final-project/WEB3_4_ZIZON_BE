@@ -12,6 +12,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ll.dopdang.domain.member.dto.request.LoginRequest;
+import com.ll.dopdang.domain.member.dto.response.LoginResponse;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
 import com.ll.dopdang.global.security.jwt.service.TokenManagementService;
 import com.ll.dopdang.standard.util.AuthResponseUtil;
@@ -21,12 +22,31 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * JwtAuthenticationFilter
+ */
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
+	/**
+	 * 토큰 관리 서비스
+	 */
 	private final TokenManagementService tokenManagementService;
+	/**
+	 * ObjectMapper
+	 */
 	private final ObjectMapper objectMapper;
+	/**
+	 * AuthenticationManager
+	 */
 	private final AuthenticationManager authenticationManager;
 
+	/**
+	 *
+	 * @param req HttpServletRequest
+	 * @param resp HttpServletResponse
+	 * @return {@link Authentication}
+	 * @throws AuthenticationException 예외
+	 */
 	@Override
 	public Authentication attemptAuthentication(HttpServletRequest req, HttpServletResponse resp) throws
 		AuthenticationException {
@@ -44,6 +64,13 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 		}
 	}
 
+	/**
+	 *
+	 * @param req HttpServletRequest
+	 * @param resp HttpServletResponse
+	 * @param failed AuthenticationException
+	 * @throws IOException 예외
+	 */
 	@Override
 	protected void unsuccessfulAuthentication(HttpServletRequest req, HttpServletResponse resp,
 		AuthenticationException failed) throws IOException {
@@ -55,6 +82,14 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 		);
 	}
 
+	/**
+	 *
+	 * @param req HttpServletRequest
+	 * @param resp HttpServletResponse
+	 * @param chain FilterChain
+	 * @param authentication Authentication
+	 * @throws IOException 예외
+	 */
 	@Override
 	protected void successfulAuthentication(HttpServletRequest req, HttpServletResponse resp, FilterChain chain,
 		Authentication authentication) throws IOException {
@@ -68,7 +103,8 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 			tokenManagementService.getAccessToken(),
 			tokenManagementService.getRefreshTokenCookie(),
 			HttpServletResponse.SC_OK,
-			ResponseEntity.ok("로그인이 성공적으로 이루어졌습니다."),
+			ResponseEntity.ok(new LoginResponse(userDetails.getMember().getName(), userDetails.getUsername(),
+				userDetails.getMember().getProfileImage())),
 			objectMapper
 		);
 	}

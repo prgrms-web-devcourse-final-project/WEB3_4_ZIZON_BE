@@ -25,12 +25,28 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * 소셜 로그인 성공 핸들러
+ */
 @Component
 @RequiredArgsConstructor
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
+	/**
+	 * 토큰 관리 서비스
+	 */
 	private final TokenManagementService tokenManagementService;
+	/**
+	 * ObjectMapper
+	 */
 	private final ObjectMapper objectMapper;
 
+	/**
+	 * 소셜 로그인 성공을 다루는 메서드
+	 * @param req HttpServletRequest
+	 * @param resp HttpServletResponse
+	 * @param authentication Authentication
+	 * @throws IOException 예외
+	 */
 	@Override
 	public void onAuthenticationSuccess(HttpServletRequest req, HttpServletResponse resp,
 		Authentication authentication) throws IOException {
@@ -56,7 +72,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
 	/**
 	 * 소셜 로그인 후 사용자 정보를 추출하여 Member 테이블에 맞게 변환
-	 * @param oAuth2User
+	 * @param oAuth2User 소셜 유저
 	 * @return {@link Member}
 	 */
 	private Member extractUserFromOAuth2User(OAuth2User oAuth2User) {
@@ -137,7 +153,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
 	/**
 	 * 소셜 로그인 성공 시 출력될 dto 생성
-	 * @param member
+	 * @param member 소셜 유저
 	 * @return {@link SocialLoginResponse}
 	 */
 	private SocialLoginResponse createSocialLoginResponse(Member member) {
@@ -152,9 +168,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
 	/**
 	 * 클라이언트로 보낼 데이터를 json으로 가공
-	 * @param resp
-	 * @param socialLoginResponse
-	 * @throws IOException
+	 * @param resp HttpServletResponse
+	 * @param socialLoginResponse 로그인 유저 정보
+	 * @throws IOException 예외
 	 */
 	private void setJsonResponse(HttpServletResponse resp, SocialLoginResponse socialLoginResponse) throws IOException {
 		resp.setHeader("Authorization", "Bearer " + tokenManagementService.getAccessToken());
@@ -168,10 +184,10 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
 	/**
 	 * 소셜 로그인 후 프론트 페이지로 리다이렉트
-	 * @param resp
-	 * @param accessToken
-	 * @param userInfo
-	 * @throws IOException
+	 * @param resp HttpServletResponse
+	 * @param accessToken 엑세스 토큰
+	 * @param userInfo 로그인 유저 정보
+	 * @throws IOException 예외
 	 */
 	private void redirectToFrontend(HttpServletResponse resp, String accessToken, SocialLoginResponse userInfo) throws
 		IOException {

@@ -7,6 +7,9 @@ import org.springframework.stereotype.Component;
 
 import com.ll.dopdang.global.security.oauth2.dto.OAuthAttributes;
 
+/**
+ * 소셜 로그인 유저 변환 서비스
+ */
 @Component
 public class OAuthUserConverter {
 	/**

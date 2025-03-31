@@ -9,33 +9,42 @@ import org.springframework.stereotype.Component;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * ResponseAspect
+ */
 @Aspect
 @Component
 @RequiredArgsConstructor
 public class ResponseAspect {
+	/**
+	 * 응답
+	 */
 	private final HttpServletResponse response;
 
+	/**
+	 *
+	 * @param joinPoint 설명
+	 * @return {@link Object}
+	 * @throws Throwable 예외
+	 */
 	@Around("""
-		(
-		    within
-		    (
-		        @org.springframework.web.bind.annotation.RestController *
-		    )
-		    &&
-		    (
-		        @annotation(org.springframework.web.bind.annotation.GetMapping)
-		        ||
-		        @annotation(org.springframework.web.bind.annotation.PostMapping)
-		        ||
-		        @annotation(org.springframework.web.bind.annotation.PutMapping)
-		        ||
-		        @annotation(org.springframework.web.bind.annotation.DeleteMapping)
-		        ||
-		        @annotation(org.springframework.web.bind.annotation.RequestMapping)
-		    )
-		)
-		||
-		@annotation(org.springframework.web.bind.annotation.ResponseBody)
+				(
+				    within(@org.springframework.web.bind.annotation.RestController *)
+				&&
+				    (
+				        @annotation(org.springframework.web.bind.annotation.GetMapping)
+				        ||
+				        @annotation(org.springframework.web.bind.annotation.PostMapping)
+				        ||
+				        @annotation(org.springframework.web.bind.annotation.PutMapping)
+				        ||
+				        @annotation(org.springframework.web.bind.annotation.DeleteMapping)
+				        ||
+				        @annotation(org.springframework.web.bind.annotation.RequestMapping)
+				    )
+				)
+				||
+				@annotation(org.springframework.web.bind.annotation.ResponseBody)
 		""")
 	public Object handleResponse(ProceedingJoinPoint joinPoint) throws Throwable {
 		Object proceed = joinPoint.proceed();

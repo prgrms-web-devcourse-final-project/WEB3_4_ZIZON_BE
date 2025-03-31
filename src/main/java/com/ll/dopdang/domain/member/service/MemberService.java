@@ -5,6 +5,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * MemberService
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)

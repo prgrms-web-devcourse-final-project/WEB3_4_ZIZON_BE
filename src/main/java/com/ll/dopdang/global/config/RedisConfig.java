@@ -8,9 +8,17 @@ import org.springframework.data.redis.repository.configuration.EnableRedisReposi
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+/**
+ * RedisConfig
+ */
 @Configuration
 @EnableRedisRepositories
 public class RedisConfig {
+	/**
+	 * 레디스 템플릿 설정
+	 * @param factory 레디스
+	 * @return {@link RedisTemplate}
+	 */
 	@Bean
 	public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory) {
 		RedisTemplate<String, Object> template = new RedisTemplate<>();

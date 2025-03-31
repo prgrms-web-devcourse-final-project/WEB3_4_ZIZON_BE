@@ -21,11 +21,20 @@ import com.ll.dopdang.global.security.oauth2.dto.OAuthAttributes;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 소셜 로그인 유저 서비스
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
+	/**
+	 * 소셜 유저 변환 서비스
+	 */
 	private final OAuthUserConverter oAuthUserConverter;
+	/**
+	 * 유저 레포지터리
+	 */
 	private final MemberRepository memberRepository;
 
 	/**

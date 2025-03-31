@@ -27,25 +27,51 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * JwtAuthorizationFilter
+ */
 @RequiredArgsConstructor
 public class JwtAuthorizationFilter extends OncePerRequestFilter {
+	/**
+	 * jwt 유틸리티
+	 */
 	private final JwtUtil jwtUtil;
+	/**
+	 * 토큰 관리 서비스
+	 */
 	private final TokenManagementService tokenManagementService;
+	/**
+	 * ObjectMapper
+	 */
 	private final ObjectMapper objectMapper;
 
+	/**
+	 *
+	 * @param req HttpServletRequest
+	 * @param resp HttpServletResponse
+	 * @param filterChain FilterChain
+	 * @throws ServletException 예외
+	 * @throws IOException 예외
+	 */
 	@Override
 	protected void doFilterInternal(HttpServletRequest req, HttpServletResponse resp, FilterChain filterChain) throws
 		ServletException,
 		IOException {
-		String requestURI = req.getRequestURI();
+		String requestUri = req.getRequestURI();
 
-		if (requestURI.equals("/api/v1/reissue")) {
+		if (requestUri.equals("/api/v1/reissue")) {
 			handleTokenReissue(req, resp);
 		} else {
 			handleAccessTokenValidation(req, resp, filterChain);
 		}
 	}
 
+	/**
+	 * 토큰 재발급
+	 * @param req HttpServletRequest
+	 * @param resp HttpServletResponse
+	 * @throws IOException 예외
+	 */
 	private void handleTokenReissue(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 		try {
 			tokenManagementService.reissueTokens(req, resp);
@@ -58,6 +84,14 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 		}
 	}
 
+	/**
+	 * 엑세스 토큰 검증
+	 * @param req HttpServletRequest
+	 * @param resp HttpServletResponse
+	 * @param filterChain FilterChain
+	 * @throws ServletException 예외
+	 * @throws IOException 예외
+	 */
 	private void handleAccessTokenValidation(HttpServletRequest req, HttpServletResponse resp,
 		FilterChain filterChain) throws ServletException, IOException {
 		if (isPublicUrl(req)) {
@@ -119,6 +153,11 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 		}
 	}
 
+	/**
+	 * 전체 허용 URL인지 검증
+	 * @param request HttpServletRequest
+	 * @return {@link Boolean}
+	 */
 	private boolean isPublicUrl(HttpServletRequest request) {
 		String requestUri = request.getRequestURI();
 		HttpMethod method = HttpMethod.valueOf(request.getMethod());
@@ -132,6 +171,11 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 			.anyMatch(pattern -> new AntPathMatcher().match(pattern, requestUri));
 	}
 
+	/**
+	 * 토큰 추출
+	 * @param request HttpServletRequest
+	 * @return {@link String}
+	 */
 	private String extractToken(HttpServletRequest request) {
 		Cookie[] cookies = request.getCookies();
 		if (cookies != null) {

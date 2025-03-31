@@ -1,6 +1,12 @@
 package com.ll.dopdang.domain.member.entity;
 
+/**
+ * 유저 상태 enum
+ */
 public enum MemberStatus {
+	/**
+	 * 유저 상태
+	 */
 	ACTIVE("활성"),
 	UNCERIFIED("미인증"),
 	DORMANT("휴먼"),
