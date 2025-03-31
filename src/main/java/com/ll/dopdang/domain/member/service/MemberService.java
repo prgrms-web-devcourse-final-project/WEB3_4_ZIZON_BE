@@ -1,16 +1,20 @@
 package com.ll.dopdang.domain.member.service;
 
+import java.util.Objects;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ll.dopdang.domain.member.dto.request.MemberSignupRequest;
+import com.ll.dopdang.domain.member.dto.request.VerifyCodeRequest;
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.entity.MemberRole;
 import com.ll.dopdang.domain.member.entity.MemberStatus;
 import com.ll.dopdang.domain.member.repository.MemberRepository;
 import com.ll.dopdang.global.redis.repository.RedisRepository;
+import com.ll.dopdang.global.security.custom.CustomUserDetails;
 import com.ll.dopdang.global.sms.dto.SmsVerificationRequest;
 import com.ll.dopdang.global.sms.dto.SmsVerificationResponse;
 import com.ll.dopdang.global.sms.service.SmsService;
@@ -76,6 +80,37 @@ public class MemberService {
 	}
 
 	/**
+	 * 소셜 로그인 유저의 전화번호 인증 메서드
+	 * @param id 유저 고유 ID
+	 * @param code 인증번호
+	 * @param req 전화번호 인증 dto
+	 * @param customUserDetails 인증된 사용자 정보
+	 */
+	@Transactional
+	public void verifyPhone(Long id, String code, VerifyCodeRequest req, CustomUserDetails customUserDetails) {
+		isValidMember(id, customUserDetails);
+		Member member = getMember(id);
+
+		if (member.getMemberId().equals(member.getEmail())) {
+			throw new RuntimeException("해당 유저는 소셜 유저가 아닙니다.");
+		}
+
+		// 전화번호 수정 기능이 들어가면 사라질 로직
+		if (MemberStatus.ACTIVE.toString().equals(member.getStatus())) {
+			throw new RuntimeException("해당 유저는 이미 전화번호를 인증하였습니다.");
+		}
+
+		boolean isVerified = verify(req.getPhone(), code);
+		if (!isVerified) {
+			throw new RuntimeException("전화번호 인증에 실패하였습니다.");
+		}
+
+		member.activateMember();
+		member.activatePhone(req.getPhone());
+		redisRepository.remove("VERIFIED_PHONE:" + req.getPhone());
+	}
+
+	/**
 	 * 인증 코드 검증 메서드
 	 * @param phone 전화번호
 	 * @param code 인증번호
@@ -93,5 +128,29 @@ public class MemberService {
 	 */
 	public SmsVerificationResponse sendCode(String phone) {
 		return smsService.sendVerificationCode(phone);
+	}
+
+	/**
+	 * 회원 검증 메서드
+	 * @param id 유저 고유 ID
+	 * @param customUserDetails 인증된 사용자 정보
+	 */
+	public void isValidMember(Long id, CustomUserDetails customUserDetails) {
+		if (customUserDetails == null) {
+			throw new RuntimeException("유저 정보가 없습니다.");
+		}
+		if (!Objects.equals(customUserDetails.getMember().getId(), id)) {
+			throw new RuntimeException("인증되지 않은 유저입니다.");
+		}
+	}
+
+	/**
+	 * 유저 ID를 사용한 유저 찾기 메서드
+	 * @param id 유저 고유 ID
+	 * @return {@link Member}
+	 */
+	public Member getMember(Long id) {
+		return memberRepository.findById(id).orElseThrow(
+			() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 	}
 }

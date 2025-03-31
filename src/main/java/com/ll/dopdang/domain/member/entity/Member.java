@@ -139,4 +139,19 @@ public class Member {
 		this.memberId = memberId;
 	}
 
+	/**
+	 * 유저를 활성화 상태로 설정하는 메서드
+	 */
+	public void activateMember() {
+		this.status = MemberStatus.ACTIVE.toString();
+	}
+
+	/**
+	 * 유저의 전화번호를 설정하는 메서드
+	 * @param phone 전화번호
+	 */
+	public void activatePhone(String phone) {
+		this.phone = phone;
+	}
+
 }
