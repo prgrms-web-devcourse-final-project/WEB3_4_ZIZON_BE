@@ -53,6 +53,14 @@ public class MemberController {
 		return ResponseEntity.ok("회원 가입 성공");
 	}
 
+	/**
+	 * 소셜 유저의 전화번호 인증 메서드
+	 * @param userId 유저 고유 ID
+	 * @param code 인증번호
+	 * @param request 전화번호 인증 dto
+	 * @param customUserDetails 인증된 사용자 정보
+	 * @return {@link ResponseEntity}
+	 */
 	@PostMapping("/{user_id}/phone-verification")
 	public ResponseEntity<Object> verifyPhone(
 		@PathVariable("user_id") Long userId,
