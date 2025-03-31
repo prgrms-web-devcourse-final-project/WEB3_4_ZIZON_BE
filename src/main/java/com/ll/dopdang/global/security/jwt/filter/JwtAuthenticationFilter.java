@@ -2,12 +2,14 @@ package com.ll.dopdang.global.security.jwt.filter;
 
 import java.io.IOException;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -53,6 +55,22 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 		try {
 			LoginRequest loginRequest = objectMapper.readValue(req.getInputStream(), LoginRequest.class);
 
+			// 이메일 검증
+			if (loginRequest.getEmail() == null || loginRequest.getEmail().isBlank()) {
+				throw new AuthenticationServiceException("이메일을 입력해주세요.");
+			}
+			if (!loginRequest.getEmail().matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+				throw new AuthenticationServiceException("올바른 이메일 형식이 아닙니다.");
+			}
+
+			// 비밀번호 검증
+			if (loginRequest.getPassword() == null || loginRequest.getPassword().isBlank()) {
+				throw new AuthenticationServiceException("비밀번호를 입력해주세요.");
+			}
+			if (!loginRequest.getPassword().matches(".*[!@#$%^&*(),.?\":{}|<>].*")) {
+				throw new AuthenticationServiceException("비밀번호는 특수문자를 포함해야 합니다.");
+			}
+
 			String email = loginRequest.getEmail();
 			String password = loginRequest.getPassword();
 
@@ -74,12 +92,32 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 	@Override
 	protected void unsuccessfulAuthentication(HttpServletRequest req, HttpServletResponse resp,
 		AuthenticationException failed) throws IOException {
-		AuthResponseUtil.failLogin(
-			resp,
-			(ResponseEntity<?>)ResponseEntity.badRequest(),
-			HttpServletResponse.SC_UNAUTHORIZED,
-			objectMapper
-		);
+		ResponseEntity<?> responseEntity;
+		int status;
+		String message = failed.getMessage();
+
+		if (failed instanceof AuthenticationServiceException) {
+			// 이메일/비밀번호 형식 검증 실패
+			status = HttpServletResponse.SC_BAD_REQUEST;
+			responseEntity = ResponseEntity.badRequest().body(message);
+		} else if (message != null && message.startsWith("DEACTIVATED:")) {
+			// 탈퇴한 계정 처리 - 명확한 마커로 식별
+			status = HttpServletResponse.SC_FORBIDDEN;
+			responseEntity = ResponseEntity.status(HttpStatus.FORBIDDEN)
+				.body("탈퇴한 계정입니다.");
+		} else if (failed instanceof UsernameNotFoundException) {
+			// 존재하지 않는 계정
+			status = HttpServletResponse.SC_UNAUTHORIZED;
+			responseEntity = ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+				.body("존재하지 않는 계정입니다.");
+		} else {
+			// 그 외 인증 실패
+			status = HttpServletResponse.SC_UNAUTHORIZED;
+			responseEntity = ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+				.body("이메일 또는 비밀번호가 일치하지 않습니다.");
+		}
+
+		AuthResponseUtil.failLogin(resp, responseEntity, status, objectMapper);
 	}
 
 	/**

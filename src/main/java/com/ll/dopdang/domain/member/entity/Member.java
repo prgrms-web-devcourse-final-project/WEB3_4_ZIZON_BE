@@ -74,7 +74,7 @@ public class Member {
 	 * 생성 일자
 	 */
 	@CreatedDate
-	@Column(name = "create_at")
+	@Column(name = "created_at")
 	private LocalDateTime createdAt;
 
 	/**
