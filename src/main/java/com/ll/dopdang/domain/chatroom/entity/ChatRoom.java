@@ -9,7 +9,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "chat_rooms")
 @Getter
 @Setter
 @NoArgsConstructor

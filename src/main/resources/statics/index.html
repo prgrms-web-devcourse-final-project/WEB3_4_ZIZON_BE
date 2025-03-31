@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>채팅 테스트</title>
+    <!-- SockJS 및 Stomp.js 라이브러리 로드 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+</head>
+<body>
+<h1>채팅 테스트</h1>
+<div>
+    <label>보내는 사람: </label>
+    <input type="text" id="sender" placeholder="sender">
+    <label>받는 사람: </label>
+    <input type="text" id="receiver" placeholder="receiver">
+</div>
+<div>
+    <button onclick="connect()">연결</button>
+    <button onclick="disconnect()">연결 끊기</button>
+</div>
+<div>
+    <input type="text" id="message" placeholder="메시지 입력">
+    <button onclick="sendMessage()">메시지 전송</button>
+</div>
+<div id="chatLog" style="border:1px solid #ccc; padding:10px; width:300px; height:200px; overflow:auto;">
+    채팅 로그
+</div>
+
+<script>
+    let stompClient = null;
+    let roomId = "";
+
+    function connect() {
+        const sender = document.getElementById("sender").value;
+        const receiver = document.getElementById("receiver").value;
+        // 채팅방 아이디 생성 로직 (서버와 동일하게 알파벳 순으로 정렬)
+        roomId = (sender < receiver) ? sender + ":" + receiver : receiver + ":" + sender;
+
+        const socket = new SockJS('http://localhost:8080/ws-chat');
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, function(frame) {
+            console.log('Connected: ' + frame);
+            // 구독: 서버에서는 /topic/chat/{roomId}로 메시지를 보냅니다.
+            stompClient.subscribe('/topic/chat/' + roomId, function(messageOutput) {
+                showMessage(JSON.parse(messageOutput.body));
+            });
+        }, function(error) {
+            console.error('STOMP 연결 에러: ' + error);
+        });
+    }
+
+    function disconnect() {
+        if (stompClient != null) {
+            stompClient.disconnect();
+        }
+        console.log("연결 끊김");
+    }
+
+    function sendMessage() {
+        const sender = document.getElementById("sender").value;
+        const receiver = document.getElementById("receiver").value;
+        const content = document.getElementById("message").value;
+        // 메시지 객체 구성 (fileUrl은 빈 문자열로 처리)
+        const chatMessage = {
+            sender: sender,
+            receiver: receiver,
+            content: content,
+            fileUrl: ""
+        };
+        stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
+        document.getElementById("message").value = "";
+    }
+
+    function showMessage(message) {
+        const chatLog = document.getElementById("chatLog");
+        const messageElement = document.createElement("p");
+        messageElement.innerText = "[" + message.timestamp + "] " + message.sender + ": " + message.content;
+        chatLog.appendChild(messageElement);
+    }
+</script>
+</body>
+</html>

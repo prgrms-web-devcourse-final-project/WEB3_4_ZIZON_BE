@@ -6,7 +6,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "chat_messages")
 @Getter
 @Setter
 @NoArgsConstructor
