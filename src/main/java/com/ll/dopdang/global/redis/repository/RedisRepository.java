@@ -25,7 +25,7 @@ public class RedisRepository {
 	 * @param duration 저장 기간
 	 * @param timeUnit 시간 단위
 	 */
-	public void save(String key, Object value, Long duration, TimeUnit timeUnit) {
+	public void save(String key, Object value, long duration, TimeUnit timeUnit) {
 		redisTemplate.opsForValue().set(key, value, duration, timeUnit);
 	}
 
