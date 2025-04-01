@@ -143,7 +143,7 @@ public class Member {
 	 * 유저를 활성화 상태로 설정하는 메서드
 	 */
 	public void activateMember() {
-		this.status = MemberStatus.ACTIVE.toString();
+		this.status = MemberStatus.활성.toString();
 	}
 
 	/**

@@ -7,9 +7,9 @@ public enum MemberRole {
 	/**
 	 * 유저 역할
 	 */
-	ROLE_CLIENT("일반 사용자"),
-	ROLE_EXPERT("전문가"),
-	ROLE_ADMIN("관리자");
+	client("일반 사용자"),
+	expert("전문가"),
+	admin("관리자");
 
 	private final String description;
 

@@ -71,8 +71,8 @@ public class MemberService {
 			.name(req.getName())
 			.phone(req.getPhone())
 			.profileImage("")
-			.status(MemberStatus.ACTIVE.toString())
-			.userRole(MemberRole.ROLE_CLIENT.toString())
+			.status(MemberStatus.활성.toString())
+			.userRole(MemberRole.client.toString())
 			.memberId(req.getEmail())
 			.build();
 		memberRepository.save(member);
@@ -96,7 +96,7 @@ public class MemberService {
 		}
 
 		// 전화번호 수정 기능이 들어가면 사라질 로직
-		if (MemberStatus.ACTIVE.toString().equals(member.getStatus())) {
+		if (MemberStatus.활성.toString().equals(member.getStatus())) {
 			throw new RuntimeException("해당 유저는 이미 전화번호를 인증하였습니다.");
 		}
 

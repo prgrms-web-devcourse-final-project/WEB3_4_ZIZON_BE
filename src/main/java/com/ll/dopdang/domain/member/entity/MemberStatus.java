@@ -7,11 +7,11 @@ public enum MemberStatus {
 	/**
 	 * 유저 상태
 	 */
-	ACTIVE("활성"),
-	UNCERIFIED("미인증"),
-	DORMANT("휴먼"),
-	SUSPENDED("정지"),
-	DEACTIVATED("탈퇴");
+	활성("활성"),
+	미인증("미인증"),
+	휴면("휴먼"),
+	정지("정지"),
+	탈퇴("탈퇴");
 
 	private final String description;
 
