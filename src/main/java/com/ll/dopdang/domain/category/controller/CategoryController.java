@@ -2,6 +2,7 @@ package com.ll.dopdang.domain.category.controller;
 
 import com.ll.dopdang.domain.BaseResponse;
 import com.ll.dopdang.domain.category.dto.request.CategoryRequestDto;
+import com.ll.dopdang.domain.category.dto.response.CategoryResponseDto;
 import com.ll.dopdang.domain.category.entity.Category;
 import com.ll.dopdang.domain.category.service.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,5 +24,9 @@ public class CategoryController {
         categoryService.createCategory(categoryRequestDto);
         return ResponseEntity.status(HttpStatus.CREATED).body("카테고리 생성 성공");
     }
-
+    @GetMapping
+    public ResponseEntity<List<CategoryResponseDto>> getCategories() {
+        List<CategoryResponseDto> response = categoryService.getAllCategories();
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
 }

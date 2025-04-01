@@ -1,10 +1,15 @@
 package com.ll.dopdang.domain.category.service;
 
 import com.ll.dopdang.domain.category.dto.request.CategoryRequestDto;
+import com.ll.dopdang.domain.category.dto.response.CategoryResponseDto;
 import com.ll.dopdang.domain.category.entity.Category;
 import com.ll.dopdang.domain.category.repository.CategoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class CategoryService {
@@ -33,6 +38,16 @@ public class CategoryService {
                 categoryRequestDto.getCategoryType(),
                 null
         );
+        categoryRepository.save(category);
+    }
+
+    public List<CategoryResponseDto> getAllCategories(){
+        List<Category> categories = categoryRepository.findAll();
+        List<CategoryResponseDto> response = new ArrayList<>();
+        for(Category category : categories) {
+            response.add(new CategoryResponseDto(category));
+        }
+        return response;
     }
 
     private Integer generateCategoryId(int level, Integer parentId) {
