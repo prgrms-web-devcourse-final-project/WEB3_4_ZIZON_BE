@@ -4,6 +4,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import java.util.Arrays;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,6 +28,8 @@ import com.ll.dopdang.domain.member.entity.MemberStatus;
 import com.ll.dopdang.domain.member.repository.MemberRepository;
 import com.ll.dopdang.global.redis.repository.RedisRepository;
 import com.ll.dopdang.global.sms.service.CoolSmsService;
+
+import jakarta.servlet.http.Cookie;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -129,6 +134,34 @@ class MemberControllerTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(new LoginRequest("", ""))))
 			.andExpect(status().isBadRequest())
+			.andDo(print());
+	}
+
+	@Test
+	@DisplayName("로그아웃 테스트")
+	void test6() throws Exception {
+		MvcResult loginResult = mvc.perform(post("/users/login")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(new LoginRequest("test1@test.com", "test1234!"))))
+			.andExpect(status().isOk())
+			.andDo(print())
+			.andReturn();
+
+		Cookie[] cookies = loginResult.getResponse().getCookies();
+
+		if (cookies == null || cookies.length == 0) {
+			throw new RuntimeException("로그인 응답에 쿠키가 없습니다.");
+		}
+
+		Cookie accessTokenCookie = Arrays.stream(cookies)
+			.filter(cookie -> cookie.getName().equals("accessToken"))
+			.findFirst()
+			.orElseThrow(() -> new RuntimeException("액세스 토큰 쿠키를 찾을 수 없습니다."));
+
+		mvc.perform(post("/users/logout")
+				.contentType(MediaType.APPLICATION_JSON)
+				.cookie(accessTokenCookie))
+			.andExpect(status().isOk())
 			.andDo(print());
 	}
 }
