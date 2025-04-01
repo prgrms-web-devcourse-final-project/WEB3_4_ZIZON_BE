@@ -1,8 +1,9 @@
 package com.ll.dopdang.global.security.jwt.handler;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 
@@ -34,9 +35,13 @@ public class JwtLogoutSuccessHandler implements LogoutSuccessHandler {
 	@Override
 	public void onLogoutSuccess(HttpServletRequest req, HttpServletResponse resp, Authentication auth) throws
 		IOException, ServletException {
+		Map<String, Object> response = new HashMap<>();
+		response.put("code", "200");
+		response.put("message", "로그아웃 되었습니다.");
+
 		resp.setContentType("application/json");
 		resp.setCharacterEncoding("UTF-8");
 		resp.setStatus(HttpServletResponse.SC_OK);
-		resp.getWriter().write(objectMapper.writeValueAsString(ResponseEntity.ok()));
+		resp.getWriter().write(objectMapper.writeValueAsString(response));
 	}
 }
