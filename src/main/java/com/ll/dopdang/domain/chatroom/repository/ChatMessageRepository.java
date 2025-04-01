@@ -8,6 +8,6 @@ import org.springframework.stereotype.Repository;
 import com.ll.dopdang.domain.chatroom.entity.ChatMessage;
 
 @Repository
-public interface ChatMessageRepository extends JpaRepository<ChatMessage, String> {
-	List<ChatMessage> findByChatRoom_RoomIdOrderByTimestampAsc(String roomId);
+public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
+	List<ChatMessage> findByRoomIdOrderByTimestampAsc(String roomId);
 }

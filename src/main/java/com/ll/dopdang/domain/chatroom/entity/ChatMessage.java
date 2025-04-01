@@ -15,6 +15,7 @@ public class ChatMessage {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
+	private String roomId;
 	private String sender;
 	private String receiver;
 	private String content;
@@ -22,7 +23,4 @@ public class ChatMessage {
 
 	@Column(columnDefinition = "TEXT")
 	private String fileUrl;
-
-	@ManyToOne
-	private ChatRoom chatRoom;
 }

@@ -15,13 +15,13 @@ public record ChatRoomResponseDto(
 	}
 
 	private static String computeDisplayName(ChatRoom room, String currentUsername) {
-		if (room.getClient().equals(room.getExpert())) {
+		if (room.getMember1().equals(room.getMember2())) {
 			return "나와의 채팅방";
 		} else {
-			if (currentUsername.equals(room.getClient())) {
-				return room.getExpert() + "님과의 채팅방";
-			} else if (currentUsername.equals(room.getExpert())) {
-				return room.getClient() + "님과의 채팅방";
+			if (currentUsername.equals(room.getMember1())) {
+				return room.getMember2() + "님과의 채팅방";
+			} else if (currentUsername.equals(room.getMember2())) {
+				return room.getMember1() + "님과의 채팅방";
 			} else {
 				return room.getRoomId();
 			}

@@ -16,15 +16,15 @@ import lombok.*;
 public class ChatRoom {
 	@Id
 	@Column(unique = true)
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
 	private String roomId;
 
-	private String client;
-	private String expert;
+	private String member1;
+	private String member2;
 
 	private LocalDateTime lastReadAtUser1;
 	private LocalDateTime lastReadAtUser2;
 
-	@OneToMany(mappedBy = "chatRoom")
-	@JsonIgnore
-	private List<ChatMessage> messages;
 }
