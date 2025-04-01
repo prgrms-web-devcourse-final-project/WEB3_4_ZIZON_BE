@@ -9,20 +9,29 @@
 </head>
 <body>
 <h1>채팅 테스트</h1>
+
+<!-- 현재 로그인 사용자 표시 -->
 <div>
-    <label>보내는 사람: </label>
-    <input type="text" id="sender" placeholder="sender">
+    <label>현재 사용자: </label>
+    <span id="currentUser"></span>
+</div>
+
+<!-- 상대방 정보 입력 -->
+<div>
     <label>받는 사람: </label>
     <input type="text" id="receiver" placeholder="receiver">
 </div>
+
 <div>
     <button onclick="connect()">연결</button>
     <button onclick="disconnect()">연결 끊기</button>
 </div>
+
 <div>
     <input type="text" id="message" placeholder="메시지 입력">
     <button onclick="sendMessage()">메시지 전송</button>
 </div>
+
 <div id="chatLog" style="border:1px solid #ccc; padding:10px; width:300px; height:200px; overflow:auto;">
     채팅 로그
 </div>
@@ -30,11 +39,43 @@
 <script>
     let stompClient = null;
     let roomId = "";
+    let currentUser = null; // 로그인 사용자 정보를 저장할 변수
+
+    // 로그인 사용자 정보를 /users/me 엔드포인트에서 가져옵니다.
+    function fetchCurrentUser() {
+        fetch('http://localhost:8080/users/me', {
+            credentials: 'include' // 쿠키 포함하여 요청
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("현재 사용자 정보를 가져오지 못했습니다.");
+                }
+                return response.json();
+            })
+            .then(data => {
+                currentUser = data; // { id, email, name } 형태
+                document.getElementById("currentUser").innerText = currentUser.name + " (" + currentUser.email + ")";
+            })
+            .catch(error => {
+                console.error("Error fetching current user:", error);
+            });
+    }
+
+    // 페이지 로딩 시 현재 사용자 정보 요청
+    fetchCurrentUser();
 
     function connect() {
-        const sender = document.getElementById("sender").value;
+        if (!currentUser) {
+            alert("로그인된 사용자 정보를 불러오지 못했습니다.");
+            return;
+        }
+        const sender = currentUser.email;
         const receiver = document.getElementById("receiver").value;
-        // 채팅방 아이디 생성 로직 (서버와 동일하게 알파벳 순으로 정렬)
+        if (!receiver) {
+            alert("받는 사람을 입력하세요.");
+            return;
+        }
+        // 방 아이디 생성 (두 사용자 정보를 알파벳 순으로 정렬)
         roomId = (sender < receiver) ? sender + ":" + receiver : receiver + ":" + sender;
 
         const socket = new SockJS('http://localhost:8080/ws-chat');
@@ -42,13 +83,39 @@
 
         stompClient.connect({}, function(frame) {
             console.log('Connected: ' + frame);
-            // 구독: 서버에서는 /topic/chat/{roomId}로 메시지를 보냅니다.
+            // 채팅 기록 먼저 불러오기
+            fetchChatHistory(sender, receiver);
+            // 구독: 해당 채팅방의 실시간 메시지 수신
             stompClient.subscribe('/topic/chat/' + roomId, function(messageOutput) {
                 showMessage(JSON.parse(messageOutput.body));
             });
         }, function(error) {
             console.error('STOMP 연결 에러: ' + error);
         });
+    }
+
+    // /history 엔드포인트를 호출하여 채팅 기록을 불러옵니다.
+    function fetchChatHistory(sender, receiver) {
+        // 예시: GET /history?sender=...&receiver=...
+        fetch(`http://localhost:8080/history?sender=${encodeURIComponent(sender)}&receiver=${encodeURIComponent(receiver)}`, {
+            credentials: 'include'
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("채팅 기록을 불러오지 못했습니다.");
+                }
+                return response.json();
+            })
+            .then(messages => {
+                // 기존 채팅 로그 초기화
+                document.getElementById("chatLog").innerHTML = "";
+                messages.forEach(message => {
+                    showMessage(message);
+                });
+            })
+            .catch(error => {
+                console.error("Error fetching chat history:", error);
+            });
     }
 
     function disconnect() {
@@ -59,10 +126,18 @@
     }
 
     function sendMessage() {
-        const sender = document.getElementById("sender").value;
+        if (!currentUser) {
+            alert("현재 사용자 정보가 없습니다.");
+            return;
+        }
+        const sender = currentUser.email; // sender는 로그인한 사용자 정보 사용
         const receiver = document.getElementById("receiver").value;
         const content = document.getElementById("message").value;
-        // 메시지 객체 구성 (fileUrl은 빈 문자열로 처리)
+        if (!content) {
+            alert("메시지를 입력하세요.");
+            return;
+        }
+        // 메시지 객체 구성
         const chatMessage = {
             sender: sender,
             receiver: receiver,

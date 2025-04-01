@@ -1,7 +1,9 @@
 package com.ll.dopdang.domain.member.controller;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ll.dopdang.domain.member.dto.request.MemberSignupRequest;
 import com.ll.dopdang.domain.member.dto.request.VerifyCodeRequest;
+import com.ll.dopdang.domain.member.dto.response.MemberInfoResponse;
 import com.ll.dopdang.domain.member.service.MemberService;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
 import com.ll.dopdang.global.sms.dto.SmsVerificationResponse;
@@ -74,5 +77,19 @@ public class MemberController {
 		}
 		memberService.verifyPhone(userId, code, request, customUserDetails);
 		return ResponseEntity.ok("전화번호 인증이 완료되었습니다.");
+	}
+
+	@GetMapping("/me")
+	public ResponseEntity<MemberInfoResponse> getCurrentUser(
+		@AuthenticationPrincipal CustomUserDetails customUserDetails) {
+		if (customUserDetails == null) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+		}
+		MemberInfoResponse response = new MemberInfoResponse(
+			customUserDetails.getMember().getId(),
+			customUserDetails.getUsername(),
+			customUserDetails.getMember().getName()
+		);
+		return ResponseEntity.ok(response);
 	}
 }
