@@ -6,15 +6,21 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface CategoryRepository extends JpaRepository<Category, Integer> {
 
-    // 대분류 카테고리를 이름으로 조회
-    Optional<Category> findByNameAndParentIsNull(String name);
+    Optional<Category> findTopByLevelOrderByIdDesc(int level);
 
-    // 소분류 카테고리를 대분류와 이름으로 조회
-    @Query("SELECT c FROM Category c WHERE c.name = :name AND c.parent = :parent")
-    Optional<Category> findByNameAndParent(@Param("name") String name, @Param("parent") Category parent);
+    Optional<Category> findTopByParentIdOrderByIdDesc(Integer parentId);
+
+    List<Category> findAllByParentId(Integer parentId);
+
+    @Query("SELECT MAX(c.id) FROM Category c WHERE c.parent IS NULL")
+    Integer findMaxParentCategoryId();
+
+    @Query("SELECT MAX(c.id) FROM Category c WHERE c.parent.id = :parentId")
+    Integer findMaxChildCategoryId(@Param("parentId") Integer parentId);
 }
