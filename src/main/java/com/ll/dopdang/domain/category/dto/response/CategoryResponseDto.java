@@ -1,14 +1,11 @@
 package com.ll.dopdang.domain.category.dto.response;
 
 import com.ll.dopdang.domain.category.entity.Category;
-import com.ll.dopdang.domain.category.entity.CategoryType;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
-@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class CategoryResponseDto {
