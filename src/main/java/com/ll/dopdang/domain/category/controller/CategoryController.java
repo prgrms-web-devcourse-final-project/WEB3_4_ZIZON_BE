@@ -29,4 +29,5 @@ public class CategoryController {
         List<CategoryResponseDto> response = categoryService.getAllCategories();
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
+
 }

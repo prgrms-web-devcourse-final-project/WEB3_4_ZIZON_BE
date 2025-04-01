@@ -6,10 +6,8 @@ import com.ll.dopdang.domain.category.entity.Category;
 import com.ll.dopdang.domain.category.repository.CategoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class CategoryService {
@@ -26,18 +24,21 @@ public class CategoryService {
         if (level > 1 && parentId != null) {
             parent = categoryRepository.findById(parentId)
                     .orElseThrow(() -> new IllegalArgumentException("부모 카테고리가 존재하지 않습니다."));
+            if (!parent.getCategoryType().equals(categoryRequestDto.getCategoryType())) {
+                        throw new IllegalArgumentException("부모와 자식의 categoryType이 일치해야 합니다. " +
+                                "부모 categoryType: " + parent.getCategoryType() +
+                                ", 자식 categoryType: " + categoryRequestDto.getCategoryType());
+            }
         }
-
         Integer newId = generateCategoryId(level, parentId);
-        Category category = new Category(
-                newId,
-                parent,
-                null,
-                categoryRequestDto.getName(),
-                level,
-                categoryRequestDto.getCategoryType(),
-                null
-        );
+        Category category = Category.builder()
+                .id(newId)
+                .parent(parent)
+                .name(categoryRequestDto.getName())
+                .level(level)
+                .categoryType(categoryRequestDto.getCategoryType())
+                .build();
+
         categoryRepository.save(category);
     }
 
@@ -51,17 +52,14 @@ public class CategoryService {
     }
 
     private Integer generateCategoryId(int level, Integer parentId) {
-        if (level == 1) {   // 1레벨: 1000 단위로 ID 생성
+        if (level == 1) { // 1레벨: 1000 단위로 ID 생성
             return categoryRepository.findTopByLevelOrderByIdDesc(level)
                     .map(category -> category.getId() + 1000)
                     .orElse(1000); // 첫번째 대분류 ID = 1000
-        } else {    // 2레벨 이상: parentId 기반으로 마지막 자식 + 1 ID
+        } else { // 2레벨 이상: parentId 기반으로 마지막 자식 + 1 ID
             return categoryRepository.findTopByParentIdOrderByIdDesc(parentId)
                     .map(category -> category.getId() + 1)
-                    .orElse(parentId * 100 + 1); // 자식이 없을 경우, 부모 ID * 100 + 1
+                    .orElse(parentId + 1); // 자식이 없을 경우, 부모 ID * 100 + 1
         }
     }
-
-
-
 }
