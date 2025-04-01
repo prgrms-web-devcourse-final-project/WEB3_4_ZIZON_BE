@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ll.dopdang.domain.payment.dto.PaymentOrderInfo;
 import com.ll.dopdang.domain.payment.entity.Payment;
@@ -25,6 +24,7 @@ import com.ll.dopdang.domain.payment.entity.PaymentDetail;
 import com.ll.dopdang.domain.payment.entity.PaymentMetadata;
 import com.ll.dopdang.domain.payment.entity.PaymentType;
 import com.ll.dopdang.domain.payment.repository.PaymentRepository;
+import com.ll.dopdang.domain.payment.strategy.PaymentValidatorFactory;
 import com.ll.dopdang.domain.project.entity.Contract;
 import com.ll.dopdang.domain.project.service.ContractService;
 import com.ll.dopdang.global.exception.ErrorCode;
@@ -34,9 +34,6 @@ import com.ll.dopdang.global.redis.repository.RedisRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * 결제 처리를 담당하는 서비스
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -51,6 +48,7 @@ public class PaymentService {
 	private final PaymentRepository paymentRepository;
 	private final ObjectMapper objectMapper;
 	private final RestTemplate restTemplate;
+	private final PaymentValidatorFactory validatorFactory;
 
 	@Value("${payment.toss.secretKey}")
 	private String tossSecretKey;
@@ -63,16 +61,12 @@ public class PaymentService {
 	 * @return 생성된 주문 ID
 	 */
 	public String createOrderId(PaymentType paymentType, Long referenceId) {
-
-		// UUID를 사용하여 고유한 orderId 생성
-		String orderId = paymentType.name() + "__" + UUID.randomUUID();
-
-		// Redis에 orderId와 결제 정보 매핑 저장
+		String orderId = UUID.randomUUID().toString();
 		String redisKey = KEY_PREFIX + orderId;
+
 		PaymentOrderInfo orderInfo = new PaymentOrderInfo(paymentType, referenceId);
 		redisRepository.save(redisKey, orderInfo, ORDER_EXPIRY_MINUTES, TimeUnit.MINUTES);
 
-		log.debug("주문 ID 생성 완료: orderId={}, paymentType={}, referenceId={}", orderId, paymentType, referenceId);
 		return orderId;
 	}
 
@@ -96,11 +90,14 @@ public class PaymentService {
 		// 결제 금액 검증
 		validatePaymentAmount(paymentType, referenceId, amount);
 
-		// 토스페이먼츠 API 호출 및 응답 처리
+		// 토스페이먼츠 API 호출
 		String responseBody = callTossPaymentsApi(paymentKey, orderId, amount);
 
 		// 결제 정보 저장
 		savePaymentInformation(paymentType, referenceId, amount, responseBody);
+
+		// Redis에서 주문 정보 삭제
+		redisRepository.remove(KEY_PREFIX + orderId);
 
 		log.info("결제 승인 성공: paymentKey={}", paymentKey);
 	}
@@ -131,36 +128,8 @@ public class PaymentService {
 	 * @param requestAmount 결제 요청 금액
 	 */
 	private void validatePaymentAmount(PaymentType paymentType, Long referenceId, BigDecimal requestAmount) {
-		BigDecimal expectedAmount;
-
-		// Todo: 전략 패턴 적용해서 switch문 제거
-		switch (paymentType) {
-			case PROJECT:
-				Contract contract = contractService.getContractById(referenceId);
-				expectedAmount = contract.getPrice();
-				break;
-			case ORDER:
-				// Todo: 스토어 주문 상품에 대한 결제 금액 검증 로직 추가
-				expectedAmount = requestAmount; // 임시 처리
-				break;
-			case ETC:
-				// Todo: 기타 결제에 대한 결제 금액 검증 로직 추가
-				expectedAmount = requestAmount; // 임시 처리
-				break;
-			default:
-				throw new ServiceException(ErrorCode.PAYMENT_PROCESSING_ERROR, "지원하지 않는 결제 유형입니다.");
-		}
-
-		if (expectedAmount.compareTo(requestAmount) != 0) {
-			log.error("결제 금액 불일치: 예상 금액={}, 요청 금액={}", expectedAmount, requestAmount);
-			throw new ServiceException(
-				ErrorCode.PAYMENT_AMOUNT_MISMATCH,
-				String.format("결제 금액이 일치하지 않습니다. 예상 금액: %s, 결제 요청 금액: %s",
-					expectedAmount, requestAmount)
-			);
-		}
-
-		log.debug("결제 금액 검증 성공: 예상 금액={}, 요청 금액={}", expectedAmount, requestAmount);
+		// 전략 패턴을 사용하여 결제 유형에 맞는 검증 로직 실행
+		validatorFactory.getValidator(paymentType).validateAndGetExpectedAmount(referenceId, requestAmount);
 	}
 
 	/**
@@ -225,16 +194,15 @@ public class PaymentService {
 	private void savePaymentInformation(PaymentType paymentType, Long referenceId, BigDecimal amount,
 		String responseBody) {
 		try {
+			// 토스페이먼츠 응답에서 paymentKey 추출
+			Map<String, Object> responseMap = objectMapper.readValue(responseBody, Map.class);
+			String paymentKey = (String)responseMap.get("paymentKey");
+
 			// 수수료 계산
 			BigDecimal fee = calculateFee(amount);
 
-			// paymentKey 추출
-			JsonNode jsonNode = objectMapper.readTree(responseBody);
-			String paymentKey = jsonNode.get("paymentKey").asText();
-
-			// 결제 유형에 따라 다른 처리
-			Payment payment;
-			PaymentDetail paymentDetail;
+			Payment payment = null;
+			PaymentDetail paymentDetail = null;
 
 			switch (paymentType) {
 				case PROJECT:
@@ -264,10 +232,11 @@ public class PaymentService {
 			PaymentMetadata metadata = PaymentMetadata.createMetadata(payment, responseBody);
 			payment.setMetadata(metadata);
 
-			// 영속화 (cascade 설정에 따라 관련 엔티티도 함께 저장)
+			// 결제 정보 저장 (cascade 설정에 따라 관련 엔티티도 함께 저장)
 			paymentRepository.save(payment);
 
-			log.debug("결제 정보 저장 완료: paymentId={}", payment.getId());
+			log.info("결제 정보 저장 완료: paymentId={} paymentKey={}, amount={}, fee={}",
+				payment.getId(), paymentKey, amount, fee);
 		} catch (Exception e) {
 			log.error("결제 정보 저장 중 오류 발생", e);
 			throw new ServiceException(ErrorCode.PAYMENT_PROCESSING_ERROR,
