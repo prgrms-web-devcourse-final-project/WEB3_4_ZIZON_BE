@@ -1,10 +1,15 @@
 package com.ll.dopdang.domain.member.controller;
 
+import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
+import static org.hibernate.validator.internal.util.Contracts.assertTrue;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.util.AssertionErrors.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -87,14 +92,34 @@ class MemberControllerTest {
 	@Test
 	@DisplayName("로그인 테스트 - 정상 로그인 시도")
 	void test1() throws Exception {
-		mvc.perform(post("/users/login")
+		MvcResult result = mvc.perform(post("/users/login")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(new LoginRequest("test1@test.com", "test1234!"))))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.body.email").value("test1@test.com"))
 			.andExpect(jsonPath("$.body.profileImage").value(""))
 			.andExpect(jsonPath("$.body.name").value("test1"))
-			.andDo(print());
+			.andDo(print())
+			.andReturn();
+
+		Cookie[] cookies = result.getResponse().getCookies();
+		assertNotNull(cookies, "쿠키가 null입니다.");
+		assertTrue(cookies.length > 0, "쿠키가 없습니다.");
+
+		Cookie accessTokenCookie = Arrays.stream(cookies)
+			.filter(cookie -> "accessToken".equals(cookie.getName()))
+			.findFirst()
+			.orElse(null);
+
+		assertNotNull(accessTokenCookie, "액세스 토큰 쿠키가 없습니다.");
+		assertFalse("액세스 토큰이 비어있습니다.", accessTokenCookie.getValue().isEmpty());
+
+		verify(redisRepository, times(1)).save(
+			eq(accessTokenCookie.getValue()),
+			anyString(),
+			anyLong(),
+			eq(TimeUnit.MILLISECONDS)
+		);
 	}
 
 	@Test
@@ -148,20 +173,55 @@ class MemberControllerTest {
 			.andReturn();
 
 		Cookie[] cookies = loginResult.getResponse().getCookies();
-
-		if (cookies == null || cookies.length == 0) {
-			throw new RuntimeException("로그인 응답에 쿠키가 없습니다.");
-		}
+		assertNotNull(cookies, "로그인 응답에 쿠키가 없습니다.");
+		assertTrue(cookies.length > 0, "로그인 응답에 쿠키가 없습니다.");
 
 		Cookie accessTokenCookie = Arrays.stream(cookies)
 			.filter(cookie -> cookie.getName().equals("accessToken"))
 			.findFirst()
 			.orElseThrow(() -> new RuntimeException("액세스 토큰 쿠키를 찾을 수 없습니다."));
 
-		mvc.perform(post("/users/logout")
+		String accessTokenValue = accessTokenCookie.getValue();
+		assertFalse("액세스 토큰이 비어있습니다.", accessTokenValue.isEmpty());
+
+		MvcResult logoutResult = mvc.perform(post("/users/logout")
 				.contentType(MediaType.APPLICATION_JSON)
 				.cookie(accessTokenCookie))
 			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.message").value("로그아웃 되었습니다."))
+			.andDo(print())
+			.andReturn();
+
+		Cookie[] logoutCookies = logoutResult.getResponse().getCookies();
+		assertNotNull(logoutCookies, "로그아웃 응답에 쿠키가 없습니다.");
+
+		boolean accessTokenInvalidated = false;
+		for (Cookie cookie : logoutCookies) {
+			if ("accessToken".equals(cookie.getName())) {
+				assertEquals("쿠키가 무효화되지 않았습니다.", 0, cookie.getMaxAge());
+				accessTokenInvalidated = true;
+				break;
+			}
+		}
+		assertTrue(accessTokenInvalidated, "액세스 토큰 쿠키가 무효화되지 않았습니다.");
+
+		verify(redisRepository, times(1)).remove(eq(accessTokenValue));
+
+		verify(redisRepository, times(1)).save(
+			eq("blacklist:" + accessTokenValue),
+			eq("LOGOUT"),
+			anyLong(),
+			eq(TimeUnit.MILLISECONDS)
+		);
+	}
+
+	@Test
+	@DisplayName("로그아웃 테스트 - 로그인 하지 않은 상태(토큰이 없는 상태)")
+	void test7() throws Exception {
+		mvc.perform(post("/users/logout")
+				.contentType(MediaType.APPLICATION_JSON))
+			.andExpect(status().isBadRequest())
 			.andDo(print());
 	}
 }
