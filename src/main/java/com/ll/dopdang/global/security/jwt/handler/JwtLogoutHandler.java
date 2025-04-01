@@ -5,21 +5,18 @@ import org.springframework.security.web.authentication.logout.LogoutHandler;
 
 import com.ll.dopdang.global.security.jwt.service.TokenManagementService;
 import com.ll.dopdang.global.security.jwt.service.TokenService;
-import com.ll.dopdang.standard.util.JwtUtil;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * JwtLogoutHandler
  */
+@Slf4j
 @RequiredArgsConstructor
 public class JwtLogoutHandler implements LogoutHandler {
-	/**
-	 * jwt 유틸리티
-	 */
-	private final JwtUtil jwtUtil;
 	/**
 	 * 토큰 서비스
 	 */
@@ -37,22 +34,21 @@ public class JwtLogoutHandler implements LogoutHandler {
 	 */
 	@Override
 	public void logout(HttpServletRequest req, HttpServletResponse resp, Authentication auth) {
-		String authorization = req.getHeader("Authorization");
-		String accessToken = null;
+		String accessToken = tokenService.getAccessToken(req);
 
-		if (authorization != null && authorization.startsWith("Bearer ")) {
-			accessToken = authorization.substring(7);
-		}
+		boolean isLoggedIn = accessToken != null;
+		req.setAttribute("isLoggedIn", isLoggedIn);
 
-		String refreshToken = tokenService.getRefreshToken(req);
+		if (isLoggedIn) {
+			// 토큰 무효화
+			tokenManagementService.invalidateTokens(accessToken);
 
-		if (accessToken != null && refreshToken != null) {
-			try {
-				String username = jwtUtil.getUsername(accessToken);
-				tokenManagementService.invalidateTokens(username, accessToken);
-			} catch (Exception e) {
-				// 예외 처리
-			}
+			// 쿠키 무효화
+			resp.addCookie(tokenManagementService.invalidateCookie("accessToken"));
+
+			log.info("로그아웃 처리 - 토큰 무효화 완료");
+		} else {
+			log.info("로그아웃 처리 - 로그인 상태가 아님");
 		}
 	}
 }

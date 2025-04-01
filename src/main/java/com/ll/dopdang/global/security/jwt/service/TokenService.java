@@ -2,6 +2,8 @@ package com.ll.dopdang.global.security.jwt.service;
 
 import org.springframework.stereotype.Component;
 
+import com.ll.dopdang.global.redis.repository.RedisRepository;
+
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -12,24 +14,34 @@ import lombok.RequiredArgsConstructor;
 @Component
 @RequiredArgsConstructor
 public class TokenService {
+	private final RedisRepository redisRepository;
+
 	/**
 	 * 리프레시 토큰 가져오는 메서드
-	 * @param request HttpServletRequest
+	 * @param accessToken 엑세스 토큰
 	 * @return {@link String}
 	 */
-	public String getRefreshToken(HttpServletRequest request) {
+	public String getRefreshToken(String accessToken) {
+		if (accessToken == null) {
+			return null;
+		}
+		return (String)redisRepository.get(accessToken);
+	}
+
+	public String getAccessToken(HttpServletRequest request) {
 		if (request.getCookies() == null) {
 			return null;
 		}
 
-		String refreshToken = null;
+		String accessToken = null;
 
 		for (Cookie cookie : request.getCookies()) {
-			if (cookie.getName().equals("refreshToken")) {
-				refreshToken = cookie.getValue();
+			if (cookie.getName().equals("accessToken")) {
+				accessToken = cookie.getValue();
+				break;
 			}
 		}
 
-		return refreshToken;
+		return accessToken;
 	}
 }

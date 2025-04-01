@@ -177,7 +177,7 @@ public class SecurityConfig {
 				}))
 			.logout(logout -> logout
 				.logoutUrl("/users/logout")
-				.addLogoutHandler(new JwtLogoutHandler(jwtUtil, tokenService, tokenManagementService))
+				.addLogoutHandler(new JwtLogoutHandler(tokenService, tokenManagementService))
 				.logoutSuccessHandler(new JwtLogoutSuccessHandler(objectMapper)))
 			.oauth2Login(oauth2 -> oauth2
 				.userInfoEndpoint(userInfo -> userInfo

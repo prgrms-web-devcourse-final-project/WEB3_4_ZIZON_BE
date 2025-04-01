@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 
@@ -36,12 +37,23 @@ public class JwtLogoutSuccessHandler implements LogoutSuccessHandler {
 	public void onLogoutSuccess(HttpServletRequest req, HttpServletResponse resp, Authentication auth) throws
 		IOException, ServletException {
 		Map<String, Object> response = new HashMap<>();
-		response.put("code", "200");
-		response.put("message", "로그아웃 되었습니다.");
+
+		boolean isLoggedIn = req.getAttribute("isLoggedIn") != null && (boolean)req.getAttribute("isLoggedIn");
+
+		if (isLoggedIn) {
+			// 정상적인 로그아웃 처리
+			response.put("code", "200");
+			response.put("message", "로그아웃 되었습니다.");
+			resp.setStatus(HttpStatus.OK.value());
+		} else {
+			// 이미 로그아웃 상태
+			response.put("code", "400");
+			response.put("message", "이미 로그아웃 상태입니다.");
+			resp.setStatus(HttpStatus.BAD_REQUEST.value());
+		}
 
 		resp.setContentType("application/json");
 		resp.setCharacterEncoding("UTF-8");
-		resp.setStatus(HttpServletResponse.SC_OK);
 		resp.getWriter().write(objectMapper.writeValueAsString(response));
 	}
 }

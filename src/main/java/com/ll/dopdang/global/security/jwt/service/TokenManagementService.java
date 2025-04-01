@@ -19,10 +19,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * TokenManagementService (토큰 관리 서비스)
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TokenManagementService {
@@ -79,7 +81,6 @@ public class TokenManagementService {
 		Cookie accessTokenCookie = jwtUtil.setJwtCookie("accessToken", accessToken, accessExpiration);
 		response.addCookie(accessTokenCookie);
 
-		redisRepository.remove(accessToken);
 		redisRepository.save(accessToken, refreshToken, refreshExpiration, TimeUnit.MILLISECONDS);
 
 		this.accessToken = accessToken;
@@ -92,7 +93,8 @@ public class TokenManagementService {
 	 * @throws IOException 예외
 	 */
 	public void reissueTokens(HttpServletRequest request, HttpServletResponse response) throws IOException {
-		String refreshToken = tokenService.getRefreshToken(request);
+		String accessToken = tokenService.getAccessToken(request);
+		String refreshToken = tokenService.getRefreshToken(accessToken);
 
 		if (refreshToken == null) {
 			throw new IllegalArgumentException("리프레시 토큰이 없습니다.");
@@ -100,11 +102,6 @@ public class TokenManagementService {
 
 		String username = jwtUtil.getUsername(refreshToken);
 		String role = jwtUtil.getRole(refreshToken);
-
-		// Redis에 저장된 리프레시 토큰과 비교
-		if (!redisRepository.get(username).equals(refreshToken)) {
-			throw new IllegalArgumentException("유효하지 않은 리프레시 토큰입니다.");
-		}
 
 		CustomUserDetails userDetails = new CustomUserDetails(
 			Member.builder()
@@ -118,37 +115,63 @@ public class TokenManagementService {
 		String newAccessToken = jwtUtil.createAccessToken(userDetails, accessExpiration);
 		String newRefreshToken = jwtUtil.createRefreshToken(userDetails, refreshExpiration);
 
+		Cookie newAccessTokenCookie = jwtUtil.setJwtCookie("accessToken", newAccessToken, accessExpiration);
+		response.addCookie(newAccessTokenCookie);
+
 		// Redis 업데이트
-		redisRepository.remove(userDetails.getUsername());
-		redisRepository.save(userDetails.getUsername(), newRefreshToken, refreshExpiration, TimeUnit.MILLISECONDS);
+		redisRepository.remove(accessToken); // 이전 액세스 토큰 제거
+		redisRepository.save(newAccessToken, newRefreshToken, refreshExpiration, TimeUnit.MILLISECONDS);
 
 		// 응답 처리
 		AuthResponseUtil.success(
 			response,
 			newAccessToken,
-			jwtUtil.setJwtCookie("refreshToken", newRefreshToken, refreshExpiration),
+			null, // refreshToken은 쿠키가 아닌 Redis에 저장
 			HttpServletResponse.SC_OK,
 			ResponseEntity.ok("AccessToken 발급 성공"),
 			objectMapper);
+
+		log.info("토큰 재발급 성공 - 사용자: {}", username);
 	}
 
 	/**
-	 * 토큰 블랙리스트 추가
-	 * @param username 이메일
-	 * @param accessToken 엑세스 토큰
+	 * 토큰 무효화
+	 * @param accessToken 액세스 토큰
 	 */
-	public void invalidateTokens(String username, String accessToken) {
-		if (accessToken != null) {
-			try {
-				// 액세스 토큰 블랙리스트에 추가
-				long expiration = jwtUtil.getExpirationDate(accessToken).getTime() - System.currentTimeMillis();
-				redisRepository.save(accessToken, "Logout", expiration, TimeUnit.MILLISECONDS);
-
-				// 리프레시 토큰 삭제
-				redisRepository.remove(username);
-			} catch (Exception e) {
-				// 예외 처리
-			}
+	public void invalidateTokens(String accessToken) {
+		if (accessToken == null) {
+			return;
 		}
+
+		try {
+			// 사용자 정보 추출
+			String username = jwtUtil.getUsername(accessToken);
+
+			// Redis에서 리프레시 토큰 삭제
+			redisRepository.remove(accessToken);
+
+			// 액세스 토큰 블랙리스트에 추가 (만료 시간까지만)
+			long expiration = jwtUtil.getExpirationDate(accessToken).getTime() - System.currentTimeMillis();
+			if (expiration > 0) {
+				redisRepository.save("blacklist:" + accessToken, "LOGOUT", expiration, TimeUnit.MILLISECONDS);
+			}
+
+			log.info("토큰 무효화 성공 - 사용자: {}", username);
+		} catch (Exception e) {
+			log.error("토큰 무효화 중 오류 발생", e);
+		}
+	}
+
+	/**
+	 * 쿠키 무효화
+	 * @param cookieName 쿠키 이름
+	 * @return 무효화된 쿠키
+	 */
+	public Cookie invalidateCookie(String cookieName) {
+		Cookie cookie = new Cookie(cookieName, null);
+		cookie.setMaxAge(0);
+		cookie.setPath("/");
+		cookie.setHttpOnly(true);
+		return cookie;
 	}
 }
