@@ -1,5 +1,6 @@
 package com.ll.dopdang.domain.category.dto.request;
 
+import com.ll.dopdang.domain.category.entity.Category;
 import com.ll.dopdang.domain.category.entity.CategoryType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,4 +16,7 @@ public class CategoryRequestDto {
     private String name;
     private int level;
     private CategoryType categoryType;
+
+    public CategoryRequestDto(Category category) {
+    }
 }
