@@ -7,6 +7,7 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+
   jpa:
     show-sql: true
     properties:
@@ -14,8 +15,20 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
 
+  logging:
+    level:
+      root: DEBUG
+
   data:
     redis:
       host: ${REDIS_HOST}
       port: 6379
       password: ${REDIS_PASSWORD}
+    elasticsearch:
+      uris: http://localhost:9200
+  cloud:
+    aws:
+      credentials:
+        access-key: ${CLOUD_AWS_CREDENTIALS_ACCESS_KEY}
+        secret-key: ${CLOUD_AWS_CREDENTIALS_SECRET_KEY}
+        region: ${CLOUD_AWS_REGION}
