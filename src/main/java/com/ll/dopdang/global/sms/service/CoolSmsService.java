@@ -11,6 +11,8 @@ import net.nurigo.sdk.message.model.Message;
 import net.nurigo.sdk.message.request.SingleMessageSendingRequest;
 import net.nurigo.sdk.message.service.DefaultMessageService;
 
+import com.ll.dopdang.global.exception.ErrorCode;
+import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.global.redis.repository.RedisRepository;
 import com.ll.dopdang.global.sms.dto.SmsVerificationRequest;
 import com.ll.dopdang.global.sms.dto.SmsVerificationResponse;
@@ -25,37 +27,17 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 public class CoolSmsService implements SmsService {
-	/**
-	 * CoolSMS api key
-	 */
 	@Value("${coolsms.api_key}")
-	private String API_KEY;
-	/**
-	 * CoolSMS api secret
-	 */
+	private String apiKey;
 	@Value("${coolsms.api_secret}")
-	private String API_SECRET;
-	/**
-	 * CoolSMS from number
-	 */
+	private String apiSecret;
 	@Value("${coolsms.from_number}")
-	private String FROM_NUMBER;
-	/**
-	 * redis repository
-	 */
+	private String fromNumber;
 	private final RedisRepository redisRepository;
-	/**
-	 * 인증 코드 길이
-	 */
 	private static final int VERIFICATION_CODE_LENGTH = 6;
-	/**
-	 * 인증 코드 유효 시간
-	 */
 	private static final int VERIFICATION_CODE_EXPIRATION = 5 * 60; // 5분
-	/**
-	 * 기본 메세지 서비스
-	 */
 	private DefaultMessageService messageService;
+	private final Random random = new Random();
 
 	/**
 	 * 메세지 가져오기
@@ -63,7 +45,7 @@ public class CoolSmsService implements SmsService {
 	 */
 	private DefaultMessageService getMessageService() {
 		if (messageService == null) {
-			messageService = NurigoApp.INSTANCE.initialize(API_KEY, API_SECRET, "https://api.coolsms.co.kr");
+			messageService = NurigoApp.INSTANCE.initialize(apiKey, apiSecret, "https://api.coolsms.co.kr");
 		}
 		return messageService;
 	}
@@ -88,7 +70,7 @@ public class CoolSmsService implements SmsService {
 
 			// CoolSMS를 통해 SMS 발송
 			Message message = new Message();
-			message.setFrom(FROM_NUMBER);
+			message.setFrom(fromNumber);
 			message.setTo(phoneNumber);
 			message.setText(messageBody);
 
@@ -104,7 +86,7 @@ public class CoolSmsService implements SmsService {
 
 		} catch (Exception e) {
 			log.error("SMS 발송 실패: {}", e.getMessage(), e);
-			throw new RuntimeException("sms 발송");
+			throw new ServiceException(ErrorCode.MESSAGE_SENDING_ERROR);
 		}
 	}
 
@@ -136,7 +118,6 @@ public class CoolSmsService implements SmsService {
 	 * @return {@link String}
 	 */
 	private String generateVerificationCode() {
-		Random random = new Random();
 		StringBuilder sb = new StringBuilder();
 
 		for (int i = 0; i < VERIFICATION_CODE_LENGTH; i++) {
