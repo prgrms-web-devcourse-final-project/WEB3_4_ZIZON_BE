@@ -107,6 +107,12 @@ public class MemberService {
 		return findMember(id);
 	}
 
+	@Transactional
+	public Member updateMember(Long id, CustomUserDetails customUserDetails) {
+		isValidMember(id, customUserDetails);
+		return findMember(id);
+	}
+
 	/**
 	 * 인증 코드 검증 메서드
 	 * @param phone 전화번호
