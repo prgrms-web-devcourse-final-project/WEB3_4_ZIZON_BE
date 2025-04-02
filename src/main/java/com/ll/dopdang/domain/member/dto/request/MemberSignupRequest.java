@@ -1,9 +1,9 @@
 package com.ll.dopdang.domain.member.dto.request;
 
-import com.ll.dopdang.domain.member.entity.Member;
-
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -14,6 +14,8 @@ import lombok.NoArgsConstructor;
 /**
  * 회원가입 dto
  */
+
+@Valid
 @Getter
 @Builder
 @NoArgsConstructor
@@ -41,18 +43,6 @@ public class MemberSignupRequest {
 	/**
 	 * 전화번호
 	 */
-	@NotBlank
-	@Pattern(regexp = "^(010\\d{8}|011\\d{7})$")
-	private String phone;
-
-	/**
-	 * 생성자
-	 * @param member 유저
-	 */
-	public MemberSignupRequest(Member member) {
-		this.email = member.getEmail();
-		this.password = member.getPassword();
-		this.name = member.getName();
-		this.phone = member.getPhone();
-	}
+	@NotNull
+	private VerifyCodeRequest verifyCodeRequest;
 }

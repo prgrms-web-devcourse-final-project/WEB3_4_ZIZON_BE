@@ -177,7 +177,7 @@ public class SecurityConfig {
 				}))
 			.logout(logout -> logout
 				.logoutUrl("/users/logout")
-				.addLogoutHandler(new JwtLogoutHandler(jwtUtil, tokenService, tokenManagementService))
+				.addLogoutHandler(new JwtLogoutHandler(tokenService, tokenManagementService))
 				.logoutSuccessHandler(new JwtLogoutSuccessHandler(objectMapper)))
 			.oauth2Login(oauth2 -> oauth2
 				.userInfoEndpoint(userInfo -> userInfo
@@ -212,7 +212,8 @@ public class SecurityConfig {
 		// 허용할 헤더 설정
 		configuration.setAllowedHeaders(List.of("*"));
 
-		configuration.setExposedHeaders(Arrays.asList("Authorization", "Set-Cookie"));
+		configuration.setExposedHeaders(
+			Arrays.asList("Authorization", "Set-Cookie", "Access-Control-Allow-Credentials"));
 
 		// CORS 설정을 소스에 등록
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

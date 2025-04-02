@@ -156,9 +156,10 @@ public class JwtUtil {
 
 		Cookie cookie = new Cookie(key, value);
 		cookie.setMaxAge((int)expiration / 1000);
-		cookie.setSecure(false);
-		cookie.setPath("/");
-		cookie.setHttpOnly(true);
+		cookie.setSecure(false);    // HTTPS에서만 전송
+		cookie.setPath("/");        // 모든 경로에서 접근 가능
+		cookie.setDomain("");        // 모든 서브 도메인에서 접근 가능
+		cookie.setHttpOnly(true);    // XSS 공격 방지
 
 		return cookie;
 	}

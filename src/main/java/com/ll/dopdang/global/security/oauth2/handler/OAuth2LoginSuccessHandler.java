@@ -110,8 +110,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 					.email(name + "@kakao.com")
 					.profileImage(profileImg)
 					.memberId(providerId)
-					.userRole(MemberRole.ROLE_CLIENT.toString())
-					.status(MemberStatus.UNCERIFIED.toString())
+					.userRole(MemberRole.CLIENT.toString())
+					.status(MemberStatus.UNVERIFIED.toString())
 					.build();
 			} else if ("google".equals(registrationId)) {
 				name = (String)attributes.get("name");
@@ -125,8 +125,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 					.email(email)
 					.profileImage(profileImg)
 					.memberId(providerId)
-					.userRole(MemberRole.ROLE_CLIENT.toString())
-					.status(MemberStatus.UNCERIFIED.toString())
+					.userRole(MemberRole.CLIENT.toString())
+					.status(MemberStatus.UNVERIFIED.toString())
 					.build();
 			} else {
 				Map<String, Object> response = (Map<String, Object>)attributes.get("response");
@@ -141,8 +141,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 					.email(email)
 					.profileImage(profileImg)
 					.memberId(providerId)
-					.userRole(MemberRole.ROLE_CLIENT.toString())
-					.status(MemberStatus.UNCERIFIED.toString())
+					.userRole(MemberRole.CLIENT.toString())
+					.status(MemberStatus.UNVERIFIED.toString())
 					.build();
 			}
 

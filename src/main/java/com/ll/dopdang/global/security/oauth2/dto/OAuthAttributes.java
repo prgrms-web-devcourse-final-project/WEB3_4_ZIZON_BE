@@ -79,8 +79,8 @@ public class OAuthAttributes {
 			.phone("")
 			.profileImage(profileImage)
 			.memberId(memberId)
-			.userRole(MemberRole.ROLE_CLIENT.toString())
-			.status(MemberStatus.UNCERIFIED.toString())
+			.userRole(MemberRole.CLIENT.toString())
+			.status(MemberStatus.UNVERIFIED.toString())
 			.build();
 	}
 }

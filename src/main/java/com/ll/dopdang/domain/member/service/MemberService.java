@@ -5,6 +5,7 @@ import java.util.Objects;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.ObjectUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ll.dopdang.domain.member.dto.request.MemberSignupRequest;
@@ -26,7 +27,6 @@ import lombok.RequiredArgsConstructor;
  */
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class MemberService {
 	/**
 	 * 유저 레포지터리
@@ -54,29 +54,29 @@ public class MemberService {
 	 * @param req 회원가입 dto
 	 * @param code 인증 코드
 	 */
-	@Transactional
+	@Transactional(rollbackFor = Exception.class)
 	public void signup(MemberSignupRequest req, String code) {
 		memberRepository.findByEmail(req.getEmail()).ifPresent(m -> {
 			throw new IllegalArgumentException("이미 가입된 이메일 입니다.");
 		});
 
-		boolean isVerified = verify(req.getPhone(), code);
+		boolean isVerified = verify(req.getVerifyCodeRequest().getPhone(), code);
 		if (!isVerified) {
-			throw new RuntimeException("전화번호 인증에 실패하였습니다.");
+			throw new IllegalArgumentException("전화번호 인증에 실패하였습니다.");
 		}
 
 		Member member = Member.builder()
 			.email(req.getEmail())
 			.password(passwordEncoder.encode(req.getPassword()))
 			.name(req.getName())
-			.phone(req.getPhone())
+			.phone(req.getVerifyCodeRequest().getPhone())
 			.profileImage("")
 			.status(MemberStatus.ACTIVE.toString())
-			.userRole(MemberRole.ROLE_CLIENT.toString())
+			.userRole(MemberRole.CLIENT.toString())
 			.memberId(req.getEmail())
 			.build();
 		memberRepository.save(member);
-		redisRepository.remove("VERIFIED_PHONE:" + req.getPhone());
+		redisRepository.remove("VERIFIED_PHONE:" + req.getVerifyCodeRequest().getPhone());
 	}
 
 	/**
@@ -92,17 +92,17 @@ public class MemberService {
 		Member member = getMember(id);
 
 		if (member.getMemberId().equals(member.getEmail())) {
-			throw new RuntimeException("해당 유저는 소셜 유저가 아닙니다.");
+			throw new IllegalArgumentException("해당 유저는 소셜 유저가 아닙니다.");
 		}
 
 		// 전화번호 수정 기능이 들어가면 사라질 로직
 		if (MemberStatus.ACTIVE.toString().equals(member.getStatus())) {
-			throw new RuntimeException("해당 유저는 이미 전화번호를 인증하였습니다.");
+			throw new IllegalArgumentException("해당 유저는 이미 전화번호를 인증하였습니다.");
 		}
 
 		boolean isVerified = verify(req.getPhone(), code);
 		if (!isVerified) {
-			throw new RuntimeException("전화번호 인증에 실패하였습니다.");
+			throw new IllegalArgumentException("전화번호 인증에 실패하였습니다.");
 		}
 
 		member.activateMember();
@@ -136,11 +136,11 @@ public class MemberService {
 	 * @param customUserDetails 인증된 사용자 정보
 	 */
 	public void isValidMember(Long id, CustomUserDetails customUserDetails) {
-		if (customUserDetails == null) {
-			throw new RuntimeException("유저 정보가 없습니다.");
+		if (ObjectUtils.isEmpty(customUserDetails)) {
+			throw new IllegalArgumentException("유저 정보가 없습니다.");
 		}
 		if (!Objects.equals(customUserDetails.getMember().getId(), id)) {
-			throw new RuntimeException("인증되지 않은 유저입니다.");
+			throw new IllegalArgumentException("인증되지 않은 유저입니다.");
 		}
 	}
 
@@ -149,6 +149,7 @@ public class MemberService {
 	 * @param id 유저 고유 ID
 	 * @return {@link Member}
 	 */
+	@Transactional(readOnly = true)
 	public Member getMember(Long id) {
 		return memberRepository.findById(id).orElseThrow(
 			() -> new RuntimeException("사용자를 찾을 수 없습니다."));
