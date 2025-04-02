@@ -1,0 +1,227 @@
+package com.ll.dopdang.domain.member.controller;
+
+import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
+import static org.hibernate.validator.internal.util.Contracts.assertTrue;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.util.AssertionErrors.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ll.dopdang.domain.member.dto.request.LoginRequest;
+import com.ll.dopdang.domain.member.entity.Member;
+import com.ll.dopdang.domain.member.entity.MemberRole;
+import com.ll.dopdang.domain.member.entity.MemberStatus;
+import com.ll.dopdang.domain.member.repository.MemberRepository;
+import com.ll.dopdang.global.redis.repository.RedisRepository;
+import com.ll.dopdang.global.sms.service.CoolSmsService;
+
+import jakarta.servlet.http.Cookie;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
+@Transactional
+class MemberControllerTest {
+	@Autowired
+	private MockMvc mvc;
+	@Autowired
+	private MemberRepository memberRepository;
+	@Autowired
+	private ObjectMapper objectMapper;
+	@Autowired
+	private PasswordEncoder passwordEncoder;
+	@MockitoBean
+	private RedisRepository redisRepository;
+	@MockitoBean
+	private CoolSmsService coolSmsService;
+
+	@BeforeEach
+	void setUp() {
+		memberRepository.deleteAll();
+		Member member1 = Member.builder()
+			.email("test1@test.com")
+			.password(passwordEncoder.encode("test1234!"))
+			.name("test1")
+			.profileImage("")
+			.memberId("test1@test.com")
+			.userRole(MemberRole.CLIENT.toString())
+			.status(MemberStatus.ACTIVE.toString())
+			.build();
+		Member member2 = Member.builder()
+			.email("test2@test.com")
+			.password(passwordEncoder.encode("test1234!"))
+			.name("test2")
+			.profileImage("")
+			.memberId("test2@test.com")
+			.userRole(MemberRole.CLIENT.toString())
+			.status(MemberStatus.ACTIVE.toString())
+			.build();
+		Member member3 = Member.builder()
+			.email("test3@test.com")
+			.password(passwordEncoder.encode("test1234!"))
+			.name("test3")
+			.profileImage("")
+			.memberId("test3@test.com")
+			.userRole(MemberRole.CLIENT.toString())
+			.status(MemberStatus.DEACTIVATED.toString())
+			.build();
+		memberRepository.save(member1);
+		memberRepository.save(member2);
+		memberRepository.save(member3);
+	}
+
+	@Test
+	@DisplayName("로그인 테스트 - 정상 로그인 시도")
+	void test1() throws Exception {
+		MvcResult result = mvc.perform(post("/users/login")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(new LoginRequest("test1@test.com", "test1234!"))))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.body.email").value("test1@test.com"))
+			.andExpect(jsonPath("$.body.profileImage").value(""))
+			.andExpect(jsonPath("$.body.name").value("test1"))
+			.andDo(print())
+			.andReturn();
+
+		Cookie[] cookies = result.getResponse().getCookies();
+		assertNotNull(cookies, "쿠키가 null입니다.");
+		assertTrue(cookies.length > 0, "쿠키가 없습니다.");
+
+		Cookie accessTokenCookie = Arrays.stream(cookies)
+			.filter(cookie -> "accessToken".equals(cookie.getName()))
+			.findFirst()
+			.orElse(null);
+
+		assertNotNull(accessTokenCookie, "액세스 토큰 쿠키가 없습니다.");
+		assertFalse("액세스 토큰이 비어있습니다.", accessTokenCookie.getValue().isEmpty());
+
+		verify(redisRepository, times(1)).save(
+			eq(accessTokenCookie.getValue()),
+			anyString(),
+			anyLong(),
+			eq(TimeUnit.MILLISECONDS)
+		);
+	}
+
+	@Test
+	@DisplayName("로그인 테스트 - 이메일 형식 오류")
+	void test2() throws Exception {
+		mvc.perform(post("/users/login")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(new LoginRequest("test1", "test1234!"))))
+			.andExpect(status().isBadRequest())
+			.andDo(print());
+	}
+
+	@Test
+	@DisplayName("로그인 테스트 - 비밀번호 형식 오류")
+	void test3() throws Exception {
+		mvc.perform(post("/users/login")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(new LoginRequest("test1@test.com", "test1234"))))
+			.andExpect(status().isBadRequest())
+			.andDo(print());
+	}
+
+	@Test
+	@DisplayName("로그인 테스트 - 탈퇴 유저 로그인 시도")
+	void test4() throws Exception {
+		mvc.perform(post("/users/login")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(new LoginRequest("test3@test.com", "test1234!"))))
+			.andExpect(status().isForbidden())
+			.andDo(print());
+	}
+
+	@Test
+	@DisplayName("로그인 테스트 - 이메일, 비밀번호 미입력")
+	void test5() throws Exception {
+		mvc.perform(post("/users/login")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(new LoginRequest("", ""))))
+			.andExpect(status().isBadRequest())
+			.andDo(print());
+	}
+
+	@Test
+	@DisplayName("로그아웃 테스트")
+	void test6() throws Exception {
+		MvcResult loginResult = mvc.perform(post("/users/login")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(new LoginRequest("test1@test.com", "test1234!"))))
+			.andExpect(status().isOk())
+			.andDo(print())
+			.andReturn();
+
+		Cookie[] cookies = loginResult.getResponse().getCookies();
+		assertNotNull(cookies, "로그인 응답에 쿠키가 없습니다.");
+		assertTrue(cookies.length > 0, "로그인 응답에 쿠키가 없습니다.");
+
+		Cookie accessTokenCookie = Arrays.stream(cookies)
+			.filter(cookie -> cookie.getName().equals("accessToken"))
+			.findFirst()
+			.orElseThrow(() -> new RuntimeException("액세스 토큰 쿠키를 찾을 수 없습니다."));
+
+		String accessTokenValue = accessTokenCookie.getValue();
+		assertFalse("액세스 토큰이 비어있습니다.", accessTokenValue.isEmpty());
+
+		MvcResult logoutResult = mvc.perform(post("/users/logout")
+				.contentType(MediaType.APPLICATION_JSON)
+				.cookie(accessTokenCookie))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.code").value("200"))
+			.andExpect(jsonPath("$.message").value("로그아웃 되었습니다."))
+			.andDo(print())
+			.andReturn();
+
+		Cookie[] logoutCookies = logoutResult.getResponse().getCookies();
+		assertNotNull(logoutCookies, "로그아웃 응답에 쿠키가 없습니다.");
+
+		boolean accessTokenInvalidated = false;
+		for (Cookie cookie : logoutCookies) {
+			if ("accessToken".equals(cookie.getName())) {
+				assertEquals("쿠키가 무효화되지 않았습니다.", 0, cookie.getMaxAge());
+				accessTokenInvalidated = true;
+				break;
+			}
+		}
+		assertTrue(accessTokenInvalidated, "액세스 토큰 쿠키가 무효화되지 않았습니다.");
+
+		verify(redisRepository, times(1)).remove(eq(accessTokenValue));
+
+		verify(redisRepository, times(1)).save(
+			eq("blacklist:" + accessTokenValue),
+			eq("LOGOUT"),
+			anyLong(),
+			eq(TimeUnit.MILLISECONDS)
+		);
+	}
+
+	@Test
+	@DisplayName("로그아웃 테스트 - 로그인 하지 않은 상태(토큰이 없는 상태)")
+	void test7() throws Exception {
+		mvc.perform(post("/users/logout")
+				.contentType(MediaType.APPLICATION_JSON))
+			.andExpect(status().isBadRequest())
+			.andDo(print());
+	}
+}
