@@ -1,14 +1,11 @@
 package com.ll.dopdang.domain.payment.service;
 
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +18,7 @@ import com.ll.dopdang.domain.payment.entity.PaymentType;
 import com.ll.dopdang.domain.payment.repository.PaymentRepository;
 import com.ll.dopdang.domain.payment.strategy.saver.PaymentSaverFactory;
 import com.ll.dopdang.domain.payment.strategy.validator.PaymentValidatorFactory;
+import com.ll.dopdang.domain.payment.util.TossPaymentUtils;
 import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.global.redis.repository.RedisRepository;
@@ -28,6 +26,9 @@ import com.ll.dopdang.global.redis.repository.RedisRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 결제 생성 및 승인 관련 기능을 제공하는 서비스
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -137,7 +138,7 @@ public class PaymentService {
 	}
 
 	/**
-	 * 토스페이먼츠 API를 호출하여 결제를 승인합니다.
+	 * 토스페이먼츠 결제 승인 API를 호출하여 결제를 승인합니다.
 	 *
 	 * @param paymentKey 결제 키
 	 * @param orderId 주문 ID
@@ -145,38 +146,13 @@ public class PaymentService {
 	 * @return API 응답 데이터
 	 */
 	private String callTossPaymentsApi(String paymentKey, String orderId, BigDecimal amount) {
-		try {
-			// Basic 인증 헤더 생성 (시크릿 키 + ":")
-			String authString = tossSecretKey + ":";
-			String encodedAuthString = Base64.getEncoder().encodeToString(authString.getBytes(StandardCharsets.UTF_8));
-			String authorization = "Basic " + encodedAuthString;
-
-			// 요청 본문 생성
-			Map<String, Object> requestBody = Map.of(
-				"paymentKey", paymentKey,
-				"orderId", orderId,
-				"amount", amount
-			);
-
-			// Feign 클라이언트를 통한 API 호출
-			ResponseEntity<String> response = tossPaymentClient.confirmPayment(
-				authorization,
-				requestBody
-			);
-
-			// 응답 처리
-			if (response.getStatusCode().is2xxSuccessful()) {
-				return response.getBody();
-			} else {
-				log.error("결제 승인 실패: {}", response.getBody());
-				throw new ServiceException(ErrorCode.PAYMENT_CONFIRMATION_FAILED,
-					"결제 승인 실패: " + response.getBody());
-			}
-		} catch (Exception e) {
-			log.error("토스페이먼츠 API 호출 중 오류 발생", e);
-			throw new ServiceException(ErrorCode.PAYMENT_PROCESSING_ERROR,
-				"결제 처리 중 오류가 발생했습니다.");
-		}
+		return TossPaymentUtils.confirmPayment(
+			tossPaymentClient,
+			tossSecretKey,
+			paymentKey,
+			orderId,
+			amount
+		);
 	}
 
 	/**
@@ -202,10 +178,9 @@ public class PaymentService {
 				.savePayment(referenceId, amount, fee, paymentKey);
 
 			// PaymentMetadata 엔티티 생성
-			PaymentMetadata metadata = PaymentMetadata.createMetadata(payment, responseBody);
-			payment.setMetadata(metadata);
+			PaymentMetadata.createPaymentMetadata(payment, responseBody);
 
-			// 결제 정보 저장 (cascade 설정에 따라 관련 엔티티도 함께 저장)
+			// 결제 정보 저장
 			paymentRepository.save(payment);
 
 			log.info("결제 정보 저장 완료: paymentId={} paymentKey={}, amount={}, fee={}",

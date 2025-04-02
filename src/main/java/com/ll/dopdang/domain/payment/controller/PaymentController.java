@@ -15,6 +15,10 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.service.MemberService;
 import com.ll.dopdang.domain.payment.dto.OrderIdRequest;
+import com.ll.dopdang.domain.payment.dto.PaymentCancellationRequest;
+import com.ll.dopdang.domain.payment.dto.PaymentCancellationResponse;
+import com.ll.dopdang.domain.payment.entity.Payment;
+import com.ll.dopdang.domain.payment.service.PaymentCancellationService;
 import com.ll.dopdang.domain.payment.service.PaymentService;
 
 import jakarta.validation.Valid;
@@ -28,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 public class PaymentController {
 
 	private final PaymentService paymentService;
+	private final PaymentCancellationService paymentCancellationService;
 	private final MemberService memberService;
 
 	/**
@@ -73,7 +78,6 @@ public class PaymentController {
 		paymentService.confirmPayment(paymentKey, orderId, amount);
 
 		Map<String, Object> response = new HashMap<>();
-		response.put("paymentKey", paymentKey);
 		response.put("orderId", orderId);
 		response.put("amount", amount);
 		response.put("message", "결제가 성공적으로 완료되었습니다.");
@@ -103,5 +107,27 @@ public class PaymentController {
 		response.put("orderId", orderId);
 
 		return ResponseEntity.badRequest().body(response);
+	}
+
+	/**
+	 * 결제를 취소합니다. cancelAmount가 null이면 전액 취소, 값이 있으면 부분 취소로 처리합니다.
+	 *
+	 * @param request 취소 요청 정보 (결제 유형, 참조 ID, 취소 사유, 취소 금액(선택적) 포함)
+	 * @return 취소 결과
+	 */
+	@PostMapping("/cancel")
+	public ResponseEntity<?> cancelPayment(@RequestBody @Valid PaymentCancellationRequest request) {
+
+		log.info("결제 취소 요청: paymentType={}, referenceId={}, reason={}, amount={}",
+			request.getPaymentType(), request.getReferenceId(), request.getCancelReason(), request.getCancelAmount());
+
+		Payment payment = paymentCancellationService.cancelPayment(
+			request.getPaymentType(),
+			request.getReferenceId(),
+			request.getCancelReason(),
+			request.getCancelAmount()
+		);
+
+		return ResponseEntity.ok(PaymentCancellationResponse.from(payment));
 	}
 }

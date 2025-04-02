@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.project.entity.Contract;
@@ -20,7 +21,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
@@ -37,8 +37,7 @@ import lombok.NoArgsConstructor;
 	uniqueConstraints = {
 		@UniqueConstraint(
 			name = "uk_payment_reference",
-			columnNames = {"payment_type", "reference_id"}
-		)
+			columnNames = {"payment_type", "reference_id"})
 	})
 public class Payment {
 
@@ -78,12 +77,27 @@ public class Payment {
 	@Column(name = "payment_date")
 	private LocalDateTime paymentDate;
 
+	// 결제 상태 필드 추가
+	@Enumerated(EnumType.STRING)
+	@Column(name = "status")
+	@Builder.Default
+	private PaymentStatus status = PaymentStatus.PAID;
+
+	// 취소된 총 금액 (부분 취소 시 누적)
+	@Column(name = "canceled_amount", precision = 10, scale = 2)
+	private BigDecimal canceledAmount;
+
 	@Builder.Default
 	@OneToMany(mappedBy = "payment", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<PaymentDetail> paymentDetails = new ArrayList<>();
 
-	@OneToOne(mappedBy = "payment", cascade = CascadeType.ALL, orphanRemoval = true)
-	private PaymentMetadata metadata;
+	@Builder.Default
+	@OneToMany(mappedBy = "payment", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<PaymentMetadata> metadataList = new ArrayList<>();
+
+	@Builder.Default
+	@OneToMany(mappedBy = "payment", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<PaymentCancellationDetail> cancellationDetails = new ArrayList<>();
 
 	/**
 	 * 계약 정보로부터 결제 정보를 생성하는 정적 팩토리 메서드
@@ -106,6 +120,7 @@ public class Payment {
 			.totalPrice(amount)
 			.totalFee(fee)
 			.paymentDate(LocalDateTime.now())
+			.status(PaymentStatus.PAID)
 			.build();
 	}
 
@@ -118,10 +133,89 @@ public class Payment {
 	}
 
 	/**
-	 * 결제 메타데이터를 설정합니다.
+	 * 메타데이터를 추가합니다.
 	 */
-	public void setMetadata(PaymentMetadata metadata) {
-		this.metadata = metadata;
+	public void addMetadata(PaymentMetadata metadata) {
+		this.metadataList.add(metadata);
 		metadata.setPayment(this);
+	}
+
+	/**
+	 * 결제 메타데이터를 가져옵니다.
+	 */
+	public PaymentMetadata getPaymentMetadata() {
+		return this.metadataList.stream()
+			.filter(m -> PaymentMetadata.MetadataType.PAYMENT.equals(m.getType()))
+			.findFirst()
+			.orElse(null);
+	}
+
+	/**
+	 * 취소 메타데이터 목록을 가져옵니다.
+	 */
+	public List<PaymentMetadata> getCancellationMetadataList() {
+		return this.metadataList.stream()
+			.filter(m -> PaymentMetadata.MetadataType.CANCELLATION.equals(m.getType()))
+			.collect(Collectors.toList());
+	}
+
+	/**
+	 * 취소 상세 정보를 추가합니다.
+	 */
+	public void addCancellationDetail(PaymentCancellationDetail cancellationDetail) {
+		this.cancellationDetails.add(cancellationDetail);
+		cancellationDetail.setPayment(this);
+	}
+
+	/**
+	 * 결제 취소 상태를 업데이트합니다.
+	 *
+	 * @param cancelAmount 취소 금액
+	 * @param isFullCancellation 전액 취소 여부
+	 */
+	public void updateCancellationStatus(BigDecimal cancelAmount, boolean isFullCancellation) {
+		// 취소 금액 업데이트 (누적)
+		if (this.canceledAmount == null) {
+			this.canceledAmount = cancelAmount;
+		} else {
+			this.canceledAmount = this.canceledAmount.add(cancelAmount);
+		}
+
+		// 상태 업데이트
+		if (isFullCancellation) {
+			this.status = PaymentStatus.FULLY_CANCELED;
+		} else {
+			this.status = PaymentStatus.PARTIALLY_CANCELED;
+		}
+	}
+
+	/**
+	 * 남은 결제 금액을 계산합니다.
+	 *
+	 * @return 남은 결제 금액
+	 */
+	public BigDecimal getRemainingAmount() {
+		if (this.canceledAmount == null) {
+			return this.totalPrice;
+		}
+		return this.totalPrice.subtract(this.canceledAmount);
+	}
+
+	/**
+	 * 결제가 취소되었는지 확인합니다.
+	 *
+	 * @return 취소 여부
+	 */
+	public boolean isCanceled() {
+		return this.status == PaymentStatus.FULLY_CANCELED;
+	}
+
+	/**
+	 * 결제가 부분 취소되었는지 확인합니다.
+	 *
+	 * @return 부분 취소 여부
+	 */
+	public boolean isPartiallyCanceled() {
+		return this.status == PaymentStatus.PARTIALLY_CANCELED;
 	}
 }
