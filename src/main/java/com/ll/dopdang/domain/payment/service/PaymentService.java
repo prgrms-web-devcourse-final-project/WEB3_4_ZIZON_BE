@@ -20,12 +20,11 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ll.dopdang.domain.payment.dto.PaymentOrderInfo;
 import com.ll.dopdang.domain.payment.entity.Payment;
-import com.ll.dopdang.domain.payment.entity.PaymentDetail;
 import com.ll.dopdang.domain.payment.entity.PaymentMetadata;
 import com.ll.dopdang.domain.payment.entity.PaymentType;
 import com.ll.dopdang.domain.payment.repository.PaymentRepository;
-import com.ll.dopdang.domain.payment.strategy.PaymentValidatorFactory;
-import com.ll.dopdang.domain.project.entity.Contract;
+import com.ll.dopdang.domain.payment.strategy.saver.PaymentSaverFactory;
+import com.ll.dopdang.domain.payment.strategy.validator.PaymentValidatorFactory;
 import com.ll.dopdang.domain.project.service.ContractService;
 import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
@@ -49,6 +48,7 @@ public class PaymentService {
 	private final ObjectMapper objectMapper;
 	private final RestTemplate restTemplate;
 	private final PaymentValidatorFactory validatorFactory;
+	private final PaymentSaverFactory saverFactory;
 
 	@Value("${payment.toss.secretKey}")
 	private String tossSecretKey;
@@ -213,34 +213,11 @@ public class PaymentService {
 			// 수수료 계산
 			BigDecimal fee = calculateFee(amount);
 
-			Payment payment;
-			PaymentDetail paymentDetail;
+			// 전략 패턴을 사용하여 결제 유형에 맞는 저장 로직 실행
+			Payment payment = saverFactory.getSaver(paymentType)
+				.savePayment(referenceId, amount, fee, paymentKey);
 
-			switch (paymentType) {
-				case PROJECT:
-					Contract contract = contractService.getContractById(referenceId);
-
-					// 1. Payment 엔티티 생성 (paymentKey 포함)
-					payment = Payment.createFromContract(contract, amount, fee, paymentKey);
-
-					// 2. PaymentDetail 엔티티 생성
-					paymentDetail = PaymentDetail.createFromContract(payment, contract, amount, fee);
-					payment.addPaymentDetail(paymentDetail);
-					break;
-
-				case ORDER:
-					// Todo: 스토어 주문에 대한 저장 로직 추가 필요
-					throw new ServiceException(ErrorCode.PAYMENT_PROCESSING_ERROR, "주문 결제 처리 기능이 아직 구현되지 않았습니다.");
-
-				case ETC:
-					// Todo: 기타 결제 유형에 대한 저장 로직 추가 필요
-					throw new ServiceException(ErrorCode.PAYMENT_PROCESSING_ERROR, "기타 결제 처리 기능이 아직 구현되지 않았습니다.");
-
-				default:
-					throw new ServiceException(ErrorCode.PAYMENT_PROCESSING_ERROR, "지원하지 않는 결제 유형입니다.");
-			}
-
-			// 3. PaymentMetadata 엔티티 생성
+			// PaymentMetadata 엔티티 생성
 			PaymentMetadata metadata = PaymentMetadata.createMetadata(payment, responseBody);
 			payment.setMetadata(metadata);
 

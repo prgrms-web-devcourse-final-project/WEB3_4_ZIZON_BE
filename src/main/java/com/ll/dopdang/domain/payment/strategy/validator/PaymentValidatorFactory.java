@@ -1,4 +1,4 @@
-package com.ll.dopdang.domain.payment.strategy;
+package com.ll.dopdang.domain.payment.strategy.validator;
 
 import java.util.EnumMap;
 import java.util.Map;
