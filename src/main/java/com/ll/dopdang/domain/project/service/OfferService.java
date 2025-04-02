@@ -1,6 +1,9 @@
 package com.ll.dopdang.domain.project.service;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.ll.dopdang.domain.project.entity.Offer;
 import com.ll.dopdang.domain.project.repository.OfferRepository;
@@ -36,5 +39,24 @@ public class OfferService {
 	 */
 	public Offer saveOffer(Offer offer) {
 		return offerRepository.save(offer);
+	}
+
+	/**
+	 * 같은 프로젝트의 다른 오퍼들을 거절 상태로 변경합니다.
+	 *
+	 * @param projectId 프로젝트 ID
+	 * @param acceptedOfferId 수락된 오퍼 ID
+	 */
+	@Transactional
+	public void rejectOtherOffers(Long projectId, Long acceptedOfferId) {
+		List<Offer> otherOffers = offerRepository.findByProjectIdAndIdNot(projectId, acceptedOfferId);
+
+		for (Offer offer : otherOffers) {
+			// PENDING 상태인 오퍼만 REJECTED로 변경
+			if (offer.getStatus() == Offer.OfferStatus.PENDING) {
+				offer.setStatus(Offer.OfferStatus.REJECTED);
+				offerRepository.save(offer);
+			}
+		}
 	}
 }

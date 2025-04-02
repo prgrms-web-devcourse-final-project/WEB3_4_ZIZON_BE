@@ -49,7 +49,11 @@ public class ContractService {
 		offer.setStatus(Offer.OfferStatus.ACCEPTED);
 		offerService.saveOffer(offer);
 
-		// 5. 계약 ID 반환
+		// 5. 같은 프로젝트의 다른 오퍼들을 REJECTED로 변경
+		Long projectId = offer.getProject().getId();
+		offerService.rejectOtherOffers(projectId, offerId);
+
+		// 6. 계약 ID 반환
 		return savedContract.getId();
 	}
 }
