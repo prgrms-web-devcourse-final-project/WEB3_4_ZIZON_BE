@@ -27,6 +27,7 @@ public class ChatController {
 
 	@PostMapping("/create")
 	public ResponseEntity<ChatRoomResponseDto> createRoom(@RequestParam String sender, @RequestParam String receiver) {
+		//파라미터로 로그인 사용자를(sender) 주는 이유는 웹소켓의 특성 때문
 		ChatRoom chatRoom = chatService.createChatRoom(sender, receiver);
 		// 기본값으로 unreadCount 0, lastMessage과 lastMessageTime은 null로 설정
 		ChatRoomResponseDto responseDto = new ChatRoomResponseDto(chatRoom, sender, 0, null, null);
@@ -36,8 +37,17 @@ public class ChatController {
 	//채팅방 조회 시
 	@GetMapping("/history")
 	public ResponseEntity<List<ChatMessage>> getHistory(@RequestParam String sender, @RequestParam String receiver) {
+		//파라미터로 로그인 사용자를(sender) 주는 이유는 웹소켓의 특성 때문
 		List<ChatMessage> messages = chatService.getMessages(sender, receiver);
 		return ResponseEntity.ok(messages);
+	}
+
+	//회원 별 채팅방
+	@GetMapping("/rooms")
+	public ResponseEntity<List<ChatRoom>> getChatRooms(@RequestParam String member) {
+		//파라미터로 멤버를 주는 이유는 웹소켓의 특성 때문
+		List<ChatRoom> rooms = chatService.getChatRoomsForUser(member);
+		return ResponseEntity.ok(rooms);
 	}
 
 	//메시지 전송 시 사용되는 메시지

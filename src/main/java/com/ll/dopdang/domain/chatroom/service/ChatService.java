@@ -62,4 +62,10 @@ public class ChatService {
 		String roomId = getRoomId(sender, receiver);
 		return chatMessageRepository.findByRoomIdOrderByTimestampAsc(roomId);
 	}
+
+	//현재 로그인한 사용자 기준 채팅방 조회
+	@Transactional(readOnly = true)
+	public List<ChatRoom> getChatRoomsForUser(String member) {
+		return chatRoomRepository.findByRoomIdContaining(member);
+	}
 }

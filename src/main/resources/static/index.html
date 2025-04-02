@@ -2,67 +2,33 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>채팅 테스트</title>
-    <!-- SockJS 및 Stomp.js 라이브러리 로드 -->
+    <title>채팅방 목록</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <style>
-        /* 내 메시지는 오른쪽 정렬, 상대방 메시지는 왼쪽 정렬 */
-        .my-message {
-            text-align: right;
-            background-color: #DCF8C6;
-            padding: 5px;
-            border-radius: 5px;
+        /* 채팅방 목록 스타일 */
+        .chat-room {
+            border: 1px solid #ccc;
+            padding: 10px;
             margin: 5px;
-        }
-        .other-message {
-            text-align: left;
-            background-color: #FFFFFF;
-            padding: 5px;
-            border-radius: 5px;
-            margin: 5px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
-<h1>채팅 테스트</h1>
-
-<!-- 현재 사용자 표시 -->
+<h1>채팅방 목록</h1>
 <div>
     <label>현재 사용자: </label>
     <span id="currentUser"></span>
 </div>
-
-<!-- 상대방 정보 입력 -->
-<div>
-    <label>받는 사람: </label>
-    <input type="text" id="receiver" placeholder="receiver">
+<div id="chatRoomsList">
+    <!-- 채팅방 목록이 여기 표시됩니다. -->
 </div>
-
-<div>
-    <button onclick="connect()">연결</button>
-    <button onclick="disconnect()">연결 끊기</button>
-</div>
-
-<div>
-    <input type="text" id="message" placeholder="메시지 입력">
-    <button onclick="sendMessage()">메시지 전송</button>
-</div>
-
-<div id="chatLog" style="border:1px solid #ccc; padding:10px; width:300px; height:200px; overflow:auto;">
-    채팅 로그
-</div>
-
 <script>
-    let stompClient = null;
-    let roomId = "";
-    let currentUser = null; // /users/me에서 받아온 현재 사용자 정보
+    let currentUser = null;
 
-    // /users/me 엔드포인트를 호출하여 현재 로그인한 사용자 정보를 가져옴
     function fetchCurrentUser() {
-        fetch('http://localhost:8080/users/me', {
-            credentials: 'include'
-        })
+        fetch('http://localhost:8080/users/me', { credentials: 'include' })
             .then(response => {
                 if (!response.ok) {
                     throw new Error("현재 사용자 정보를 가져오지 못했습니다.");
@@ -70,110 +36,45 @@
                 return response.json();
             })
             .then(data => {
-                currentUser = data; // { id, email, name } 형태
+                currentUser = data; // 예: { id, email, name }
                 document.getElementById("currentUser").innerText = currentUser.name + " (" + currentUser.email + ")";
+                fetchChatRooms();
             })
             .catch(error => {
                 console.error("Error fetching current user:", error);
             });
     }
 
-    // 페이지 로딩 시 현재 사용자 정보 요청
-    fetchCurrentUser();
-
-    function connect() {
-        if (!currentUser) {
-            alert("현재 사용자 정보를 불러오지 못했습니다.");
-            return;
-        }
-        const sender = currentUser.email;
-        const receiver = document.getElementById("receiver").value;
-        if (!receiver) {
-            alert("받는 사람을 입력하세요.");
-            return;
-        }
-        // 채팅방 아이디 생성: 두 사용자 정보를 알파벳 순으로 정렬
-        roomId = (sender < receiver) ? sender + ":" + receiver : receiver + ":" + sender;
-
-        const socket = new SockJS('http://localhost:8080/ws-chat');
-        stompClient = Stomp.over(socket);
-
-        stompClient.connect({}, function(frame) {
-            console.log('Connected: ' + frame);
-            // 채팅 기록 불러오기
-            fetchChatHistory(sender, receiver);
-            // 구독: 해당 채팅방의 실시간 메시지 수신
-            stompClient.subscribe('/topic/chat/' + roomId, function(messageOutput) {
-                showMessage(JSON.parse(messageOutput.body));
-            });
-        }, function(error) {
-            console.error('STOMP 연결 에러: ' + error);
-        });
-    }
-
-    // /history 엔드포인트를 호출하여 채팅 기록을 불러옴
-    function fetchChatHistory(sender, receiver) {
-        fetch(`http://localhost:8080/history?sender=${encodeURIComponent(sender)}&receiver=${encodeURIComponent(receiver)}`, {
-            credentials: 'include'
-        })
+    function fetchChatRooms() {
+        if (!currentUser) return;
+        // 여기서는 현재 사용자 식별자로 이메일을 사용한다고 가정합니다.
+        fetch(`http://localhost:8080/rooms?member=${encodeURIComponent(currentUser.email)}`, { credentials: 'include' })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error("채팅 기록을 불러오지 못했습니다.");
+                    throw new Error("채팅방 목록을 가져오지 못했습니다.");
                 }
                 return response.json();
             })
-            .then(messages => {
-                document.getElementById("chatLog").innerHTML = "";
-                messages.forEach(message => {
-                    showMessage(message);
+            .then(rooms => {
+                const chatRoomsList = document.getElementById("chatRoomsList");
+                chatRoomsList.innerHTML = "";
+                rooms.forEach(room => {
+                    const roomDiv = document.createElement("div");
+                    roomDiv.className = "chat-room";
+                    roomDiv.innerText = room.roomId;
+                    roomDiv.onclick = function() {
+                        // 채팅방 클릭 시 chatroom.html로 이동 (roomId와 현재 사용자를 쿼리파라미터로 전달)
+                        window.location.href = `chatroom.html?roomId=${encodeURIComponent(room.roomId)}&member=${encodeURIComponent(currentUser.email)}`;
+                    };
+                    chatRoomsList.appendChild(roomDiv);
                 });
             })
             .catch(error => {
-                console.error("Error fetching chat history:", error);
+                console.error("Error fetching chat rooms:", error);
             });
     }
 
-    function disconnect() {
-        if (stompClient != null) {
-            stompClient.disconnect();
-        }
-        console.log("연결 끊김");
-    }
-
-    function sendMessage() {
-        if (!currentUser) {
-            alert("현재 사용자 정보가 없습니다.");
-            return;
-        }
-        const sender = currentUser.email; // 현재 사용자의 이메일
-        const receiver = document.getElementById("receiver").value;
-        const content = document.getElementById("message").value;
-        if (!content) {
-            alert("메시지를 입력하세요.");
-            return;
-        }
-        const chatMessage = {
-            sender: sender,
-            receiver: receiver,
-            content: content,
-            fileUrl: ""
-        };
-        stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
-        document.getElementById("message").value = "";
-    }
-
-    function showMessage(message) {
-        const chatLog = document.getElementById("chatLog");
-        const messageElement = document.createElement("p");
-        // 현재 사용자와 메시지의 sender를 비교하여 CSS 클래스 적용
-        if (message.sender === currentUser.email) {
-            messageElement.className = "my-message";
-        } else {
-            messageElement.className = "other-message";
-        }
-        messageElement.innerText = "[" + message.timestamp + "] " + message.sender + ": " + message.content;
-        chatLog.appendChild(messageElement);
-    }
+    fetchCurrentUser();
 </script>
 </body>
 </html>

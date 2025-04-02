@@ -171,7 +171,7 @@ public class SecurityConfig {
 			.exceptionHandling(exception -> exception
 				.accessDeniedHandler((request, response, authException) -> {
 					AuthResponseUtil.failLogin(
-						response, ResponseEntity.badRequest().build(), HttpServletResponse.SC_UNAUTHORIZED,
+						response, (ResponseEntity<?>)ResponseEntity.badRequest(), HttpServletResponse.SC_FORBIDDEN,
 						objectMapper
 					);
 				}))
