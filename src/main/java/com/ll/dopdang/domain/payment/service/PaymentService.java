@@ -55,18 +55,30 @@ public class PaymentService {
 
 	/**
 	 * 결제 유형과 참조 ID에 대한 주문 ID를 생성합니다.
+	 * 이미 결제가 완료된 경우 ServiceException을 발생시킵니다.
 	 *
 	 * @param paymentType 결제 유형
 	 * @param referenceId 참조 ID
 	 * @return 생성된 주문 ID
+	 * @throws ServiceException 이미 결제가 완료된 경우
 	 */
 	public String createOrderId(PaymentType paymentType, Long referenceId) {
+		// 이미 결제가 완료된 건인지 확인
+		boolean alreadyPaid = paymentRepository.existsByPaymentTypeAndReferenceId(paymentType, referenceId);
+
+		if (alreadyPaid) {
+			log.warn("이미 결제가 완료된 건입니다: paymentType={}, referenceId={}", paymentType, referenceId);
+			throw new ServiceException(ErrorCode.PAYMENT_ALREADY_COMPLETED);
+		}
+
 		String orderId = UUID.randomUUID().toString();
 		String redisKey = KEY_PREFIX + orderId;
 
 		PaymentOrderInfo orderInfo = new PaymentOrderInfo(paymentType, referenceId);
 		redisRepository.save(redisKey, orderInfo, ORDER_EXPIRY_MINUTES, TimeUnit.MINUTES);
 
+		log.info("주문 ID 생성 완료: orderId={}, paymentType={}, referenceId={}",
+			orderId, paymentType, referenceId);
 		return orderId;
 	}
 
@@ -201,8 +213,8 @@ public class PaymentService {
 			// 수수료 계산
 			BigDecimal fee = calculateFee(amount);
 
-			Payment payment = null;
-			PaymentDetail paymentDetail = null;
+			Payment payment;
+			PaymentDetail paymentDetail;
 
 			switch (paymentType) {
 				case PROJECT:
