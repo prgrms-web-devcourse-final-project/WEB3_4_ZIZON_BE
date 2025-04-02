@@ -53,8 +53,7 @@ public class GlobalExceptionHandler {
 		String message = "요청 본문을 처리할 수 없습니다.";
 
 		// 날짜 형식 오류 처리
-		if (e.getCause() instanceof InvalidFormatException) {
-			InvalidFormatException ife = (InvalidFormatException)e.getCause();
+		if (e.getCause() instanceof InvalidFormatException ife) {
 			if (ife.getTargetType() != null
 				&& (ife.getTargetType().equals(LocalDateTime.class)
 				|| ife.getTargetType().equals(LocalDate.class))) {

@@ -15,6 +15,7 @@ import com.ll.dopdang.domain.member.dto.request.UpdateProfileRequest;
 import com.ll.dopdang.domain.member.dto.request.VerifyCodeRequest;
 import com.ll.dopdang.domain.member.dto.response.ProfileResponse;
 import com.ll.dopdang.domain.member.service.MemberService;
+import com.ll.dopdang.domain.member.service.MemberUtilService;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
 import com.ll.dopdang.global.sms.dto.SmsVerificationResponse;
 
@@ -34,6 +35,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/users")
 public class MemberController {
 	private final MemberService memberService;
+	private final MemberUtilService memberUtilService;
 
 	/**
 	 * 회원 가입 API
@@ -44,7 +46,7 @@ public class MemberController {
 	public ResponseEntity<Object> signup(
 		@Valid @RequestBody MemberSignupRequest req) {
 		if (req.getVerifyCodeRequest().getCode() == null) {
-			SmsVerificationResponse resp = memberService.sendCode(req.getVerifyCodeRequest().getPhone());
+			SmsVerificationResponse resp = memberUtilService.sendCode(req.getVerifyCodeRequest().getPhone());
 			return ResponseEntity.ok(resp);
 		}
 		memberService.signup(req, req.getVerifyCodeRequest().getCode());
@@ -65,7 +67,7 @@ public class MemberController {
 		@AuthenticationPrincipal CustomUserDetails customUserDetails
 	) {
 		if (request.getCode() == null) {
-			SmsVerificationResponse resp = memberService.sendCode(request.getPhone());
+			SmsVerificationResponse resp = memberUtilService.sendCode(request.getPhone());
 			return ResponseEntity.ok(resp);
 		}
 		memberService.verifyPhone(userId, request.getCode(), request, customUserDetails);

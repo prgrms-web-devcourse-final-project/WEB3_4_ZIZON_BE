@@ -1,11 +1,8 @@
 package com.ll.dopdang.domain.member.service;
 
-import java.util.Objects;
-
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.ObjectUtils;
 
 import com.ll.dopdang.domain.member.dto.request.MemberSignupRequest;
 import com.ll.dopdang.domain.member.dto.request.UpdateProfileRequest;
@@ -18,9 +15,6 @@ import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.global.redis.repository.RedisRepository;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
-import com.ll.dopdang.global.sms.dto.SmsVerificationRequest;
-import com.ll.dopdang.global.sms.dto.SmsVerificationResponse;
-import com.ll.dopdang.global.sms.service.SmsService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -33,7 +27,7 @@ public class MemberService {
 	private final MemberRepository memberRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final RedisRepository redisRepository;
-	private final SmsService smsService;
+	private final MemberUtilService memberUtilService;
 
 	/**
 	 * 회원가입 메서드
@@ -46,7 +40,7 @@ public class MemberService {
 			throw new IllegalArgumentException("이미 가입된 이메일 입니다.");
 		});
 
-		boolean isVerified = verify(req.getVerifyCodeRequest().getPhone(), code);
+		boolean isVerified = memberUtilService.verify(req.getVerifyCodeRequest().getPhone(), code);
 		if (!isVerified) {
 			throw new IllegalArgumentException("전화번호 인증에 실패하였습니다.");
 		}
@@ -74,8 +68,8 @@ public class MemberService {
 	 */
 	@Transactional
 	public void verifyPhone(Long id, String code, VerifyCodeRequest req, CustomUserDetails customUserDetails) {
-		isValidMember(id, customUserDetails);
-		Member member = findMember(id);
+		memberUtilService.isValidMember(id, customUserDetails);
+		Member member = memberUtilService.findMember(id);
 
 		if (member.getMemberId().equals(member.getEmail())) {
 			throw new ServiceException(ErrorCode.NOT_A_SOCIAL_USER);
@@ -86,7 +80,7 @@ public class MemberService {
 			throw new ServiceException(ErrorCode.PHONE_ALREADY_VERIFIED);
 		}
 
-		boolean isVerified = verify(req.getPhone(), code);
+		boolean isVerified = memberUtilService.verify(req.getPhone(), code);
 		if (!isVerified) {
 			throw new ServiceException(ErrorCode.PHONE_VERIFICATION_FAILED);
 		}
@@ -104,8 +98,8 @@ public class MemberService {
 	 */
 	@Transactional(readOnly = true)
 	public Member getMember(Long id, CustomUserDetails customUserDetails) {
-		isValidMember(id, customUserDetails);
-		return findMember(id);
+		memberUtilService.isValidMember(id, customUserDetails);
+		return memberUtilService.findMember(id);
 	}
 
 	/**
@@ -116,58 +110,13 @@ public class MemberService {
 	 */
 	@Transactional
 	public void updateMember(Long id, UpdateProfileRequest req, CustomUserDetails customUserDetails) {
-		isValidMember(id, customUserDetails);
-		Member member = findMember(id);
+		memberUtilService.isValidMember(id, customUserDetails);
+		Member member = memberUtilService.findMember(id);
 
 		if (passwordEncoder.matches(req.getPassword(), member.getPassword())) {
 			throw new ServiceException(ErrorCode.PASSWORD_SAME_AS_CURRENT);
 		}
 
 		member.updateMember(req.getName(), passwordEncoder.encode(req.getPassword()));
-	}
-
-	/**
-	 * 인증 코드 검증 메서드
-	 * @param phone 전화번호
-	 * @param code 인증번호
-	 * @return {@link Boolean}
-	 */
-	public boolean verify(String phone, String code) {
-		SmsVerificationRequest req = new SmsVerificationRequest(phone, code);
-		return smsService.verifyCode(req);
-	}
-
-	/**
-	 * 인증번호 발송 메서드
-	 * @param phone 전화번호
-	 * @return {@link SmsVerificationResponse}
-	 */
-	public SmsVerificationResponse sendCode(String phone) {
-		return smsService.sendVerificationCode(phone);
-	}
-
-	/**
-	 * 회원 검증 메서드
-	 * @param id 유저 고유 ID
-	 * @param customUserDetails 인증된 사용자 정보
-	 */
-	public void isValidMember(Long id, CustomUserDetails customUserDetails) {
-		if (ObjectUtils.isEmpty(customUserDetails)) {
-			throw new ServiceException(ErrorCode.MEMBER_NOT_FOUND);
-		}
-		if (!Objects.equals(customUserDetails.getMember().getId(), id)) {
-			throw new ServiceException(ErrorCode.UNAUTHORIZED_USER);
-		}
-	}
-
-	/**
-	 * 유저 ID를 사용한 유저 찾기 메서드
-	 * @param id 유저 고유 ID
-	 * @return {@link Member}
-	 */
-	@Transactional(readOnly = true)
-	public Member findMember(Long id) {
-		return memberRepository.findById(id).orElseThrow(
-			() -> new ServiceException(ErrorCode.MEMBER_NOT_FOUND));
 	}
 }

@@ -75,15 +75,15 @@ public class TokenManagementService {
 	 * @param response HttpServletResponse
 	 */
 	public void createAndStoreTokens(CustomUserDetails userDetails, HttpServletResponse response) {
-		String accessToken = jwtUtil.createAccessToken(userDetails, accessExpiration);
+		String accessToken1 = jwtUtil.createAccessToken(userDetails, accessExpiration);
 		String refreshToken = jwtUtil.createRefreshToken(userDetails, refreshExpiration);
 
-		Cookie accessTokenCookie = jwtUtil.setJwtCookie("accessToken", accessToken, accessExpiration);
+		Cookie accessTokenCookie = jwtUtil.setJwtCookie("accessToken", accessToken1, accessExpiration);
 		response.addCookie(accessTokenCookie);
 
-		redisRepository.save(accessToken, refreshToken, refreshExpiration, TimeUnit.MILLISECONDS);
+		redisRepository.save(accessToken1, refreshToken, refreshExpiration, TimeUnit.MILLISECONDS);
 
-		this.accessToken = accessToken;
+		this.accessToken = accessToken1;
 	}
 
 	/**
@@ -93,8 +93,8 @@ public class TokenManagementService {
 	 * @throws IOException 예외
 	 */
 	public void reissueTokens(HttpServletRequest request, HttpServletResponse response) throws IOException {
-		String accessToken = tokenService.getAccessToken(request);
-		String refreshToken = tokenService.getRefreshToken(accessToken);
+		String accessToken1 = tokenService.getAccessToken(request);
+		String refreshToken = tokenService.getRefreshToken(accessToken1);
 
 		if (refreshToken == null) {
 			throw new IllegalArgumentException("리프레시 토큰이 없습니다.");
@@ -119,7 +119,7 @@ public class TokenManagementService {
 		response.addCookie(newAccessTokenCookie);
 
 		// Redis 업데이트
-		redisRepository.remove(accessToken); // 이전 액세스 토큰 제거
+		redisRepository.remove(accessToken1); // 이전 액세스 토큰 제거
 		redisRepository.save(newAccessToken, newRefreshToken, refreshExpiration, TimeUnit.MILLISECONDS);
 
 		// 응답 처리
