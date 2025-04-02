@@ -3,6 +3,7 @@ package com.ll.dopdang.domain.project.entity;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.ll.dopdang.domain.category.entity.Category;
 import com.ll.dopdang.domain.member.entity.Member;
 
 import jakarta.persistence.Column;
@@ -34,9 +35,9 @@ public class Project {
 	@JoinColumn(name = "client_id")
 	private Member client;
 
-	// Todo: 카테고리 테이블 생성되면 Long -> Category로 타입 변경 및 관계 설정
-	@Column(name = "category_id")
-	private Long categoryId;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "category_id")
+	private Category category;
 
 	@Column(nullable = false)
 	private String title;

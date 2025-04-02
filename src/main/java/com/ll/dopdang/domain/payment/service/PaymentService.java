@@ -1,6 +1,7 @@
 package com.ll.dopdang.domain.payment.service;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -10,12 +11,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.payment.client.TossPaymentClient;
 import com.ll.dopdang.domain.payment.dto.PaymentOrderInfo;
 import com.ll.dopdang.domain.payment.entity.Payment;
 import com.ll.dopdang.domain.payment.entity.PaymentMetadata;
 import com.ll.dopdang.domain.payment.entity.PaymentType;
 import com.ll.dopdang.domain.payment.repository.PaymentRepository;
+import com.ll.dopdang.domain.payment.strategy.info.PaymentInfoProviderFactory;
 import com.ll.dopdang.domain.payment.strategy.saver.PaymentSaverFactory;
 import com.ll.dopdang.domain.payment.strategy.validator.PaymentValidatorFactory;
 import com.ll.dopdang.domain.payment.util.TossPaymentUtils;
@@ -43,20 +46,22 @@ public class PaymentService {
 	private final TossPaymentClient tossPaymentClient;
 	private final PaymentValidatorFactory validatorFactory;
 	private final PaymentSaverFactory saverFactory;
+	private final PaymentInfoProviderFactory infoProviderFactory;
 
 	@Value("${payment.toss.secretKey}")
 	private String tossSecretKey;
 
 	/**
-	 * 결제 유형과 참조 ID에 대한 주문 ID를 생성합니다.
+	 * 결제 유형과 참조 ID에 대한 주문 ID를 생성하고 관련 정보를 반환합니다.
 	 * 이미 결제가 완료된 경우 ServiceException을 발생시킵니다.
 	 *
 	 * @param paymentType 결제 유형
 	 * @param referenceId 참조 ID
-	 * @return 생성된 주문 ID
+	 * @param member 회원 정보
+	 * @return 주문 ID와 고객 키, 결제 유형별 추가 정보가 포함된 맵
 	 * @throws ServiceException 이미 결제가 완료된 경우
 	 */
-	public String createOrderId(PaymentType paymentType, Long referenceId) {
+	public Map<String, Object> createOrderIdWithInfo(PaymentType paymentType, Long referenceId, Member member) {
 		// 이미 결제가 완료된 건인지 확인
 		boolean alreadyPaid = paymentRepository.existsByPaymentTypeAndReferenceId(paymentType, referenceId);
 
@@ -73,7 +78,20 @@ public class PaymentService {
 
 		log.info("주문 ID 생성 완료: orderId={}, paymentType={}, referenceId={}",
 			orderId, paymentType, referenceId);
-		return orderId;
+
+		// 기본 응답 정보
+		Map<String, Object> response = new HashMap<>();
+		response.put("orderId", orderId);
+		response.put("customerKey", member.getUniqueKey());
+
+		// 결제 유형별 추가 정보 제공
+		Map<String, Object> additionalInfo = infoProviderFactory.getProvider(paymentType)
+			.provideAdditionalInfo(referenceId);
+
+		// 추가 정보를 응답에 병합
+		response.putAll(additionalInfo);
+
+		return response;
 	}
 
 	/**

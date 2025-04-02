@@ -36,25 +36,24 @@ public class PaymentController {
 	private final MemberService memberService;
 
 	/**
-	 * 결제를 위한 주문 ID를 생성합니다.
+	 * 결제를 위한 주문 정보를 생성합니다.
 	 *
-	 * @param request 결제 유형과 참조 ID가 포함된 요청 객체
-	 * @return 주문 ID와 고객 키가 포함된 응답
+	 * @param request 주문 정보 생성 요청 (결제 유형, 참조 ID 포함)
+	 * @return 생성된 주문 ID와 결제에 필요한 추가 정보가 포함된 응답
 	 */
 	@PostMapping("/orderId")
-	public ResponseEntity<?> createOrderId(@RequestBody @Valid OrderIdRequest request) {
-
+	public ResponseEntity<?> createPaymentOrderInfo(@RequestBody @Valid OrderIdRequest request) {
 		log.info("주문 ID 생성 요청: paymentType={}, referenceId={}", request.getPaymentType(), request.getReferenceId());
-
-		String orderId = paymentService.createOrderId(request.getPaymentType(), request.getReferenceId());
 
 		//Todo: jwt 연동 시 인증된 사용자 정보로 멤버 찾도록 수정
 		Member member = memberService.getMemberById(1L);
-		String customerKey = member.getUniqueKey();
 
-		Map<String, Object> response = new HashMap<>();
-		response.put("orderId", orderId);
-		response.put("customerKey", customerKey);
+		// 서비스에서 주문 ID 생성 및 추가 정보 조회
+		Map<String, Object> response = paymentService.createOrderIdWithInfo(
+			request.getPaymentType(),
+			request.getReferenceId(),
+			member
+		);
 
 		return ResponseEntity.ok(response);
 	}

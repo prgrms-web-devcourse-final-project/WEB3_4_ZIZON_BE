@@ -78,6 +78,9 @@ dependencies {
 
     // OpenFeign
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+
+    // Hibernate6Module
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-hibernate6'
 }
 
 // Spring Cloud 의존성 관리 적용
