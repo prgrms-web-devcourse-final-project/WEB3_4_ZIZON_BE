@@ -212,7 +212,8 @@ public class SecurityConfig {
 		// 허용할 헤더 설정
 		configuration.setAllowedHeaders(List.of("*"));
 
-		configuration.setExposedHeaders(Arrays.asList("Authorization", "Set-Cookie"));
+		configuration.setExposedHeaders(
+			Arrays.asList("Authorization", "Set-Cookie", "Access-Control-Allow-Credentials"));
 
 		// CORS 설정을 소스에 등록
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
