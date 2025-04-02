@@ -22,6 +22,14 @@ spring:
       port: 6379
       password: ${REDIS_PASSWORD}
 
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 5000
+            readTimeout: 5000
+
 common:
   api:
     base-url: 'http://localhost:8080'
@@ -30,3 +38,4 @@ common:
 payment:
   toss:
     secretKey: ${TOSS_SECRET_KEY}
+    api-url: https://api.tosspayments.com

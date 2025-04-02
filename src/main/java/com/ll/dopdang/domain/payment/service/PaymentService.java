@@ -1,7 +1,6 @@
 package com.ll.dopdang.domain.payment.service;
 
 import java.math.BigDecimal;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
@@ -9,15 +8,12 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ll.dopdang.domain.payment.client.TossPaymentClient;
 import com.ll.dopdang.domain.payment.dto.PaymentOrderInfo;
 import com.ll.dopdang.domain.payment.entity.Payment;
 import com.ll.dopdang.domain.payment.entity.PaymentMetadata;
@@ -38,13 +34,12 @@ import lombok.extern.slf4j.Slf4j;
 public class PaymentService {
 
 	private static final String KEY_PREFIX = "payment:order:";
-	private static final String TOSS_API_URL = "https://api.tosspayments.com/v1/payments/confirm";
 	private static final long ORDER_EXPIRY_MINUTES = 10L;
 
 	private final RedisRepository redisRepository;
 	private final PaymentRepository paymentRepository;
 	private final ObjectMapper objectMapper;
-	private final RestTemplate restTemplate;
+	private final TossPaymentClient tossPaymentClient;
 	private final PaymentValidatorFactory validatorFactory;
 	private final PaymentSaverFactory saverFactory;
 
@@ -92,7 +87,6 @@ public class PaymentService {
 		log.info("결제 승인 요청: paymentKey={}, orderId={}, amount={}", paymentKey, orderId, amount);
 
 		// 주문 ID로 결제 정보 조회
-		// Todo: 이미 결제된 건인지 검증하는 로직 추가
 		PaymentOrderInfo orderInfo = getPaymentOrderInfoByOrderId(orderId);
 		PaymentType paymentType = orderInfo.getPaymentType();
 		Long referenceId = orderInfo.getReferenceId();
@@ -152,14 +146,10 @@ public class PaymentService {
 	 */
 	private String callTossPaymentsApi(String paymentKey, String orderId, BigDecimal amount) {
 		try {
-			// HTTP 요청 헤더 설정
-			HttpHeaders headers = new HttpHeaders();
-			headers.setContentType(MediaType.APPLICATION_JSON);
-
 			// Basic 인증 헤더 생성 (시크릿 키 + ":")
 			String authString = tossSecretKey + ":";
 			String encodedAuthString = Base64.getEncoder().encodeToString(authString.getBytes(StandardCharsets.UTF_8));
-			headers.set("Authorization", "Basic " + encodedAuthString);
+			String authorization = "Basic " + encodedAuthString;
 
 			// 요청 본문 생성
 			Map<String, Object> requestBody = Map.of(
@@ -168,14 +158,10 @@ public class PaymentService {
 				"amount", amount
 			);
 
-			// HTTP 요청 엔티티 생성
-			HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(requestBody, headers);
-
-			// API 호출
-			ResponseEntity<String> response = restTemplate.postForEntity(
-				URI.create(TOSS_API_URL),
-				requestEntity,
-				String.class
+			// Feign 클라이언트를 통한 API 호출
+			ResponseEntity<String> response = tossPaymentClient.confirmPayment(
+				authorization,
+				requestBody
 			);
 
 			// 응답 처리
