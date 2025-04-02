@@ -7,13 +7,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ll.dopdang.domain.member.dto.request.MemberSignupRequest;
 import com.ll.dopdang.domain.member.dto.request.VerifyCodeRequest;
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.entity.MemberRole;
 import com.ll.dopdang.domain.member.entity.MemberStatus;
 import com.ll.dopdang.domain.member.repository.MemberRepository;
+import com.ll.dopdang.global.exception.ErrorCode;
+import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.global.redis.repository.RedisRepository;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
 import com.ll.dopdang.global.sms.dto.SmsVerificationRequest;
@@ -28,26 +29,10 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class MemberService {
-	/**
-	 * 유저 레포지터리
-	 */
 	private final MemberRepository memberRepository;
-	/**
-	 * 비밀번호 인코더
-	 */
 	private final PasswordEncoder passwordEncoder;
-	/**
-	 * redis 레포지터리
-	 */
 	private final RedisRepository redisRepository;
-	/**
-	 * 문자 발송 서비스
-	 */
 	private final SmsService smsService;
-	/**
-	 * ObjectMapper
-	 */
-	private final ObjectMapper objectMapper;
 
 	/**
 	 * 회원가입 메서드
@@ -89,25 +74,37 @@ public class MemberService {
 	@Transactional
 	public void verifyPhone(Long id, String code, VerifyCodeRequest req, CustomUserDetails customUserDetails) {
 		isValidMember(id, customUserDetails);
-		Member member = getMember(id);
+		Member member = findMember(id);
 
 		if (member.getMemberId().equals(member.getEmail())) {
-			throw new IllegalArgumentException("해당 유저는 소셜 유저가 아닙니다.");
+			throw new ServiceException(ErrorCode.NOT_A_SOCIAL_USER);
 		}
 
 		// 전화번호 수정 기능이 들어가면 사라질 로직
 		if (MemberStatus.ACTIVE.toString().equals(member.getStatus())) {
-			throw new IllegalArgumentException("해당 유저는 이미 전화번호를 인증하였습니다.");
+			throw new ServiceException(ErrorCode.PHONE_ALREADY_VERIFIED);
 		}
 
 		boolean isVerified = verify(req.getPhone(), code);
 		if (!isVerified) {
-			throw new IllegalArgumentException("전화번호 인증에 실패하였습니다.");
+			throw new ServiceException(ErrorCode.PHONE_VERIFICATION_FAILED);
 		}
 
 		member.activateMember();
 		member.activatePhone(req.getPhone());
 		redisRepository.remove("VERIFIED_PHONE:" + req.getPhone());
+	}
+
+	/**
+	 * Member 가져 오기
+	 * @param id 유저 고유 ID
+	 * @param customUserDetails 인증된 사용자 정보
+	 * @return {@link Member}
+	 */
+	@Transactional(readOnly = true)
+	public Member getMember(Long id, CustomUserDetails customUserDetails) {
+		isValidMember(id, customUserDetails);
+		return findMember(id);
 	}
 
 	/**
@@ -137,10 +134,10 @@ public class MemberService {
 	 */
 	public void isValidMember(Long id, CustomUserDetails customUserDetails) {
 		if (ObjectUtils.isEmpty(customUserDetails)) {
-			throw new IllegalArgumentException("유저 정보가 없습니다.");
+			throw new ServiceException(ErrorCode.MEMBER_NOT_FOUND);
 		}
 		if (!Objects.equals(customUserDetails.getMember().getId(), id)) {
-			throw new IllegalArgumentException("인증되지 않은 유저입니다.");
+			throw new ServiceException(ErrorCode.UNAUTHORIZED_USER);
 		}
 	}
 
@@ -150,8 +147,8 @@ public class MemberService {
 	 * @return {@link Member}
 	 */
 	@Transactional(readOnly = true)
-	public Member getMember(Long id) {
+	public Member findMember(Long id) {
 		return memberRepository.findById(id).orElseThrow(
-			() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+			() -> new ServiceException(ErrorCode.MEMBER_NOT_FOUND));
 	}
 }

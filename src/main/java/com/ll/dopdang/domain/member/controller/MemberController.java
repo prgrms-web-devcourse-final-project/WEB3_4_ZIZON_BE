@@ -2,6 +2,7 @@ package com.ll.dopdang.domain.member.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ll.dopdang.domain.member.dto.request.MemberSignupRequest;
 import com.ll.dopdang.domain.member.dto.request.VerifyCodeRequest;
+import com.ll.dopdang.domain.member.dto.response.ProfileResponse;
 import com.ll.dopdang.domain.member.service.MemberService;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
 import com.ll.dopdang.global.sms.dto.SmsVerificationResponse;
@@ -29,13 +31,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @RequestMapping("/users")
 public class MemberController {
-	/**
-	 * 유저 서비스
-	 */
 	private final MemberService memberService;
 
 	/**
-	 * 회원 가입 메서드
+	 * 회원 가입 API
 	 * @param req 회원가입 dto
 	 * @return {@link ResponseEntity}
 	 */
@@ -51,7 +50,7 @@ public class MemberController {
 	}
 
 	/**
-	 * 소셜 유저의 전화번호 인증 메서드
+	 * 소셜 유저의 전화번호 인증 API
 	 * @param userId 유저 고유 ID
 	 * @param request 전화번호 인증 dto
 	 * @param customUserDetails 인증된 사용자 정보
@@ -69,5 +68,18 @@ public class MemberController {
 		}
 		memberService.verifyPhone(userId, request.getCode(), request, customUserDetails);
 		return ResponseEntity.ok("전화번호 인증이 완료되었습니다.");
+	}
+
+	/**
+	 * 사용자 마이페이지 조회 API
+	 * @param userId 유저 고유 ID
+	 * @param customUserDetails 인증된 사용자 정보
+	 * @return {@link ResponseEntity}
+	 */
+	@GetMapping("/{user_id}")
+	public ResponseEntity<Object> getMember(
+		@PathVariable("user_id") Long userId,
+		@AuthenticationPrincipal CustomUserDetails customUserDetails) {
+		return ResponseEntity.ok(new ProfileResponse(memberService.getMember(userId, customUserDetails)));
 	}
 }
