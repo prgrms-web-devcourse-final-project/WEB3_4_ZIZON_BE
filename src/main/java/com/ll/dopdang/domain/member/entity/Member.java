@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.util.ObjectUtils;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -114,7 +115,7 @@ public class Member {
 	 */
 	@PrePersist
 	protected void onCreate() {
-		if (this.uniqueKey == null) {
+		if (ObjectUtils.isEmpty(uniqueKey)) {
 			this.uniqueKey = UUID.randomUUID().toString();
 		}
 	}
@@ -143,7 +144,7 @@ public class Member {
 	 * 유저를 활성화 상태로 설정하는 메서드
 	 */
 	public void activateMember() {
-		this.status = MemberStatus.활성.toString();
+		this.status = MemberStatus.ACTIVE.toString();
 	}
 
 	/**

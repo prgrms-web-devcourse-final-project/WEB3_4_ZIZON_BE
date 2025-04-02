@@ -63,8 +63,8 @@ class MemberControllerTest {
 			.name("test1")
 			.profileImage("")
 			.memberId("test1@test.com")
-			.userRole(MemberRole.client.toString())
-			.status(MemberStatus.활성.toString())
+			.userRole(MemberRole.CLIENT.toString())
+			.status(MemberStatus.ACTIVE.toString())
 			.build();
 		Member member2 = Member.builder()
 			.email("test2@test.com")
@@ -72,8 +72,8 @@ class MemberControllerTest {
 			.name("test2")
 			.profileImage("")
 			.memberId("test2@test.com")
-			.userRole(MemberRole.client.toString())
-			.status(MemberStatus.활성.toString())
+			.userRole(MemberRole.CLIENT.toString())
+			.status(MemberStatus.ACTIVE.toString())
 			.build();
 		Member member3 = Member.builder()
 			.email("test3@test.com")
@@ -81,8 +81,8 @@ class MemberControllerTest {
 			.name("test3")
 			.profileImage("")
 			.memberId("test3@test.com")
-			.userRole(MemberRole.client.toString())
-			.status(MemberStatus.탈퇴.toString())
+			.userRole(MemberRole.CLIENT.toString())
+			.status(MemberStatus.DEACTIVATED.toString())
 			.build();
 		memberRepository.save(member1);
 		memberRepository.save(member2);

@@ -33,7 +33,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 		Member member = memberRepository.findByEmail(email)
 			.orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
 
-		if (MemberStatus.탈퇴.toString().equals(member.getStatus())) {
+		if (MemberStatus.DEACTIVATED.toString().equals(member.getStatus())) {
 			throw new UsernameNotFoundException("DEACTIVATED:탈퇴한 계정입니다.");
 		}
 
