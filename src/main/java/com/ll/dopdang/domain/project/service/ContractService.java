@@ -33,6 +33,12 @@ public class ContractService {
 		// 1. 오퍼 ID로 오퍼 찾기
 		Offer offer = offerService.getOfferById(offerId);
 
+		// 1-1. 오퍼 상태 확인 - PENDING 상태가 아니면 이미 처리된 오퍼
+		if (offer.getStatus() != Offer.OfferStatus.PENDING) {
+			throw new ServiceException(ErrorCode.OFFER_ALREADY_PROCESSED,
+				"이미 처리된 오퍼입니다. 오퍼 ID: " + offerId + ", 현재 상태: " + offer.getStatus());
+		}
+
 		// 2. 오퍼와 제공된 세부 정보를 기반으로 새 계약 생성
 		Contract contract = Contract.createFromOffer(offer, price, startDate, endDate);
 

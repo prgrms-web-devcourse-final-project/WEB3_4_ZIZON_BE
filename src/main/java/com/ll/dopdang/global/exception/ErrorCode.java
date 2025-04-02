@@ -26,6 +26,7 @@ public enum ErrorCode {
 
 	// 계약 관련 에러
 	CONTRACT_PROCESSING_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "계약 처리 중 오류가 발생했습니다."),
+	OFFER_ALREADY_PROCESSED(HttpStatus.CONFLICT, "이미 처리된 오퍼입니다."),
 
 	// 회원 관련 에러
 	MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "회원 정보를 찾을 수 없습니다.");

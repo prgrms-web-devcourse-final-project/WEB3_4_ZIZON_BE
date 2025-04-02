@@ -25,7 +25,6 @@ import com.ll.dopdang.domain.payment.entity.PaymentType;
 import com.ll.dopdang.domain.payment.repository.PaymentRepository;
 import com.ll.dopdang.domain.payment.strategy.saver.PaymentSaverFactory;
 import com.ll.dopdang.domain.payment.strategy.validator.PaymentValidatorFactory;
-import com.ll.dopdang.domain.project.service.ContractService;
 import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.global.redis.repository.RedisRepository;
@@ -43,7 +42,6 @@ public class PaymentService {
 	private static final long ORDER_EXPIRY_MINUTES = 10L;
 
 	private final RedisRepository redisRepository;
-	private final ContractService contractService;
 	private final PaymentRepository paymentRepository;
 	private final ObjectMapper objectMapper;
 	private final RestTemplate restTemplate;

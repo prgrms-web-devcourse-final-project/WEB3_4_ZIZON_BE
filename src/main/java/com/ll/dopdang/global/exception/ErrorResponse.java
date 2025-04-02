@@ -14,7 +14,7 @@ import lombok.Getter;
  */
 @Getter
 @Builder
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class ErrorResponse {
 
 	private final int status;
