@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ll.dopdang.domain.member.dto.request.MemberSignupRequest;
+import com.ll.dopdang.domain.member.dto.request.UpdateProfileRequest;
 import com.ll.dopdang.domain.member.dto.request.VerifyCodeRequest;
 import com.ll.dopdang.domain.member.dto.response.ProfileResponse;
 import com.ll.dopdang.domain.member.service.MemberService;
@@ -93,7 +94,9 @@ public class MemberController {
 	@PatchMapping("/{user_id}")
 	public ResponseEntity<Object> updateMember(
 		@PathVariable("user_id") Long userId,
+		@Valid @RequestBody UpdateProfileRequest req,
 		@AuthenticationPrincipal CustomUserDetails customUserDetails) {
-		return ResponseEntity.ok("");
+		memberService.updateMember(userId, req, customUserDetails);
+		return ResponseEntity.ok("수정을 완료하였습니다.");
 	}
 }

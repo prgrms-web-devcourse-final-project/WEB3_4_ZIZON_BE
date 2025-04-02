@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 
 import com.ll.dopdang.domain.member.dto.request.MemberSignupRequest;
+import com.ll.dopdang.domain.member.dto.request.UpdateProfileRequest;
 import com.ll.dopdang.domain.member.dto.request.VerifyCodeRequest;
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.entity.MemberRole;
@@ -107,10 +108,22 @@ public class MemberService {
 		return findMember(id);
 	}
 
+	/**
+	 *
+	 * @param id 유저 고유 ID
+	 * @param req 회원 정보 수정 dto
+	 * @param customUserDetails 인증된 사용자 정보
+	 */
 	@Transactional
-	public Member updateMember(Long id, CustomUserDetails customUserDetails) {
+	public void updateMember(Long id, UpdateProfileRequest req, CustomUserDetails customUserDetails) {
 		isValidMember(id, customUserDetails);
-		return findMember(id);
+		Member member = findMember(id);
+
+		if (passwordEncoder.matches(req.getPassword(), member.getPassword())) {
+			throw new ServiceException(ErrorCode.PASSWORD_SAME_AS_CURRENT);
+		}
+
+		member.updateMember(req.getName(), passwordEncoder.encode(req.getPassword()));
 	}
 
 	/**

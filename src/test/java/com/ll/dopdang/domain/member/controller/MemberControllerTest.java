@@ -17,20 +17,23 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ll.dopdang.domain.member.dto.request.LoginRequest;
+import com.ll.dopdang.domain.member.dto.request.UpdateProfileRequest;
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.entity.MemberRole;
 import com.ll.dopdang.domain.member.entity.MemberStatus;
 import com.ll.dopdang.domain.member.repository.MemberRepository;
+import com.ll.dopdang.global.exception.ErrorCode;
+import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.global.redis.repository.RedisRepository;
 import com.ll.dopdang.global.sms.service.CoolSmsService;
 import com.ll.dopdang.standard.util.JwtUtil;
@@ -52,9 +55,9 @@ class MemberControllerTest {
 	private PasswordEncoder passwordEncoder;
 	@Autowired
 	private JwtUtil jwtUtil;
-	@MockitoBean
+	@MockBean
 	private RedisRepository redisRepository;
-	@MockitoBean
+	@MockBean
 	private CoolSmsService coolSmsService;
 
 	@BeforeEach
@@ -294,5 +297,52 @@ class MemberControllerTest {
 			.andExpect(jsonPath("$.status").value(401))
 			.andDo(print())
 			.andReturn();
+	}
+
+	@Test
+	@DisplayName("프로필 수정 테스트")
+	void test10() throws Exception {
+		MvcResult loginResult = mvc.perform(post("/users/login")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(new LoginRequest("test1@test.com", "test1234!"))))
+			.andExpect(status().isOk())
+			.andDo(print())
+			.andReturn();
+
+		Cookie[] cookies = loginResult.getResponse().getCookies();
+		assertNotNull(cookies, "로그인 응답에 쿠키가 없습니다.");
+		assertTrue(cookies.length > 0, "로그인 응답에 쿠키가 없습니다.");
+
+		Cookie accessTokenCookie = Arrays.stream(cookies)
+			.filter(cookie -> cookie.getName().equals("accessToken"))
+			.findFirst()
+			.orElseThrow(() -> new RuntimeException("액세스 토큰 쿠키를 찾을 수 없습니다."));
+
+		String accessTokenValue = accessTokenCookie.getValue();
+		assertFalse("액세스 토큰이 비어있습니다.", accessTokenValue.isEmpty());
+
+		String newName = "update1";
+		String newPassword = "update1234!";
+
+		Long userId = jwtUtil.getUserId(accessTokenValue);
+		mvc.perform(patch("/users/{user_id}", userId)
+				.cookie(accessTokenCookie)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(new UpdateProfileRequest(newName, newPassword))))
+			.andExpect(status().isOk())
+			.andDo(print())
+			.andReturn();
+
+		Member member = memberRepository.findById(userId)
+			.orElseThrow(() -> new ServiceException(ErrorCode.MEMBER_NOT_FOUND));
+		assertEquals("이름이 변경되지 않음", newName, member.getName());
+		assertTrue(passwordEncoder.matches(newPassword, member.getPassword()), "비밀번호가 변경되지 않음");
+		
+		mvc.perform(get("/users/{user_id}", userId)
+				.cookie(accessTokenCookie)
+				.contentType(MediaType.APPLICATION_JSON))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.name").value(newName))
+			.andDo(print());
 	}
 }
