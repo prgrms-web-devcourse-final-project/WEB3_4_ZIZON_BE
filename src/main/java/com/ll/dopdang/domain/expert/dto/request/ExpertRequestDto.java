@@ -18,7 +18,7 @@ public class ExpertRequestDto {
 
     private String certificatation;
 
-    private Integer categoryId;
+    private String categoryName;
 
     private Boolean gender;
 
