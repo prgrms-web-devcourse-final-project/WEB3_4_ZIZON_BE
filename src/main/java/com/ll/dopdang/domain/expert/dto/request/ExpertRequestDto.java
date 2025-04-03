@@ -1,21 +1,31 @@
 package com.ll.dopdang.domain.expert.dto.request;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 @Getter
 @NoArgsConstructor
 public class ExpertRequestDto {
 
-    private String mainCategoryName; // 대분류 카테고리 이름
-    private List<String> subCategoryNames; // 소분류 카테고리 이름들
-    private int careerYears; // 경력 연수
-    private String introduction; // 자기소개
-    private String certification; // 자격증 정보
-    private Boolean gender; // 0 = 남자, 1 = 여자
-    private String bankName; // 은행명
-    private String accountNumber; // 계좌번호
-    private String sellerInfo; // 판매자 정보
+    @NotBlank(message = "소개는 필수 항목입니다")
+    @Size(max = 500, message = "소개는 최대 500자까지 가능합니다.")
+    private String introduction;
+
+    @NotBlank(message = "경력 연수는 필수 항목입니다.")
+    private int careerYears;
+
+    private String certificatation;
+
+    private Integer categoryId;
+
+    private Boolean gender;
+
+    @NotBlank(message = "계좌 정보는 필수 항목입니다.")
+    private String bankName;
+
+    @NotBlank(message = "계좌 정보는 필수 항목입니다.")
+    private String accountNumber;
+
 }
