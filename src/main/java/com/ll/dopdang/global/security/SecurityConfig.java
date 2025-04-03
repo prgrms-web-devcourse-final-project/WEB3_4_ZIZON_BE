@@ -162,19 +162,15 @@ public class SecurityConfig {
 			.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 			.addFilterBefore(jwtAuthorizationFilter, UsernamePasswordAuthenticationFilter.class)
 			.exceptionHandling(exception -> exception
-				.authenticationEntryPoint((request, response, authException) -> {
-					AuthResponseUtil.failLogin(
-						response, (ResponseEntity<?>)ResponseEntity.badRequest(), HttpServletResponse.SC_UNAUTHORIZED,
-						objectMapper
-					);
-				}))
+				.authenticationEntryPoint((request, response, authException) -> AuthResponseUtil.failLogin(
+					response, (ResponseEntity<?>)ResponseEntity.badRequest(), HttpServletResponse.SC_UNAUTHORIZED,
+					objectMapper
+				)))
 			.exceptionHandling(exception -> exception
-				.accessDeniedHandler((request, response, authException) -> {
-					AuthResponseUtil.failLogin(
-						response, (ResponseEntity<?>)ResponseEntity.badRequest(), HttpServletResponse.SC_FORBIDDEN,
-						objectMapper
-					);
-				}))
+				.accessDeniedHandler((request, response, authException) -> AuthResponseUtil.failLogin(
+					response, (ResponseEntity<?>)ResponseEntity.badRequest(), HttpServletResponse.SC_FORBIDDEN,
+					objectMapper
+				)))
 			.logout(logout -> logout
 				.logoutUrl("/users/logout")
 				.addLogoutHandler(new JwtLogoutHandler(tokenService, tokenManagementService))
