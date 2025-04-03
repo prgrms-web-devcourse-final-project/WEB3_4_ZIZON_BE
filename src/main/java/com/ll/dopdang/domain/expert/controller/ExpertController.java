@@ -12,11 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/experts")
@@ -37,7 +33,10 @@ public class ExpertController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ExpertResponseDto>> getExperts() {
-        return new ResponseEntity<>(expertService.getAllExperts(), HttpStatus.valueOf(200));
+    public ResponseEntity<List<ExpertResponseDto>> getExperts(
+            @RequestParam(required = false) List<String> categoryNames,
+            @RequestParam(required = false) String careerLevel
+    ) {
+        return new ResponseEntity<>(expertService.getAllExperts(categoryNames,careerLevel), HttpStatus.valueOf(200));
     }
 }

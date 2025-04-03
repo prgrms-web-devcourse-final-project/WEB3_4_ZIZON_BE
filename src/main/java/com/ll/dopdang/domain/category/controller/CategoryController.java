@@ -12,7 +12,7 @@ import java.util.List;
 
 /**
  * CategoryController
- *
+ * <p>
  * 카테고리 생성/조회와 관련된 HTTP 요청을 처리하는 컨트롤러 클래스
  */
 @RestController
@@ -41,7 +41,7 @@ public class CategoryController {
      * GET /categories
      * 전체 카테고리를 조회합니다.
      *
-     * @return ResponseEntity<List<CategoryResponseDto>> 카테고리 목록과 HTTP 상태코드 반환
+     * @return ResponseEntity<List < CategoryResponseDto>> 카테고리 목록과 HTTP 상태코드 반환
      */
     @GetMapping
     public ResponseEntity<List<CategoryResponseDto>> getCategories() {
