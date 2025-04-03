@@ -21,7 +21,11 @@ import com.ll.dopdang.global.security.custom.CustomUserDetails;
 import com.ll.dopdang.global.sms.dto.SmsVerificationResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
+
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -46,7 +50,12 @@ public class MemberController {
 	 * @param req 회원가입 dto
 	 * @return {@link ResponseEntity}
 	 */
-	@Operation(summary = "회원 가입", description = "일반 사용자의 회원가입을 위한 API 입니다.")
+	@Operation(
+		summary = "회원 가입",
+		description = "휴대폰 인증 코드가 없으면 인증 요청을 먼저 수행하고, 있으면 회원 가입을 완료합니다."
+	)
+	@ApiResponse(responseCode = "200", description = "회원 가입 또는 인증 요청 성공")
+	@ApiResponse(responseCode = "400", description = "잘못된 요청", content = @Content)
 	@PostMapping("/signup")
 	public ResponseEntity<Object> signup(
 		@Valid @RequestBody MemberSignupRequest req) {
@@ -65,10 +74,20 @@ public class MemberController {
 	 * @param customUserDetails 인증된 사용자 정보
 	 * @return {@link ResponseEntity}
 	 */
+	@Operation(
+		summary = "소셜 유저 전화번호 인증",
+		description = "소셜 로그인 사용자의 전화번호 인증을 수행합니다."
+	)
+
+	@ApiResponse(responseCode = "200", description = "전화번호 인증 성공")
+	@ApiResponse(responseCode = "401", description = "인증되지 않은 사용자", content = @Content)
 	@PostMapping("/{user_id}/phone-verification")
 	public ResponseEntity<Object> verifyPhone(
+		@Parameter(description = "유저 ID", example = "1")
 		@PathVariable("user_id") Long userId,
+
 		@Valid @RequestBody VerifyCodeRequest request,
+
 		@AuthenticationPrincipal CustomUserDetails customUserDetails
 	) {
 		if (request.getCode() == null) {
@@ -85,10 +104,18 @@ public class MemberController {
 	 * @param customUserDetails 인증된 사용자 정보
 	 * @return {@link ResponseEntity}
 	 */
+	@Operation(
+		summary = "회원 정보 조회 (마이페이지)",
+		description = "인증된 사용자의 마이페이지 정보를 조회합니다."
+	)
+	@ApiResponse(responseCode = "200", description = "조회 성공")
+	@ApiResponse(responseCode = "403", description = "접근 권한 없음")
 	@GetMapping("/{user_id}")
 	public ResponseEntity<Object> getMember(
+		@Parameter(description = "유저 ID", example = "1")
 		@PathVariable("user_id") Long userId,
-		@AuthenticationPrincipal CustomUserDetails customUserDetails) {
+		@AuthenticationPrincipal CustomUserDetails customUserDetails
+	) {
 		return ResponseEntity.ok(new ProfileResponse(memberService.getMember(userId, customUserDetails)));
 	}
 
@@ -98,11 +125,19 @@ public class MemberController {
 	 * @param customUserDetails 인증된 사용자 정보
 	 * @return {@link ResponseEntity}
 	 */
+	@Operation(
+		summary = "회원 정보 수정 (마이페이지)",
+		description = "인증된 사용자의 프로필 정보를 수정합니다."
+	)
+	@ApiResponse(responseCode = "200", description = "조회 성공")
+	@ApiResponse(responseCode = "403", description = "접근 권한 없음")
 	@PatchMapping("/{user_id}")
 	public ResponseEntity<Object> updateMember(
+		@Parameter(description = "유저 ID", example = "1")
 		@PathVariable("user_id") Long userId,
 		@Valid @RequestBody UpdateProfileRequest req,
-		@AuthenticationPrincipal CustomUserDetails customUserDetails) {
+		@AuthenticationPrincipal CustomUserDetails customUserDetails
+	) {
 		memberService.updateMember(userId, req, customUserDetails);
 		return ResponseEntity.ok("수정을 완료하였습니다.");
 	}

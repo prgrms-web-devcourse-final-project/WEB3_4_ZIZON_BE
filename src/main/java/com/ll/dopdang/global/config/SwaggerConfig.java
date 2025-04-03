@@ -13,7 +13,7 @@ import io.swagger.v3.oas.models.security.SecurityScheme;
 public class SwaggerConfig {
 
 	@Bean
-	public OpenAPI customOpenAPI() {
+	public OpenAPI customopenApi() {
 		Info info = new Info()
 			.title("Dopdang API Documentation")
 			.version("v1.0.0")
