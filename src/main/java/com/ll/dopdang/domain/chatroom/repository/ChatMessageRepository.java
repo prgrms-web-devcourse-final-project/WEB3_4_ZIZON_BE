@@ -11,4 +11,5 @@ import com.ll.dopdang.domain.chatroom.entity.ChatMessage;
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
 	//채팅 온 시간에 대해 asc 처리
 	List<ChatMessage> findByRoomIdOrderByTimestampAsc(String roomId);
+
 }
