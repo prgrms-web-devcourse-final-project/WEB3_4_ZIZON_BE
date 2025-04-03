@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.ll.dopdang.domain.expert.dto.request.ExpertRequestDto;
+import com.ll.dopdang.domain.expert.dto.response.ExpertDetailResponseDto;
 import com.ll.dopdang.domain.expert.dto.response.ExpertResponseDto;
 import com.ll.dopdang.domain.expert.service.ExpertService;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
@@ -38,5 +39,10 @@ public class ExpertController {
             @RequestParam(required = false) String careerLevel
     ) {
         return new ResponseEntity<>(expertService.getAllExperts(categoryNames,careerLevel), HttpStatus.valueOf(200));
+    }
+
+    @GetMapping("/{expertId}")
+    public ResponseEntity<ExpertDetailResponseDto> getExpertById(@PathVariable Long expertId) {
+        return new ResponseEntity<>(expertService.getExpertById(expertId),HttpStatus.valueOf(200));
     }
 }

@@ -14,8 +14,13 @@ public interface ExpertRepository extends JpaRepository<Expert, Long> {
     @Query("SELECT e FROM Expert e JOIN FETCH e.member")
     List<Expert> findAllWithMember();
 
-    @Query("SELECT e FROM Expert e " + "WHERE (:categoryNames IS NULL OR e.category.name IN :categoryNames) " + "AND (:minYears <= e.careerYears) " + "AND (:maxYears >= e.careerYears)")
-    List<Expert> findByFilters(@Param("categoryNames") List<String> categoryNames, @Param("minYears") Integer minYears, @Param("maxYears") Integer maxYears);
+    @Query("SELECT e FROM Expert e " +
+            "WHERE (:categoryNames IS NULL OR e.mainCategory.name IN :categoryNames) " +
+            "AND (:minYears IS NULL OR e.careerYears >= :minYears) " +
+            "AND (:maxYears IS NULL OR e.careerYears <= :maxYears)")
+    List<Expert> findByFilters(@Param("categoryNames") List<String> categoryNames,
+                               @Param("minYears") Integer minYears,
+                               @Param("maxYears") Integer maxYears);
 
     Optional<Expert> findByMemberId(Long memberId);
 }
