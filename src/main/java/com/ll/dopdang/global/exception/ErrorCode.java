@@ -42,7 +42,7 @@ public enum ErrorCode {
 	PHONE_ALREADY_VERIFIED(HttpStatus.BAD_REQUEST, "해당 유저는 이미 전화번호를 인증하였습니다."),
 	PHONE_VERIFICATION_FAILED(HttpStatus.BAD_REQUEST, "전화번호 인증에 실패하였습니다."),
 	PASSWORD_SAME_AS_CURRENT(HttpStatus.BAD_REQUEST, "현재 사용중인 비밀번호와 일치합니다."),
-	UNAUTHORIZED_USER(HttpStatus.UNAUTHORIZED, "인증되지 않은 유저입니다.")
+	UNAUTHORIZED_USER(HttpStatus.UNAUTHORIZED, "인증되지 않은 유저입니다."),
     
   // S3 Presigned URL 생성 관련
 	PRESIGNED_URL_CREATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Presigned URL 생성 중 알 수 없는 오류가 발생했습니다."),
