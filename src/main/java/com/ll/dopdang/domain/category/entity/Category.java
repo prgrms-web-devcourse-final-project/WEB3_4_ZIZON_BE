@@ -44,7 +44,7 @@ public class Category {
 
 	@NotNull
 	@Column(name = "level", nullable = false)
-	private Byte level;
+	private Boolean level;
 
 	/**
 	 * 카테고리 유형 (PROJECT, PRODUCT, PROVISION)

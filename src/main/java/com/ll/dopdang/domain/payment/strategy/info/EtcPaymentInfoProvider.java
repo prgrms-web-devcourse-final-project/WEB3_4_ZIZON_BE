@@ -5,6 +5,9 @@ import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
+import com.ll.dopdang.domain.payment.dto.PaymentResultResponse;
+import com.ll.dopdang.domain.payment.entity.Payment;
+
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -20,5 +23,11 @@ public class EtcPaymentInfoProvider implements PaymentOrderInfoProvider {
 
 		// 기타 결제의 경우 추가 정보가 없거나 다른 방식으로 처리할 수 있음
 		return new HashMap<>();
+	}
+
+	@Override
+	public PaymentResultResponse enrichPaymentResult(Payment payment, PaymentResultResponse baseResponse) {
+		// 기타 결제에는 전문가 정보가 없으므로 기본 응답 반환
+		return baseResponse;
 	}
 }

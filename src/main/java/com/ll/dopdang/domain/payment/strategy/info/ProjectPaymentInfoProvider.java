@@ -5,6 +5,8 @@ import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
+import com.ll.dopdang.domain.payment.dto.PaymentResultResponse;
+import com.ll.dopdang.domain.payment.entity.Payment;
 import com.ll.dopdang.domain.project.entity.Contract;
 import com.ll.dopdang.domain.project.entity.Project;
 import com.ll.dopdang.domain.project.service.ContractService;
@@ -39,5 +41,21 @@ public class ProjectPaymentInfoProvider implements PaymentOrderInfoProvider {
 		additionalInfo.put("endDate", contract.getEndDate());
 
 		return additionalInfo;
+	}
+
+	@Override
+	public PaymentResultResponse enrichPaymentResult(Payment payment, PaymentResultResponse baseResponse) {
+
+		// 결제 정보에서 참조 ID로 계약 정보 조회
+		Contract contract = contractService.getContractById(payment.getReferenceId());
+		// 기존 응답에 전문가 이름 추가
+		return PaymentResultResponse.builder()
+			.status(baseResponse.getStatus())
+			.amount(baseResponse.getAmount())
+			.errorCode(baseResponse.getErrorCode())
+			.message(baseResponse.getMessage())
+			.expertName(contract.getExpert().getName())
+			.paymentName(payment.getItemsSummary())
+			.build();
 	}
 }

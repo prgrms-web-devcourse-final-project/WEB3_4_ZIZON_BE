@@ -5,6 +5,9 @@ import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
+import com.ll.dopdang.domain.payment.dto.PaymentResultResponse;
+import com.ll.dopdang.domain.payment.entity.Payment;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,5 +39,11 @@ public class OrderPaymentInfoProvider implements PaymentOrderInfoProvider {
 		// additionalInfo.put("itemCount", order.getOrderItems().size());
 
 		return additionalInfo;
+	}
+
+	@Override
+	public PaymentResultResponse enrichPaymentResult(Payment payment, PaymentResultResponse baseResponse) {
+		// 주문 결제에는 전문가 정보가 없으므로 기본 응답 반환
+		return baseResponse;
 	}
 }

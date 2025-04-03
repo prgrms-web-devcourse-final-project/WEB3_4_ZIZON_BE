@@ -1,9 +1,12 @@
 package com.ll.dopdang.domain.payment.controller;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Map;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,10 +20,12 @@ import com.ll.dopdang.domain.member.service.MemberService;
 import com.ll.dopdang.domain.payment.dto.OrderIdRequest;
 import com.ll.dopdang.domain.payment.dto.PaymentCancellationRequest;
 import com.ll.dopdang.domain.payment.dto.PaymentCancellationResponse;
+import com.ll.dopdang.domain.payment.dto.PaymentResultResponse;
 import com.ll.dopdang.domain.payment.entity.Payment;
 import com.ll.dopdang.domain.payment.service.PaymentCancellationService;
 import com.ll.dopdang.domain.payment.service.PaymentService;
 
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/payments")
 public class PaymentController {
 
+	private static final String PAYMENT_RESULT_SESSION_KEY = "paymentResult";
 	private final PaymentService paymentService;
 	private final PaymentCancellationService paymentCancellationService;
 	private final MemberService memberService;
@@ -59,53 +65,101 @@ public class PaymentController {
 	}
 
 	/**
-	 * 토스페이먼츠 결제 성공 콜백을 처리합니다.
+	 * 결제 성공 콜백 처리
+	 * 토스페이먼츠에서 결제 성공 시 리다이렉트되는 엔드포인트
 	 *
-	 * @param paymentKey 결제 키
+	 * 1. 결제 검증 및 확정 처리
+	 * 2. 결제 정보를 기반으로 결제 결과 응답 생성 (전문가 이름 등 추가 정보 포함)
+	 * 3. 결제 결과를 세션에 저장
+	 * 4. 결과 페이지로 리다이렉트
+	 *
+	 * @param paymentKey 토스페이먼츠에서 발급한 결제 키
 	 * @param orderId 주문 ID
 	 * @param amount 결제 금액
-	 * @return 결제 성공 응답
+	 * @param session HTTP 세션
+	 * @return 결과 페이지로 리다이렉트 응답
 	 */
 	@GetMapping("/success")
 	public ResponseEntity<?> tossPaymentsSuccess(
 		@RequestParam String paymentKey,
 		@RequestParam String orderId,
-		@RequestParam BigDecimal amount) {
+		@RequestParam BigDecimal amount,
+		HttpSession session) throws URISyntaxException {
 
 		log.info("결제 성공 콜백 호출: paymentKey={}, orderId={}, amount={}", paymentKey, orderId, amount);
 
-		paymentService.confirmPayment(paymentKey, orderId, amount);
+		Payment payment = paymentService.confirmPayment(paymentKey, orderId, amount);
+		// 서비스 레이어를 통해 결제 결과 응답 생성 (전문가 이름 등 추가 정보 포함)
+		PaymentResultResponse response = paymentService.createPaymentResultResponse(payment, amount);
 
-		Map<String, Object> response = new HashMap<>();
-		response.put("orderId", orderId);
-		response.put("amount", amount);
-		response.put("message", "결제가 성공적으로 완료되었습니다.");
+		session.setAttribute(PAYMENT_RESULT_SESSION_KEY, response);
 
-		return ResponseEntity.ok(response);
+		HttpHeaders headers = new HttpHeaders();
+		headers.setLocation(new URI("/payments/result"));
+
+		return new ResponseEntity<>(headers, HttpStatus.SEE_OTHER);
 	}
 
 	/**
-	 * 토스페이먼츠 결제 실패 콜백을 처리합니다.
+	 * 결제 실패 콜백 처리
+	 * 토스페이먼츠에서 결제 실패 시 리다이렉트되는 엔드포인트
 	 *
-	 * @param code 오류 코드
-	 * @param message 오류 메시지
+	 * 1. 실패 정보 로깅
+	 * 2. 결제 실패 결과 응답 생성
+	 * 3. 결제 실패 결과를 세션에 저장
+	 * 4. 결과 페이지로 리다이렉트
+	 *
+	 * @param code 실패 코드
+	 * @param message 실패 메시지
 	 * @param orderId 주문 ID
-	 * @return 결제 실패 응답
+	 * @param session HTTP 세션
+	 * @return 결과 페이지로 리다이렉트 응답
 	 */
 	@GetMapping("/fail")
 	public ResponseEntity<?> tossPaymentsFail(
 		@RequestParam String code,
 		@RequestParam String message,
-		@RequestParam String orderId) {
+		@RequestParam String orderId,
+		HttpSession session) throws URISyntaxException {
 
 		log.error("결제 실패: code={}, message={}, orderId={}", code, message, orderId);
 
-		Map<String, Object> response = new HashMap<>();
-		response.put("code", code);
-		response.put("message", message);
-		response.put("orderId", orderId);
+		// 세션에 결제 실패 결과 저장
+		PaymentResultResponse response = PaymentResultResponse.fail(code, message);
+		session.setAttribute(PAYMENT_RESULT_SESSION_KEY, response);
 
-		return ResponseEntity.badRequest().body(response);
+		// 리다이렉트 경로는 그대로 유지
+		HttpHeaders headers = new HttpHeaders();
+		headers.setLocation(new URI("/payments/result"));
+
+		return new ResponseEntity<>(headers, HttpStatus.SEE_OTHER);
+	}
+
+	/**
+	 * 결제 결과 조회
+	 * 결제 성공/실패 후 리다이렉트되는 결과 페이지에서 호출되는 엔드포인트
+	 *
+	 * 1. 세션에서 결제 결과 조회
+	 * 2. 결제 결과가 없으면 400 Bad Request 응답
+	 * 3. 결제 결과가 있으면 결과 반환 및 세션에서 제거
+	 *
+	 * @param session HTTP 세션
+	 * @return 결제 결과 응답
+	 */
+	@GetMapping("/result")
+	public ResponseEntity<PaymentResultResponse> paymentResult(HttpSession session) {
+		// 세션에서 결제 결과 조회
+		PaymentResultResponse result = (PaymentResultResponse)session.getAttribute(PAYMENT_RESULT_SESSION_KEY);
+
+		if (result == null) {
+			log.error("결제 결과를 찾을 수 없습니다.");
+			return ResponseEntity.badRequest().build();
+		}
+
+		// 세션에서 결제 결과 제거 (일회성 데이터)
+		session.removeAttribute(PAYMENT_RESULT_SESSION_KEY);
+
+		return ResponseEntity.ok(result);
 	}
 
 	/**
@@ -129,4 +183,5 @@ public class PaymentController {
 
 		return ResponseEntity.ok(PaymentCancellationResponse.from(payment));
 	}
+
 }
