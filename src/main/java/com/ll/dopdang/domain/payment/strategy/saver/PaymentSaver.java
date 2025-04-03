@@ -19,4 +19,14 @@ public interface PaymentSaver {
 	 * @return 저장된 Payment 엔티티
 	 */
 	Payment savePayment(Long referenceId, BigDecimal amount, BigDecimal fee, String paymentKey);
+
+	/**
+	 * 실패한 결제 정보를 저장합니다.
+	 *
+	 * @param referenceId 참조 ID
+	 * @param errorCode 실패 코드
+	 * @param errorMessage 실패 메시지
+	 * @return 저장된 Payment 엔티티
+	 */
+	Payment saveFailedPayment(Long referenceId, String errorCode, String errorMessage);
 }

@@ -116,11 +116,32 @@ public class Payment {
 			.referenceId(contract.getId())
 			.itemsSummary(contract.getProject().getTitle())
 			.itemsCount(1)
-			.installmentMonths(1)
+			.installmentMonths(0) // Todo: 토스 응답에서 할부 개월 구한 뒤  설정
 			.totalPrice(amount)
 			.totalFee(fee)
 			.paymentDate(LocalDateTime.now())
 			.status(PaymentStatus.PAID)
+			.build();
+	}
+
+	/**
+	 * 계약 정보로부터 실패한 결제 정보를 생성하는 정적 팩토리 메서드
+	 *
+	 * @param contract 계약 정보
+	 * @return 생성된 Payment 엔티티
+	 */
+	public static Payment createFailedPaymentFromContract(Contract contract, BigDecimal fee) {
+		return Payment.builder()
+			.member(contract.getClient())
+			.paymentType(PaymentType.PROJECT)
+			.referenceId(contract.getId())
+			.itemsSummary(contract.getProject().getTitle())
+			.itemsCount(1)
+			.installmentMonths(0)
+			.totalPrice(contract.getPrice())
+			.totalFee(fee)
+			.paymentDate(LocalDateTime.now())
+			.status(PaymentStatus.FAILED)
 			.build();
 	}
 

@@ -124,8 +124,11 @@ public class PaymentController {
 
 		log.error("결제 실패: code={}, message={}, orderId={}", code, message, orderId);
 
-		// 세션에 결제 실패 결과 저장
-		PaymentResultResponse response = PaymentResultResponse.fail(code, message);
+		// 실패한 결제 정보 저장
+		Payment failedPayment = paymentService.saveFailedPayment(orderId, code, message);
+		// 서비스 레이어를 통해 결제 결과 응답 생성 (전문가 이름 등 추가 정보 포함)
+		PaymentResultResponse response = paymentService.createFailedPaymentResultResponse(failedPayment, message, code);
+
 		session.setAttribute(PAYMENT_RESULT_SESSION_KEY, response);
 
 		// 리다이렉트 경로는 그대로 유지

@@ -10,6 +10,7 @@ import com.ll.dopdang.domain.payment.client.TossPaymentClient;
 import com.ll.dopdang.domain.payment.entity.Payment;
 import com.ll.dopdang.domain.payment.entity.PaymentCancellationDetail;
 import com.ll.dopdang.domain.payment.entity.PaymentMetadata;
+import com.ll.dopdang.domain.payment.entity.PaymentStatus;
 import com.ll.dopdang.domain.payment.entity.PaymentType;
 import com.ll.dopdang.domain.payment.repository.PaymentRepository;
 import com.ll.dopdang.domain.payment.util.TossPaymentUtils;
@@ -50,10 +51,9 @@ public class PaymentCancellationService {
 		log.info("결제 취소 요청(참조 정보): paymentType={}, referenceId={}, cancelReason={}, cancelAmount={}",
 			paymentType, referenceId, cancelReason, cancelAmount);
 
-		// 결제 정보 조회
-		Payment payment = paymentRepository.findByPaymentTypeAndReferenceId(paymentType, referenceId)
-			.orElseThrow(() -> new ServiceException(ErrorCode.PAYMENT_NOT_FOUND,
-				"결제 정보를 찾을 수 없습니다: " + paymentType + ", " + referenceId));
+		Payment payment = paymentRepository.findByPaymentTypeAndReferenceIdAndStatus(
+				paymentType, referenceId, PaymentStatus.PAID)
+			.orElseThrow(() -> new ServiceException(ErrorCode.PAYMENT_NOT_FOUND));
 
 		// 이미 취소된 결제인지 확인
 		if (payment.isCanceled()) {

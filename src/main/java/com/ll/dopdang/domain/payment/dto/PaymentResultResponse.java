@@ -22,9 +22,10 @@ public class PaymentResultResponse {
 			.build();
 	}
 
-	public static PaymentResultResponse fail(String errorCode, String message) {
+	public static PaymentResultResponse fail(BigDecimal amount, String errorCode, String message) {
 		return PaymentResultResponse.builder()
 			.status("fail")
+			.amount(amount)
 			.errorCode(errorCode)
 			.message(message)
 			.build();

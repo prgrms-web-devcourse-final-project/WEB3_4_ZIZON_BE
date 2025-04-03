@@ -36,6 +36,8 @@ common:
 
 
 payment:
+  fee:
+    rate: 0.1  # 결제 수수료율 10%
   toss:
     secretKey: ${TOSS_SECRET_KEY}
     api-url: https://api.tosspayments.com

@@ -3,6 +3,7 @@ package com.ll.dopdang.domain.payment.service;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -17,6 +18,7 @@ import com.ll.dopdang.domain.payment.dto.PaymentOrderInfo;
 import com.ll.dopdang.domain.payment.dto.PaymentResultResponse;
 import com.ll.dopdang.domain.payment.entity.Payment;
 import com.ll.dopdang.domain.payment.entity.PaymentMetadata;
+import com.ll.dopdang.domain.payment.entity.PaymentStatus;
 import com.ll.dopdang.domain.payment.entity.PaymentType;
 import com.ll.dopdang.domain.payment.repository.PaymentRepository;
 import com.ll.dopdang.domain.payment.strategy.info.PaymentInfoProviderFactory;
@@ -52,6 +54,9 @@ public class PaymentService {
 	@Value("${payment.toss.secretKey}")
 	private String tossSecretKey;
 
+	@Value("${payment.fee.rate}")
+	private BigDecimal feeRate;
+
 	/**
 	 * 결제 유형과 참조 ID에 대한 주문 ID를 생성하고 관련 정보를 반환합니다.
 	 * 이미 결제가 완료된 경우 ServiceException을 발생시킵니다.
@@ -63,8 +68,11 @@ public class PaymentService {
 	 * @throws ServiceException 이미 결제가 완료된 경우
 	 */
 	public Map<String, Object> createOrderIdWithInfo(PaymentType paymentType, Long referenceId, Member member) {
-		// 이미 결제가 완료된 건인지 확인
-		boolean alreadyPaid = paymentRepository.existsByPaymentTypeAndReferenceId(paymentType, referenceId);
+		// 이미 성공적으로 결제가 완료된 건인지 확인 (실패한 결제는 제외)
+		Optional<Payment> successfulPayment = paymentRepository.findByPaymentTypeAndReferenceIdAndStatus(
+			paymentType, referenceId, PaymentStatus.PAID);
+
+		boolean alreadyPaid = successfulPayment.isPresent();
 
 		if (alreadyPaid) {
 			log.warn("이미 결제가 완료된 건입니다: paymentType={}, referenceId={}", paymentType, referenceId);
@@ -125,6 +133,59 @@ public class PaymentService {
 
 		log.info("결제 승인 성공: paymentKey={}", paymentKey);
 		return payment;
+	}
+
+	/**
+	 * 결제 실패 정보를 저장합니다.
+	 *
+	 * @param orderId 주문 ID
+	 * @param errorCode 실패 코드
+	 * @param errorMessage 실패 메시지
+	 * @return 저장된 Payment 엔티티
+	 */
+	@Transactional
+	public Payment saveFailedPayment(String orderId, String errorCode, String errorMessage) {
+		try {
+			// 주문 ID로 Redis에서 결제 정보 조회
+			PaymentOrderInfo orderInfo = getPaymentOrderInfoByOrderId(orderId);
+			PaymentType paymentType = orderInfo.getPaymentType();
+			Long referenceId = orderInfo.getReferenceId();
+
+			// 실패 메타데이터 생성
+			Map<String, String> failureMetadata = new HashMap<>();
+			failureMetadata.put("code", errorCode);
+			failureMetadata.put("message", errorMessage);
+			failureMetadata.put("orderId", orderId);
+
+			String metadataJson;
+			try {
+				metadataJson = objectMapper.writeValueAsString(failureMetadata);
+			} catch (Exception e) {
+				log.error("결제 실패 메타데이터 JSON 변환 오류", e);
+				metadataJson = String.format("{\"code\":\"%s\",\"message\":\"%s\",\"orderId\":\"%s\"}",
+					errorCode, errorMessage, orderId);
+			}
+
+			// 전략 패턴을 사용하여 결제 유형에 맞는 결제 실패 데이터 저장 로직 실행
+			Payment payment = saverFactory.getSaver(paymentType)
+				.saveFailedPayment(referenceId, errorCode, errorMessage);
+
+			// 실패 메타데이터 추가
+			PaymentMetadata.createFailedPaymentMetadata(payment, metadataJson);
+
+			// 결제 정보 저장
+			Payment savedPayment = paymentRepository.save(payment);
+
+			// Redis에서 주문 정보 삭제
+			redisRepository.remove(KEY_PREFIX + orderId);
+
+			log.info("결제 실패 정보 저장 완료: orderId={}, errorCode={}", orderId, errorCode);
+			return savedPayment;
+		} catch (Exception e) {
+			log.error("결제 실패 정보 저장 중 오류 발생", e);
+			throw new ServiceException(ErrorCode.PAYMENT_PROCESSING_ERROR,
+				"결제 실패 정보 저장 중 오류가 발생했습니다.");
+		}
 	}
 
 	/**
@@ -215,13 +276,12 @@ public class PaymentService {
 
 	/**
 	 * 결제 금액에 대한 수수료를 계산합니다.
-	 * 현재는 결제 금액의 10%로 설정되어 있습니다.
 	 *
 	 * @param amount 결제 금액
 	 * @return 계산된 수수료
 	 */
-	private BigDecimal calculateFee(BigDecimal amount) {
-		return amount.multiply(new BigDecimal("0.1")); // 10% 수수료
+	public BigDecimal calculateFee(BigDecimal amount) {
+		return amount.multiply(feeRate);
 	}
 
 	/**
@@ -235,6 +295,24 @@ public class PaymentService {
 	public PaymentResultResponse createPaymentResultResponse(Payment payment, BigDecimal amount) {
 		// 기본 결제 결과 응답 생성
 		PaymentResultResponse baseResponse = PaymentResultResponse.success(amount);
+
+		// 결제 유형에 맞는 정보 제공자를 통해 응답 보강
+		return infoProviderFactory.getProvider(payment.getPaymentType())
+			.enrichPaymentResult(payment, baseResponse);
+	}
+
+	/**
+	 * 결제 정보를 기반으로 결제 결과 응답을 생성합니다.
+	 * 결제 유형에 따라 다른 추가 정보를 포함합니다.
+	 *
+	 * @param payment 결제 정보
+	 * @param code 에러 코드
+	 * @param message 에러 메시지
+	 * @return 결제 결과 응답
+	 */
+	public PaymentResultResponse createFailedPaymentResultResponse(Payment payment, String code, String message) {
+		// 기본 결제 결과 응답 생성
+		PaymentResultResponse baseResponse = PaymentResultResponse.fail(payment.getTotalPrice(), code, message);
 
 		// 결제 유형에 맞는 정보 제공자를 통해 응답 보강
 		return infoProviderFactory.getProvider(payment.getPaymentType())

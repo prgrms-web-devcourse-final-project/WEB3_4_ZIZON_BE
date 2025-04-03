@@ -66,12 +66,35 @@ public class PaymentDetail {
 	public static PaymentDetail createFromContract(Payment payment, Contract contract, BigDecimal amount,
 		BigDecimal fee) {
 		PaymentDetail detail = PaymentDetail.builder()
-			.itemType("service")
+			.itemType("PROJECT")
 			.itemId(contract.getId())
 			.itemName(contract.getProject().getTitle())
 			.quantity(1)
 			.unitPrice(amount)
 			.unitTotalPrice(amount)
+			.feePrice(fee)
+			.build();
+
+		payment.addPaymentDetail(detail);
+		return detail;
+	}
+
+	/**
+	 * 계약 정보로부터 실패한 결제 상세 정보를 생성하는 정적 팩토리 메서드
+	 *
+	 * @param payment 결제 정보
+	 * @param contract 계약 정보
+	 * @param fee 수수료
+	 * @return 생성된 PaymentDetail 엔티티
+	 */
+	public static PaymentDetail createFailedPaymentDetail(Payment payment, Contract contract, BigDecimal fee) {
+		PaymentDetail detail = PaymentDetail.builder()
+			.itemType("PROJECT")
+			.itemId(contract.getId())
+			.itemName(contract.getProject().getTitle())
+			.quantity(1)
+			.unitPrice(contract.getPrice())
+			.unitTotalPrice(contract.getPrice())
 			.feePrice(fee)
 			.build();
 

@@ -85,6 +85,44 @@ public class PaymentMetadata {
 	}
 
 	/**
+	 * 결제 실패 메타데이터를 생성하는 정적 팩토리 메서드
+	 *
+	 * @param payment 결제 정보
+	 * @param metadata 메타데이터 (JSON 문자열)
+	 * @return 생성된 PaymentMetadata 엔티티
+	 */
+	public static PaymentMetadata createFailedPaymentMetadata(Payment payment, String metadata) {
+		PaymentMetadata paymentMetadata = PaymentMetadata.builder()
+			.payment(payment)
+			.type(MetadataType.FAILED)
+			.metadata(metadata)
+			.createdAt(LocalDateTime.now())
+			.build();
+
+		payment.addMetadata(paymentMetadata);
+		return paymentMetadata;
+	}
+
+	/**
+	 * 결제 실패 메타데이터를 생성하는 정적 팩토리 메서드
+	 *
+	 * @param payment 결제 정보
+	 * @param metadata 메타데이터 (JSON 문자열)
+	 * @return 생성된 PaymentMetadata 엔티티
+	 */
+	public static PaymentMetadata createViolatedPaymentMetadata(Payment payment, String metadata) {
+		PaymentMetadata paymentMetadata = PaymentMetadata.builder()
+			.payment(payment)
+			.type(MetadataType.VIOLATED)
+			.metadata(metadata)
+			.createdAt(LocalDateTime.now())
+			.build();
+
+		payment.addMetadata(paymentMetadata);
+		return paymentMetadata;
+	}
+
+	/**
 	 * 결제 정보를 설정합니다.
 	 * Payment 엔티티와의 양방향 관계를 위해 사용됩니다.
 	 */
@@ -96,7 +134,9 @@ public class PaymentMetadata {
 	 * 메타데이터 유형
 	 */
 	public enum MetadataType {
-		PAYMENT,       // 결제 메타데이터
-		CANCELLATION   // 취소 메타데이터
+		PAYMENT,      // 결제 성공 메타데이터
+		CANCELLATION, // 결제 취소 메타데이터
+		FAILED,       // 결제 인증 실패 메타데이터
+		VIOLATED      // 결제 검증 실패 메타데이터(금액 변조 등)
 	}
 }
