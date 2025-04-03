@@ -2,15 +2,7 @@ package com.ll.dopdang.domain.expert.entity;
 
 import com.ll.dopdang.domain.category.entity.Category;
 import com.ll.dopdang.domain.member.entity.Member;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -41,6 +33,7 @@ public class Expert {
 
 	private String certification;
 
+    private Boolean gender; // 0 남자 1 여자
 	//private Boolean gender; // 0 남자 1 여자
 
 	@Column(nullable = false, length = 100)
