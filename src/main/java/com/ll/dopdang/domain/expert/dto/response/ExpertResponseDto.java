@@ -11,20 +11,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ExpertResponseDto {
 
-    private String introduction;
-
-    private int careerYears;
-
-    private String categoryName;
-
-    private String certification;
-
-    private String name;
-
-    private String bankName;
-
-    private Boolean gender;
-
-    private String accountNumber;
-
+    private String name; // 전문가 이름
+    private String mainCategoryName; // 대분류 카테고리 이름
+    private int careerYears; // 경력 연수
+    private String introduction; // 자기소개
 }
