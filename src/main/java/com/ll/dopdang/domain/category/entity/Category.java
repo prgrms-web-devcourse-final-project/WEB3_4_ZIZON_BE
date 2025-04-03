@@ -33,7 +33,7 @@ public class Category {
     private int level;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
+    @Column(name= "category_type",nullable = false, length = 50)
     private CategoryType categoryType;
 
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)

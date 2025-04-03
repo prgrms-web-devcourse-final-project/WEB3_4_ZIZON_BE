@@ -25,5 +25,6 @@ public class CategoryResponseDto {
         this.id = category.getId();
         this.name = category.getName();
         this.level = category.getLevel();
+        this.categoryType = category.getCategoryType().name();
     }
 }
