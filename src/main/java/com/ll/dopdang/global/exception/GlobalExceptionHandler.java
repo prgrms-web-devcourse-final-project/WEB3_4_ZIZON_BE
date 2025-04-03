@@ -107,5 +107,6 @@ public class GlobalExceptionHandler {
 			.build();
 
 		return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+
 	}
 }
