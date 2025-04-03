@@ -7,6 +7,10 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      minimum-idle: 2   # 최소 커넥션 수
+      maximum-pool-size: 5  # 최대 커넥션 수
+
 
   jpa:
     show-sql: true
@@ -15,7 +19,7 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
 
   logging:
     level:
@@ -89,3 +93,5 @@ jwt:
   token:
     access-expiration: ${JWT_ACCESS_EXPIRATION}
     refresh-expiration: ${JWT_REFRESH_EXPIRATION}
+
+springdoc: { swagger-ui: { path: /swagger-ui.html, groups-order: DESC, operationsSorter: method, disable-swagger-default-url: true, display-request-duration: true }, api-docs: { path: /api-docs }, show-actuator: true, default-consumes-media-type: application/json, default-produces-media-type: application/json }
