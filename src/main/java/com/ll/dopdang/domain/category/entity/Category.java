@@ -24,10 +24,10 @@ public class Category {
     private String name;
 
     @Column(nullable = false)
-    private int level;
+    private Integer level;
 
     @Enumerated(EnumType.STRING)
-    @Column(name= "category_type",nullable = false, length = 50)
+    @Column(name = "category_type", nullable = false, length = 50)
     private CategoryType categoryType;
 
 }
