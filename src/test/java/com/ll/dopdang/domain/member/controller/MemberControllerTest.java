@@ -32,6 +32,7 @@ import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.entity.MemberRole;
 import com.ll.dopdang.domain.member.entity.MemberStatus;
 import com.ll.dopdang.domain.member.repository.MemberRepository;
+import com.ll.dopdang.global.config.S3Config;
 import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.global.redis.repository.RedisRepository;
@@ -59,6 +60,8 @@ class MemberControllerTest {
 	private RedisRepository redisRepository;
 	@MockBean
 	private CoolSmsService coolSmsService;
+	@MockBean
+	private S3Config s3Config;
 
 	@BeforeEach
 	void setUp() {
