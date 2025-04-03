@@ -1,5 +1,7 @@
 package com.ll.dopdang.domain.member.service;
 
+import java.time.LocalDateTime;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -103,7 +105,7 @@ public class MemberService {
 	}
 
 	/**
-	 *
+	 * Member 수정 하기
 	 * @param id 유저 고유 ID
 	 * @param req 회원 정보 수정 dto
 	 * @param customUserDetails 인증된 사용자 정보
@@ -113,10 +115,22 @@ public class MemberService {
 		memberUtilService.isValidMember(id, customUserDetails);
 		Member member = memberUtilService.findMember(id);
 
-		if (passwordEncoder.matches(req.getPassword(), member.getPassword())) {
-			throw new ServiceException(ErrorCode.PASSWORD_SAME_AS_CURRENT);
-		}
-
-		member.updateMember(req.getName(), passwordEncoder.encode(req.getPassword()));
+		Member updateMember = Member.builder()
+			.id(member.getId())
+			.email(member.getEmail())
+			.password(member.getPassword())
+			.name((req.getName() != null && !req.getName().trim().isEmpty()) ? req.getName() : member.getName())
+			.profileImage(
+				(req.getProfileImage() != null && !req.getProfileImage().trim().isEmpty()) ? req.getProfileImage() :
+					member.getProfileImage())
+			.phone(member.getPhone())
+			.status(member.getStatus())
+			.userRole(member.getUserRole())
+			.memberId(member.getMemberId())
+			.uniqueKey(member.getUniqueKey())
+			.createdAt(member.getCreatedAt())
+			.updatedAt(LocalDateTime.now())
+			.build();
+		memberRepository.save(updateMember);
 	}
 }

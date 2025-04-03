@@ -322,13 +322,13 @@ class MemberControllerTest {
 		assertFalse("액세스 토큰이 비어있습니다.", accessTokenValue.isEmpty());
 
 		String newName = "update1";
-		String newPassword = "update1234!";
+		String newProfile = "update1234!";
 
 		Long userId = jwtUtil.getUserId(accessTokenValue);
 		mvc.perform(patch("/users/{user_id}", userId)
 				.cookie(accessTokenCookie)
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(objectMapper.writeValueAsString(new UpdateProfileRequest(newName, newPassword))))
+				.content(objectMapper.writeValueAsString(new UpdateProfileRequest(newName, newProfile))))
 			.andExpect(status().isOk())
 			.andDo(print())
 			.andReturn();
@@ -336,13 +336,13 @@ class MemberControllerTest {
 		Member member = memberRepository.findById(userId)
 			.orElseThrow(() -> new ServiceException(ErrorCode.MEMBER_NOT_FOUND));
 		assertEquals("이름이 변경되지 않음", newName, member.getName());
-		assertTrue(passwordEncoder.matches(newPassword, member.getPassword()), "비밀번호가 변경되지 않음");
-		
+
 		mvc.perform(get("/users/{user_id}", userId)
 				.cookie(accessTokenCookie)
 				.contentType(MediaType.APPLICATION_JSON))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.name").value(newName))
+			.andExpect(jsonPath("$.profileImage").value(newProfile))
 			.andDo(print());
 	}
 }

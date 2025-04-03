@@ -121,18 +121,6 @@ public class Member {
 	}
 
 	/**
-	 *
-	 */
-	public void updateMember(String name, String password) {
-		if (name != null) {
-			this.name = name;
-		}
-		if (password != null) {
-			this.password = password;
-		}
-	}
-
-	/**
 	 * 유저를 활성화 상태로 설정하는 메서드
 	 */
 	public void activateMember() {
