@@ -133,4 +133,25 @@ public class MemberService {
 			.build();
 		memberRepository.save(updateMember);
 	}
+
+	@Transactional
+	public void deleteMember(Long id, CustomUserDetails customUserDetails) {
+		memberUtilService.isValidMember(id, customUserDetails);
+		Member member = memberUtilService.findMember(id);
+
+		Member deleteMember = Member.builder()
+			.id(member.getId())
+			.email(member.getEmail())
+			.password(member.getPassword())
+			.name(member.getName())
+			.profileImage(member.getProfileImage())
+			.phone(member.getPhone())
+			.status(MemberStatus.DEACTIVATED.toString())
+			.memberId(member.getMemberId())
+			.uniqueKey(member.getUniqueKey())
+			.createdAt(member.getCreatedAt())
+			.updatedAt(LocalDateTime.now())
+			.build();
+		memberRepository.save(deleteMember);
+	}
 }

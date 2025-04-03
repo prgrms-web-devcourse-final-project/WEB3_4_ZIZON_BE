@@ -2,6 +2,7 @@ package com.ll.dopdang.domain.member.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,6 +20,8 @@ import com.ll.dopdang.domain.member.service.MemberUtilService;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
 import com.ll.dopdang.global.sms.dto.SmsVerificationResponse;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -30,6 +33,7 @@ import lombok.RequiredArgsConstructor;
  *
  * @author sungyeong98
  */
+@Tag(name = "사용자 API", description = "일반 사용자 관련 API 입니다.")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/users")
@@ -42,6 +46,7 @@ public class MemberController {
 	 * @param req 회원가입 dto
 	 * @return {@link ResponseEntity}
 	 */
+	@Operation(summary = "회원 가입", description = "일반 사용자의 회원가입을 위한 API 입니다.")
 	@PostMapping("/signup")
 	public ResponseEntity<Object> signup(
 		@Valid @RequestBody MemberSignupRequest req) {
@@ -100,5 +105,13 @@ public class MemberController {
 		@AuthenticationPrincipal CustomUserDetails customUserDetails) {
 		memberService.updateMember(userId, req, customUserDetails);
 		return ResponseEntity.ok("수정을 완료하였습니다.");
+	}
+
+	@DeleteMapping("/{user_id}")
+	public ResponseEntity<Object> deleteMember(
+		@PathVariable("user_id") Long userId,
+		@AuthenticationPrincipal CustomUserDetails customUserDetails) {
+		memberService.deleteMember(userId, customUserDetails);
+		return ResponseEntity.ok("회원 탈퇴가 정상적으로 처리되었습니다.");
 	}
 }
