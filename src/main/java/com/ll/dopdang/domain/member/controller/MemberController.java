@@ -1,5 +1,6 @@
 package com.ll.dopdang.domain.member.controller;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ll.dopdang.domain.member.dto.request.MemberSignupRequest;
 import com.ll.dopdang.domain.member.dto.request.UpdateProfileRequest;
 import com.ll.dopdang.domain.member.dto.request.VerifyCodeRequest;
+import com.ll.dopdang.domain.member.dto.response.MemberInfoResponse;
 import com.ll.dopdang.domain.member.dto.response.ProfileResponse;
 import com.ll.dopdang.domain.member.service.MemberService;
 import com.ll.dopdang.domain.member.service.MemberUtilService;

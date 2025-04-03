@@ -13,6 +13,6 @@ public class ChatRoomDetailResponse {
 	private String receiver;
 	private String content;
 	private LocalDateTime timestamp;
-	private String expert_name;
-	private String expert_profile_image;
+	private String user_name;
+	private String user_profile_image;
 }

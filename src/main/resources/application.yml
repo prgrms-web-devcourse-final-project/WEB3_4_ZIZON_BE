@@ -15,7 +15,7 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
 
   logging:
     level:
