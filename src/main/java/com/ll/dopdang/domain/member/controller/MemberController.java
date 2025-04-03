@@ -64,7 +64,6 @@ public class MemberController {
 		return ResponseEntity.ok("회원 가입 성공");
 	}
 
-<<<<<<< HEAD
 	/**
 	 * 소셜 유저의 전화번호 인증 API
 	 * @param userId 유저 고유 ID
@@ -72,14 +71,13 @@ public class MemberController {
 	 * @param customUserDetails 인증된 사용자 정보
 	 * @return {@link ResponseEntity}
 	 */
-=======
 	@Operation(
 		summary = "소셜 유저 전화번호 인증",
 		description = "소셜 로그인 사용자의 전화번호 인증을 수행합니다."
 	)
+
 	@ApiResponse(responseCode = "200", description = "전화번호 인증 성공")
 	@ApiResponse(responseCode = "401", description = "인증되지 않은 사용자", content = @Content)
->>>>>>> 6aa9ef0 (fix: 스웨거 접속 문제, api 안보이는 문제, 디비 세션 문제 해결)
 	@PostMapping("/{user_id}/phone-verification")
 	public ResponseEntity<Object> verifyPhone(
 		@Parameter(description = "유저 ID", example = "1")
