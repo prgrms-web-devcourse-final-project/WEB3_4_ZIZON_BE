@@ -104,27 +104,64 @@
             flex: 1;
             overflow-y: auto;
             padding: 10px;
+            background-color: #f8f8f8;
         }
         .chat-input {
             border-top: 1px solid #ccc;
             padding: 10px;
         }
+        /* 메시지 박스 스타일 (카카오톡 스타일) */
         .message-bubble {
-            margin: 5px 0;
-            padding: 8px 12px;
-            border-radius: 8px;
-            max-width: 60%;
-            word-wrap: break-word;
+            display: flex;
+            margin: 10px 0;
         }
+        /* 내 메시지, 상대 메시지 배치 */
         .my-message {
+            flex-direction: row-reverse;
             text-align: right;
-            background-color: #DCF8C6;
-            margin-left: auto;
         }
         .other-message {
+            flex-direction: row;
             text-align: left;
-            background-color: #FFFFFF;
-            margin-right: auto;
+        }
+        /* 프로필 이미지 */
+        .profile-image {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 8px;
+        }
+        /* 메시지 정보 컨테이너 */
+        .message-info {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 8px;
+            max-width: 250px;
+            box-shadow: 0px 1px 2px rgba(0,0,0,0.1);
+        }
+        /* 발신자 이름 */
+        .sender-name {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        /* 메시지 텍스트 */
+        .message-text {
+            margin-bottom: 4px;
+            word-wrap: break-word;
+        }
+        /* 메시지 하단: 시간과 읽음 여부 */
+        .message-footer {
+            font-size: 12px;
+            color: #888;
+            display: flex;
+            justify-content: space-between;
+        }
+        .message-time {
+            margin-right: 5px;
+        }
+        .read-status {
+            margin-left: 5px;
         }
         /* 현재 사용자 정보 */
         #currentUserInfo {
@@ -137,13 +174,13 @@
 <div class="navbar">
     <div class="notification-icon" onclick="openNotificationPanel()">
         <img src="https://cdn-icons-png.flaticon.com/512/3602/3602145.png" alt="알림" />
-        <!-- 모델 변수 notificationCount를 사용 (필요 시 서버에서 전달) -->
+        <!-- 서버에서 전달한 notificationCount를 사용 -->
         <span class="badge" id="notificationBadge" th:text="${notificationCount}">0</span>
     </div>
 </div>
 
 <h1>채팅 UI</h1>
-<!-- 현재 사용자 정보 (모델 변수 currentUser) -->
+<!-- 현재 사용자 정보 (서버 모델 변수 currentUser) -->
 <div id="currentUserInfo" th:text="'현재 사용자: ' + ${currentUser.name} + ' (' + ${currentUser.email} + ')'">
     현재 사용자 정보
 </div>
@@ -155,7 +192,7 @@
             <h3>채팅방 목록</h3>
         </div>
         <div class="chat-room-list-content" id="chatRoomsList">
-            <!-- 채팅방 목록은 자바스크립트로 동적 렌더링합니다. -->
+            <!-- 채팅방 목록은 자바스크립트로 동적 렌더링 -->
         </div>
     </div>
 
@@ -165,7 +202,7 @@
             <span id="chatRoomHeader">채팅방을 선택해주세요.</span>
         </div>
         <div class="chat-messages" id="chatLog">
-            <!-- 채팅방을 선택하지 않았을 경우 기본 메시지 표시 -->
+            <!-- 채팅방 미선택 시 기본 메시지 -->
             <p style="text-align:center;color:#888;">채팅방을 선택해주세요.</p>
         </div>
         <div class="chat-input">
@@ -182,7 +219,7 @@
     let unreadCount = 0;
     let currentRoomId = null;
 
-    // 0. 페이지 unload 시 현재 채팅방 읽음 처리 (퇴장)
+    // 페이지 unload 시 현재 채팅방 읽음 처리 (퇴장)
     window.addEventListener("beforeunload", function() {
         if (currentRoomId) {
             markRoomAsRead(currentRoomId);
@@ -218,22 +255,17 @@
         stompClient.connect({}, function(frame) {
             console.log('Connected: ' + frame);
 
-            // 알림(Notice) 구독: 메시지가 도착하면 알림 개수/채팅방 목록을 업데이트
+            // 알림(Notice) 구독: 메시지 도착 시 알림 개수 및 목록 업데이트
             stompClient.subscribe('/topic/notice/' + currentUser.email, function(messageOutput) {
                 let payload = JSON.parse(messageOutput.body);
                 let roomId = payload.roomId;
 
-                // (1) 현재 채팅방에 있는 경우: unreadCount 증가시키지 않고, 서버에도 읽음 처리
                 if (currentRoomId === roomId) {
                     console.log("[Notice] 현재 열려있는 채팅방 => unreadCount 증가 X");
-                    // 서버 쪽 읽음 처리
                     markRoomAsRead(roomId).then(() => {
-                        // 읽음 처리 후 채팅방 목록만 업데이트(마지막 메시지·시간)
                         fetchChatRoomsDetail();
                     });
-                }
-                // (2) 다른 채팅방에 있는 경우: 기존 로직대로 unreadCount++
-                else {
+                } else {
                     if (notifications[roomId]) {
                         notifications[roomId]++;
                     } else {
@@ -241,7 +273,6 @@
                     }
                     unreadCount = Object.values(notifications).reduce((acc, val) => acc + val, 0);
                     updateNotificationBadge();
-                    // 채팅방 목록도 최신화(마지막 메시지·시간, badge 표시)
                     fetchChatRoomsDetail();
                 }
             });
@@ -264,11 +295,9 @@
                 return response.json();
             })
             .then(rooms => {
-                // 각 채팅방에 대해 추가 정보를 가져옵니다.
                 const detailPromises = rooms.map(room => {
                     const otherUser = (room.member1 === currentUser.email) ? room.member2 : room.member1;
 
-                    // 읽지 않은 메시지 수 조회
                     const unreadPromise = fetch(
                         `http://localhost:8080/chatrooms/${room.roomId}/unreadCount?username=${encodeURIComponent(currentUser.email)}`,
                         { credentials: 'include' }
@@ -278,7 +307,6 @@
                             return res.json();
                         });
 
-                    // 채팅 기록 조회하여 마지막 메시지와 시간을 가져옵니다.
                     const historyPromise = fetch(
                         `http://localhost:8080/chatrooms?sender=${encodeURIComponent(currentUser.email)}&receiver=${encodeURIComponent(otherUser)}`,
                         { credentials: 'include' }
@@ -325,12 +353,10 @@
             roomDiv.className = "chat-room-item";
             roomDiv.id = "chat-room-" + room.roomId;
 
-            // 프로필 이미지
             const imgElem = document.createElement("img");
             imgElem.src = room.otherUserProfile;
             roomDiv.appendChild(imgElem);
 
-            // 채팅방 정보
             const infoDiv = document.createElement("div");
             infoDiv.style.flex = "1";
 
@@ -350,7 +376,6 @@
 
             roomDiv.appendChild(infoDiv);
 
-            // 안 읽은 메시지 badge
             const badge = document.createElement("span");
             badge.className = "badge";
             if (room.unreadCount > 0) {
@@ -359,7 +384,6 @@
             }
             roomDiv.appendChild(badge);
 
-            // 채팅방 클릭 이벤트
             roomDiv.onclick = function() {
                 selectChatRoom(room.roomId, room.otherUserName);
             };
@@ -369,33 +393,29 @@
 
     // 5. 채팅방 선택
     function selectChatRoom(roomId, otherUserName) {
-        // 기존에 선택된 채팅방이 있으면 먼저 읽음 처리
         if (currentRoomId && currentRoomId !== roomId) {
             markRoomAsRead(currentRoomId);
         }
         currentRoomId = roomId;
-
         document.getElementById("chatRoomHeader").innerText =
             "채팅방 " + roomId + " (상대: " + otherUserName + ")";
-
-        // 채팅 영역 초기화 (채팅방 선택 시 기본 메시지 제거)
         document.getElementById("chatLog").innerHTML = "";
 
-        // (A) 새로 선택한 채팅방도 바로 읽음 처리 -> 서버 DB unreadCount=0
+        // 채팅방 읽음 처리 후 목록 업데이트
         markRoomAsRead(roomId).then(() => {
-            // (B) 서버 측에서 읽음처리가 끝났으니, 목록 재조회하면 unreadCount=0으로 내려올 것
             fetchChatRoomsDetail();
         });
-
-        // (C) 알림 객체에서 해당 채팅방 카운트 제거
         clearNotification(roomId);
-
-        // (D) 채팅 기록 가져오기
         fetchChatHistory(roomId);
 
-        // (E) 채팅방 구독(실시간 메시지 수신)
+        // 채팅 메시지 실시간 수신 채널 구독
         stompClient.subscribe('/topic/chat/' + roomId, function(messageOutput) {
             showMessage(JSON.parse(messageOutput.body));
+        });
+        // 읽음 업데이트 채널 구독 (서버가 읽음 이벤트 전송)
+        stompClient.subscribe('/topic/read/' + roomId, function(messageOutput) {
+            console.log("읽음 업데이트 이벤트 수신:", messageOutput.body);
+            updateReadStatusForRoom();
         });
     }
 
@@ -450,23 +470,73 @@
         document.getElementById("messageInput").value = "";
     }
 
-    // 8. 메시지 표시
+    // 8. 메시지 표시 (카카오톡 스타일)
     function showMessage(message) {
         const chatLog = document.getElementById("chatLog");
-        const messageElement = document.createElement("div");
-        messageElement.classList.add("message-bubble");
+        const messageContainer = document.createElement("div");
+        messageContainer.classList.add("message-bubble");
         if (message.sender === currentUser.email) {
-            messageElement.classList.add("my-message");
+            messageContainer.classList.add("my-message");
         } else {
-            messageElement.classList.add("other-message");
+            messageContainer.classList.add("other-message");
         }
-        const time = message.timestamp ? "[" + message.timestamp + "] " : "";
-        messageElement.innerText = time + message.sender + ": " + message.content;
-        chatLog.appendChild(messageElement);
+
+        // 상대방 메시지인 경우에만 프로필 이미지를 보여주고, 내 메시지는 생략
+        if (message.sender !== currentUser.email) {
+            const profileImg = document.createElement("img");
+            profileImg.classList.add("profile-image");
+            profileImg.src = message.user_profile_image || "https://via.placeholder.com/40";
+            messageContainer.appendChild(profileImg);
+        }
+
+        // 메시지 정보 컨테이너
+        const messageInfo = document.createElement("div");
+        messageInfo.classList.add("message-info");
+
+        // 발신자 이름: 모든 메시지에 대해 이름 표시
+        const senderName = document.createElement("div");
+        senderName.classList.add("sender-name");
+        senderName.innerText = message.user_name || message.sender;
+
+        // 메시지 텍스트
+        const messageText = document.createElement("div");
+        messageText.classList.add("message-text");
+        messageText.innerText = message.content;
+
+        // 하단에 메시지 시간 및 읽음 상태 표시
+        const messageFooter = document.createElement("div");
+        messageFooter.classList.add("message-footer");
+
+        const messageTime = document.createElement("span");
+        messageTime.classList.add("message-time");
+        messageTime.innerText = message.timestamp ? formatDate(message.timestamp) : "";
+        messageFooter.appendChild(messageTime);
+
+        // 모든 메시지에 대해 읽음 여부 표시 (양쪽 모두)
+        const readStatus = document.createElement("span");
+        readStatus.classList.add("read-status");
+        readStatus.innerText = message.read ? "읽음" : "안 읽음";
+        messageFooter.appendChild(readStatus);
+
+        messageInfo.appendChild(senderName);
+        messageInfo.appendChild(messageText);
+        messageInfo.appendChild(messageFooter);
+
+        messageContainer.appendChild(messageInfo);
+        chatLog.appendChild(messageContainer);
         chatLog.scrollTop = chatLog.scrollHeight;
     }
 
-    // 9. 알림 배지 업데이트
+    // 9. 읽음 상태 업데이트 함수 (실시간 업데이트용)
+    function updateReadStatusForRoom() {
+        // 채팅 영역의 모든 메시지의 읽음 표시를 "읽음"으로 변경
+        const readElems = document.querySelectorAll("#chatLog .read-status");
+        readElems.forEach(elem => {
+            elem.innerText = "읽음";
+        });
+    }
+
+    // 10. 알림 배지 업데이트
     function updateNotificationBadge() {
         const badge = document.getElementById("notificationBadge");
         unreadCount = Object.values(notifications).reduce((acc, val) => acc + val, 0);
@@ -478,7 +548,7 @@
         }
     }
 
-    // 10. 특정 채팅방의 알림 초기화
+    // 11. 특정 채팅방의 알림 초기화
     function clearNotification(roomId) {
         if (notifications[roomId]) {
             delete notifications[roomId];
@@ -494,7 +564,7 @@
         updateNotificationBadge();
     }
 
-    // 11. 알림 패널 열기 (전체 초기화)
+    // 12. 알림 패널 열기 (전체 초기화)
     function openNotificationPanel() {
         notifications = {};
         unreadCount = 0;
@@ -502,7 +572,7 @@
         alert("모든 알림이 초기화되었습니다.");
     }
 
-    // 12. 날짜 문자열 포맷 함수
+    // 13. 날짜 문자열 포맷 함수
     function formatDate(dateStr) {
         const date = new Date(dateStr);
         const year = date.getFullYear();
@@ -513,10 +583,9 @@
         return `${year}-${month}-${day} ${hours}:${minutes}`;
     }
 
-    // --- 채팅방 읽음 처리 함수(서버에 POST) ---
-    // ※ 중요: fetch 결과를 return하여 Promise를 리턴해야 .then() 체이닝 가능
+    // --- 채팅방 읽음 처리 함수 (서버에 POST) ---
     function markRoomAsRead(roomId) {
-        if (!roomId || !currentUser) return Promise.resolve(); // 방어 코드
+        if (!roomId || !currentUser) return Promise.resolve();
         return fetch(`http://localhost:8080/chatrooms/${roomId}/read?username=${encodeURIComponent(currentUser.email)}`, {
             method: 'POST',
             credentials: 'include'
@@ -531,7 +600,7 @@
     }
     // -----------------------------------------
 
-    // 페이지 로드 시점에 현재 사용자 조회
+    // 페이지 로드 시 현재 사용자 정보 조회
     fetchCurrentUser();
 </script>
 </body>

@@ -77,6 +77,10 @@ public class ChatService {
 			Member senderMember = memberRepository.findByEmail(msg.getSender()).orElse(null);
 			String senderName = senderMember != null ? senderMember.getName() : "";
 			String senderProfileImage = senderMember != null ? senderMember.getProfileImage() : "";
+			// read 여부는 메시지의 타임스탬프와 마지막 읽은 시간 비교 등 로직을 추가하여 설정
+			boolean read = true;
+			// 상대방 메시지인 경우 읽음 여부 계산 (예시)
+			// 실제로는 현재 사용자의 마지막 읽은 시간과 비교하는 로직이 필요합니다.
 			return new ChatRoomDetailResponse(
 				msg.getRoomId(),
 				msg.getSender(),
@@ -84,7 +88,8 @@ public class ChatService {
 				msg.getContent(),
 				msg.getTimestamp(),
 				senderName,
-				senderProfileImage
+				senderProfileImage,
+				read   // 추가된 read 필드
 			);
 		}).collect(Collectors.toList());
 	}
@@ -105,10 +110,14 @@ public class ChatService {
 		} else if (username.equals(chatRoom.getMember2())) {
 			chatRoom.setLastReadAtUser2(now);
 		}
-		return chatRoomRepository.save(chatRoom);
+		ChatRoom updatedRoom = chatRoomRepository.save(chatRoom);
+		// 읽음 처리 후 실시간 업데이트 이벤트 전송
+		messagingTemplate.convertAndSend("/topic/read/" + roomId,
+			Map.of("roomId", roomId, "username", username, "read", true));
+		return updatedRoom;
 	}
 
-	// 읽지 않은 메시지 갯수를 계산하는 메서드 (사용자 기준)
+	// 읽지 않은 메시지 개수를 계산하는 메서드 (사용자 기준)
 	@Transactional(readOnly = true)
 	public long getUnreadCount(String roomId, String username) {
 		ChatRoom chatRoom = chatRoomRepository.findByRoomId(roomId).orElse(null);
@@ -128,6 +137,4 @@ public class ChatService {
 			.filter(msg -> finalLastRead == null || msg.getTimestamp().isAfter(finalLastRead))
 			.count();
 	}
-
-
 }

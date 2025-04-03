@@ -15,4 +15,5 @@ public class ChatRoomDetailResponse {
 	private LocalDateTime timestamp;
 	private String user_name;
 	private String user_profile_image;
+	private boolean read;
 }
