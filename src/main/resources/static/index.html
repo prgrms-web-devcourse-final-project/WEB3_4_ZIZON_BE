@@ -15,6 +15,7 @@
             height: 50px;
             background-color: #f2f2f2;
             padding: 0 20px;
+            position: relative;
         }
         .notification-icon {
             position: relative;
@@ -35,6 +36,28 @@
             padding: 2px 6px;
             border-radius: 50%;
             display: none;
+        }
+        /* 알림 패널 */
+        #notificationPanel {
+            position: absolute;
+            top: 55px;
+            right: 20px;
+            width: 250px;
+            max-height: 300px;
+            overflow-y: auto;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 100;
+        }
+        .notification-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+        .notification-item:hover {
+            background-color: #f7f7f7;
         }
         /* 채팅 컨테이너 */
         .chat-container {
@@ -172,11 +195,13 @@
 <body>
 <!-- 네비게이션바 (알림 아이콘 포함) -->
 <div class="navbar">
-    <div class="notification-icon" onclick="openNotificationPanel()">
+    <div class="notification-icon" onclick="openNotificationPanel(event)">
         <img src="https://cdn-icons-png.flaticon.com/512/3602/3602145.png" alt="알림" />
         <!-- 서버에서 전달한 notificationCount를 사용 -->
         <span class="badge" id="notificationBadge" th:text="${notificationCount}">0</span>
     </div>
+    <!-- 알림 패널 -->
+    <div id="notificationPanel"></div>
 </div>
 
 <h1>채팅 UI</h1>
@@ -215,7 +240,7 @@
 <script>
     let currentUser = null;
     let stompClient = null;
-    let notifications = {};   // { roomId: count }
+    let notifications = {};   // { roomId: { otherUserName, message, count } }
     let unreadCount = 0;
     let currentRoomId = null;
 
@@ -255,26 +280,20 @@
         stompClient.connect({}, function(frame) {
             console.log('Connected: ' + frame);
 
-            // 알림(Notice) 구독: 메시지 도착 시 알림 개수 및 목록 업데이트
+            // 알림(Notice) 구독: 새 알림이 오면 notifications 객체 업데이트 후 알림 배지 갱신
             stompClient.subscribe('/topic/notice/' + currentUser.email, function(messageOutput) {
                 let payload = JSON.parse(messageOutput.body);
                 let roomId = payload.roomId;
+                let otherUser = payload.otherUser || "알 수 없음";
+                let alarmMsg = payload.message || "";
 
-                if (currentRoomId === roomId) {
-                    console.log("[Notice] 현재 열려있는 채팅방 => unreadCount 증가 X");
-                    markRoomAsRead(roomId).then(() => {
-                        fetchChatRoomsDetail();
-                    });
+                if (notifications[roomId]) {
+                    notifications[roomId].count++;
                 } else {
-                    if (notifications[roomId]) {
-                        notifications[roomId]++;
-                    } else {
-                        notifications[roomId] = 1;
-                    }
-                    unreadCount = Object.values(notifications).reduce((acc, val) => acc + val, 0);
-                    updateNotificationBadge();
-                    fetchChatRoomsDetail();
+                    notifications[roomId] = { otherUserName: otherUser, message: alarmMsg, count: 1 };
                 }
+                updateNotificationBadge();
+                fetchChatRoomsDetail();
             });
 
         }, function(error) {
@@ -539,7 +558,7 @@
     // 10. 알림 배지 업데이트
     function updateNotificationBadge() {
         const badge = document.getElementById("notificationBadge");
-        unreadCount = Object.values(notifications).reduce((acc, val) => acc + val, 0);
+        unreadCount = Object.values(notifications).reduce((acc, obj) => acc + obj.count, 0);
         if (unreadCount > 0) {
             badge.innerText = unreadCount;
             badge.style.display = 'inline';
@@ -548,31 +567,46 @@
         }
     }
 
-    // 11. 특정 채팅방의 알림 초기화
+    // 11. 알림 패널 생성 및 표시 (알림 아이콘 클릭 시 호출)
+    function openNotificationPanel(event) {
+        event.stopPropagation();
+        const panel = document.getElementById("notificationPanel");
+        panel.innerHTML = ""; // 기존 항목 제거
+
+        // notifications 객체의 각 항목을 리스트로 생성
+        for (const roomId in notifications) {
+            const item = document.createElement("div");
+            item.classList.add("notification-item");
+            const infoText = `${notifications[roomId].otherUserName} - ${notifications[roomId].message} (${notifications[roomId].count}건)`;
+            item.innerText = infoText;
+            // 클릭 시 해당 채팅방으로 이동
+            item.onclick = function() {
+                // 해당 알림 삭제 후 채팅방 이동
+                delete notifications[roomId];
+                updateNotificationBadge();
+                selectChatRoom(roomId, notifications[roomId]?.otherUserName || "알 수 없음");
+                panel.style.display = "none";
+            };
+            panel.appendChild(item);
+        }
+        panel.style.display = "block";
+    }
+
+    // 12. 알림 패널 외부 클릭 시 패널 숨기기
+    window.addEventListener("click", function() {
+        const panel = document.getElementById("notificationPanel");
+        panel.style.display = "none";
+    });
+
+    // 13. 특정 채팅방의 알림 초기화
     function clearNotification(roomId) {
         if (notifications[roomId]) {
             delete notifications[roomId];
         }
-        let roomDiv = document.getElementById("chat-room-" + roomId);
-        if (roomDiv) {
-            let badge = roomDiv.querySelector('.badge');
-            if (badge) {
-                badge.style.display = 'none';
-            }
-        }
-        unreadCount = Object.values(notifications).reduce((acc, val) => acc + val, 0);
         updateNotificationBadge();
     }
 
-    // 12. 알림 패널 열기 (전체 초기화)
-    function openNotificationPanel() {
-        notifications = {};
-        unreadCount = 0;
-        updateNotificationBadge();
-        alert("모든 알림이 초기화되었습니다.");
-    }
-
-    // 13. 날짜 문자열 포맷 함수
+    // 14. 날짜 문자열 포맷 함수
     function formatDate(dateStr) {
         const date = new Date(dateStr);
         const year = date.getFullYear();
@@ -600,7 +634,7 @@
     }
     // -----------------------------------------
 
-    // 페이지 로드 시 현재 사용자 정보 조회
+    // 페이지 로드 시 ?섏씠吏 濡쒕뱶 ?쒖젏???꾩옱 ?ъ슜???뺣낫 議고쉶
     fetchCurrentUser();
 </script>
 </body>
