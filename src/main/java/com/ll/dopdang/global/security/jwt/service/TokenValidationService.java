@@ -6,6 +6,8 @@ import org.springframework.stereotype.Service;
 
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.repository.MemberRepository;
+import com.ll.dopdang.global.exception.ErrorCode;
+import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.global.redis.repository.RedisRepository;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
 import com.ll.dopdang.standard.util.JwtUtil;
@@ -29,13 +31,11 @@ public class TokenValidationService {
 
 		String refreshToken = (String)redisRepository.get(token);
 		if (refreshToken == null) {
-			throw new IllegalArgumentException("유효하지 않은 토큰입니다.");
+			throw new ServiceException(ErrorCode.INVALID_ACCESS_TOKEN);
 		}
 
 		Member member = memberRepository.findByEmail(username)
-			.orElseThrow(() -> {
-				return new IllegalArgumentException("사용자를 찾을 수 없습니다.");
-			});
+			.orElseThrow(() -> new ServiceException(ErrorCode.MEMBER_NOT_FOUND));
 
 		CustomUserDetails userDetails = new CustomUserDetails(member);
 

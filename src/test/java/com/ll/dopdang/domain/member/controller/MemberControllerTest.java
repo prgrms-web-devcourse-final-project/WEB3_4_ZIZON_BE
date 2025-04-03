@@ -17,22 +17,26 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ll.dopdang.domain.member.dto.request.LoginRequest;
+import com.ll.dopdang.domain.member.dto.request.UpdateProfileRequest;
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.entity.MemberRole;
 import com.ll.dopdang.domain.member.entity.MemberStatus;
 import com.ll.dopdang.domain.member.repository.MemberRepository;
+import com.ll.dopdang.global.exception.ErrorCode;
+import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.global.redis.repository.RedisRepository;
 import com.ll.dopdang.global.sms.service.CoolSmsService;
+import com.ll.dopdang.standard.util.JwtUtil;
 
 import jakarta.servlet.http.Cookie;
 
@@ -49,9 +53,11 @@ class MemberControllerTest {
 	private ObjectMapper objectMapper;
 	@Autowired
 	private PasswordEncoder passwordEncoder;
-	@MockitoBean
+	@Autowired
+	private JwtUtil jwtUtil;
+	@MockBean
 	private RedisRepository redisRepository;
-	@MockitoBean
+	@MockBean
 	private CoolSmsService coolSmsService;
 
 	@BeforeEach
@@ -63,6 +69,7 @@ class MemberControllerTest {
 			.name("test1")
 			.profileImage("")
 			.memberId("test1@test.com")
+			.phone("")
 			.userRole(MemberRole.CLIENT.toString())
 			.status(MemberStatus.ACTIVE.toString())
 			.build();
@@ -72,6 +79,7 @@ class MemberControllerTest {
 			.name("test2")
 			.profileImage("")
 			.memberId("test2@test.com")
+			.phone("")
 			.userRole(MemberRole.CLIENT.toString())
 			.status(MemberStatus.ACTIVE.toString())
 			.build();
@@ -81,6 +89,7 @@ class MemberControllerTest {
 			.name("test3")
 			.profileImage("")
 			.memberId("test3@test.com")
+			.phone("")
 			.userRole(MemberRole.CLIENT.toString())
 			.status(MemberStatus.DEACTIVATED.toString())
 			.build();
@@ -222,6 +231,118 @@ class MemberControllerTest {
 		mvc.perform(post("/users/logout")
 				.contentType(MediaType.APPLICATION_JSON))
 			.andExpect(status().isBadRequest())
+			.andDo(print());
+	}
+
+	@Test
+	@DisplayName("프로필 조회 테스트")
+	void test8() throws Exception {
+		MvcResult loginResult = mvc.perform(post("/users/login")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(new LoginRequest("test1@test.com", "test1234!"))))
+			.andExpect(status().isOk())
+			.andDo(print())
+			.andReturn();
+
+		Cookie[] cookies = loginResult.getResponse().getCookies();
+		assertNotNull(cookies, "로그인 응답에 쿠키가 없습니다.");
+		assertTrue(cookies.length > 0, "로그인 응답에 쿠키가 없습니다.");
+
+		Cookie accessTokenCookie = Arrays.stream(cookies)
+			.filter(cookie -> cookie.getName().equals("accessToken"))
+			.findFirst()
+			.orElseThrow(() -> new RuntimeException("액세스 토큰 쿠키를 찾을 수 없습니다."));
+
+		String accessTokenValue = accessTokenCookie.getValue();
+		assertFalse("액세스 토큰이 비어있습니다.", accessTokenValue.isEmpty());
+
+		Long userId = jwtUtil.getUserId(accessTokenValue);
+
+		mvc.perform(get("/users/{user_id}", userId)
+				.cookie(accessTokenCookie)
+				.contentType(MediaType.APPLICATION_JSON))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.name").value("test1"))
+			.andExpect(jsonPath("$.email").value("test1@test.com"))
+			.andExpect(jsonPath("$.phone").value(""))
+			.andExpect(jsonPath("$.profileImage").value(""))
+			.andDo(print())
+			.andReturn();
+	}
+
+	@Test
+	@DisplayName("프로필 조회 테스트 - 다른 사용자의 접근")
+	void test9() throws Exception {
+		Member member2 = memberRepository.findByEmail("test2@test.com")
+			.orElseThrow(() -> new RuntimeException("테스트 사용자를 찾을 수 없습니다."));
+		Long otherUserId = member2.getId();
+
+		MvcResult loginResult = mvc.perform(post("/users/login")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(new LoginRequest("test1@test.com", "test1234!"))))
+			.andExpect(status().isOk())
+			.andDo(print())
+			.andReturn();
+
+		Cookie accessTokenCookie = Arrays.stream(loginResult.getResponse().getCookies())
+			.filter(cookie -> "accessToken".equals(cookie.getName()))
+			.findFirst()
+			.orElseThrow(() -> new RuntimeException("액세스 토큰 쿠키를 찾을 수 없습니다."));
+
+		mvc.perform(get("/users/{user_id}", otherUserId)
+				.cookie(accessTokenCookie)
+				.contentType(MediaType.APPLICATION_JSON))
+			.andExpect(status().isUnauthorized())
+			.andExpect(jsonPath("$.message").value("인증되지 않은 유저입니다."))
+			.andExpect(jsonPath("$.status").value(401))
+			.andDo(print())
+			.andReturn();
+	}
+
+	@Test
+	@DisplayName("프로필 수정 테스트")
+	void test10() throws Exception {
+		MvcResult loginResult = mvc.perform(post("/users/login")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(new LoginRequest("test1@test.com", "test1234!"))))
+			.andExpect(status().isOk())
+			.andDo(print())
+			.andReturn();
+
+		Cookie[] cookies = loginResult.getResponse().getCookies();
+		assertNotNull(cookies, "로그인 응답에 쿠키가 없습니다.");
+		assertTrue(cookies.length > 0, "로그인 응답에 쿠키가 없습니다.");
+
+		Cookie accessTokenCookie = Arrays.stream(cookies)
+			.filter(cookie -> cookie.getName().equals("accessToken"))
+			.findFirst()
+			.orElseThrow(() -> new RuntimeException("액세스 토큰 쿠키를 찾을 수 없습니다."));
+
+		String accessTokenValue = accessTokenCookie.getValue();
+		assertFalse("액세스 토큰이 비어있습니다.", accessTokenValue.isEmpty());
+
+		String newName = "update1";
+		String newProfile = "update1234!";
+
+		Long userId = jwtUtil.getUserId(accessTokenValue);
+		mvc.perform(patch("/users/{user_id}", userId)
+				.cookie(accessTokenCookie)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(new UpdateProfileRequest(newName, newProfile))))
+			.andExpect(status().isOk())
+			.andDo(print())
+			.andReturn();
+
+		Member member = memberRepository.findById(userId)
+			.orElseThrow(() -> new ServiceException(ErrorCode.MEMBER_NOT_FOUND));
+		assertEquals("이름이 변경되지 않음", newName, member.getName());
+
+		mvc.perform(get("/users/{user_id}", userId)
+				.cookie(accessTokenCookie)
+				.contentType(MediaType.APPLICATION_JSON))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.name").value(newName))
+			.andExpect(jsonPath("$.profileImage").value(newProfile))
 			.andDo(print());
 	}
 }

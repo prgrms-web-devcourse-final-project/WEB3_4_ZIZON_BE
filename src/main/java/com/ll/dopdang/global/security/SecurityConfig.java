@@ -162,19 +162,15 @@ public class SecurityConfig {
 			.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 			.addFilterBefore(jwtAuthorizationFilter, UsernamePasswordAuthenticationFilter.class)
 			.exceptionHandling(exception -> exception
-				.authenticationEntryPoint((request, response, authException) -> {
-					AuthResponseUtil.failLogin(
-						response, ResponseEntity.badRequest().build(), HttpServletResponse.SC_UNAUTHORIZED,
-						objectMapper
-					);
-				}))
+				.authenticationEntryPoint((request, response, authException) -> AuthResponseUtil.failLogin(
+					response, (ResponseEntity<?>)ResponseEntity.badRequest(), HttpServletResponse.SC_UNAUTHORIZED,
+					objectMapper
+				)))
 			.exceptionHandling(exception -> exception
-				.accessDeniedHandler((request, response, authException) -> {
-					AuthResponseUtil.failLogin(
-						response, (ResponseEntity<?>)ResponseEntity.badRequest(), HttpServletResponse.SC_FORBIDDEN,
-						objectMapper
-					);
-				}))
+				.accessDeniedHandler((request, response, authException) -> AuthResponseUtil.failLogin(
+					response, (ResponseEntity<?>)ResponseEntity.badRequest(), HttpServletResponse.SC_FORBIDDEN,
+					objectMapper
+				)))
 			.logout(logout -> logout
 				.logoutUrl("/users/logout")
 				.addLogoutHandler(new JwtLogoutHandler(tokenService, tokenManagementService))
@@ -201,7 +197,7 @@ public class SecurityConfig {
 			Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
 		);
 
-		// CORS 설정 (필요한 경우 클라이언트 도메인을 추가)
+		// CORS 설정
 		configuration.setAllowedOrigins(
 			List.of("http://localhost:8080", "http://localhost:3000")
 		);

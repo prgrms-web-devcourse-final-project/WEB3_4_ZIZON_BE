@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ll.dopdang.domain.member.entity.Member;
-import com.ll.dopdang.domain.member.repository.MemberRepository;
 import com.ll.dopdang.global.security.oauth2.dto.OAuthAttributes;
 
 import lombok.RequiredArgsConstructor;
@@ -28,14 +27,8 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
-	/**
-	 * 소셜 유저 변환 서비스
-	 */
 	private final OAuthUserConverter oAuthUserConverter;
-	/**
-	 * 유저 레포지터리
-	 */
-	private final MemberRepository memberRepository;
+	private final OAuth2UserSaveService oAuth2UserSaveService;
 
 	/**
 	 * 소셜 로그인 유저의 정보를 Member 테이블에 맞게 변환
@@ -56,7 +49,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 			OAuthAttributes attributes = oAuthUserConverter.convert(registrationId, userNameAttributeName,
 				oauth2User.getAttributes());
 
-			Member user = saveOrUpdate(attributes);
+			Member user = oAuth2UserSaveService.saveIfNotExist(attributes);
 			log.info("OAuth2 로그인 사용자 정보: id={}, email={}, name={}", user.getId(), user.getEmail(), user.getName());
 
 			Map<String, Object> updatedAttributes = new HashMap<>(attributes.getAttributes());
@@ -76,51 +69,5 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 			);
 			throw new OAuth2AuthenticationException(oauth2Error, e);
 		}
-	}
-
-	/**
-	 * 소셜 로그인 시 정보를 저장 혹은 업데이트 하는 메서드
-	 * @param attributes 유저 정보
-	 * @return {@link Member}
-	 */
-	@Transactional
-	protected Member saveOrUpdate(OAuthAttributes attributes) {
-		Member user = null;
-
-		if ("kakao".equals(attributes.getProvider()) && attributes.getMemberId() != null) {
-			user = memberRepository.findByMemberId(attributes.getMemberId())
-				.map(entity -> entity.update(attributes.getName(), attributes.getProfileImage()))
-				.orElse(null);
-		} else if ("google".equals(attributes.getProvider()) && attributes.getMemberId() != null) {
-			user = memberRepository.findByMemberId(attributes.getMemberId())
-				.map(entity -> entity.update(attributes.getName(), attributes.getProfileImage()))
-				.orElse(null);
-		} else if ("naver".equals(attributes.getProvider()) && attributes.getMemberId() != null) {
-			user = memberRepository.findByMemberId(attributes.getMemberId())
-				.map(entity -> entity.update(attributes.getName(), attributes.getProfileImage()))
-				.orElse(null);
-		}
-
-		if (user == null && attributes.getEmail() != null) {
-			user = memberRepository.findByEmail(attributes.getEmail())
-				.map(entity -> {
-					if ("kakao".equals(attributes.getProvider()) && entity.getMemberId() == null) {
-						entity.assignMemberId(attributes.getMemberId());
-					} else if ("google".equals(attributes.getProvider()) && entity.getMemberId() == null) {
-						entity.assignMemberId(attributes.getMemberId());
-					} else if ("naver".equals(attributes.getProvider()) && entity.getMemberId() == null) {
-						entity.assignMemberId(attributes.getMemberId());
-					}
-					return entity.update(attributes.getName(), attributes.getProfileImage());
-				})
-				.orElse(null);
-		}
-
-		if (user == null) {
-			user = attributes.toEntity();
-		}
-
-		Member savedUser = memberRepository.save(user);
-		return savedUser;
 	}
 }

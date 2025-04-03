@@ -20,7 +20,7 @@ spring:
   logging:
     level:
       root: DEBUG
-
+      
   data:
     redis:
       host: ${REDIS_HOST}

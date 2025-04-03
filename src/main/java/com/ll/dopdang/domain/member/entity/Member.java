@@ -121,26 +121,6 @@ public class Member {
 	}
 
 	/**
-	 * 소셜 로그인 시, 내용을 업데이트 하기 위한 메서드
-	 * @param name 유저 이름
-	 * @param profileImage 유저 프로필 사진
-	 * @return {@link Member}
-	 */
-	public Member update(String name, String profileImage) {
-		this.name = name;
-		this.profileImage = profileImage;
-		return this;
-	}
-
-	/**
-	 * 소셜 ID를 설정하기 위한 메서드
-	 * @param memberId 소셜 ID
-	 */
-	public void assignMemberId(String memberId) {
-		this.memberId = memberId;
-	}
-
-	/**
 	 * 유저를 활성화 상태로 설정하는 메서드
 	 */
 	public void activateMember() {

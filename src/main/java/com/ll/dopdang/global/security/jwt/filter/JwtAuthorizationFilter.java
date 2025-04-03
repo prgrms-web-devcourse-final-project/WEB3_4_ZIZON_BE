@@ -18,7 +18,6 @@ import com.ll.dopdang.global.security.jwt.service.TokenManagementService;
 import com.ll.dopdang.standard.util.AuthResponseUtil;
 import com.ll.dopdang.standard.util.JwtUtil;
 
-import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -132,12 +131,6 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
 			SecurityContextHolder.getContext().setAuthentication(authentication);
 			filterChain.doFilter(req, resp);
-		} catch (ExpiredJwtException e) {
-			AuthResponseUtil.failLogin(
-				resp,
-				ResponseEntity.badRequest().build(),
-				HttpServletResponse.SC_UNAUTHORIZED,
-				objectMapper);
 		} catch (JwtException e) {
 			AuthResponseUtil.failLogin(
 				resp,

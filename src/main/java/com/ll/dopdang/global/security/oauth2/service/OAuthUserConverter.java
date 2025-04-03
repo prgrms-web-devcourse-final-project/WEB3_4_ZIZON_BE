@@ -26,7 +26,7 @@ public class OAuthUserConverter {
 		} else if ("google".equals(registrationId)) {
 			return ofGoogle(userNameAttributeName, attributes);
 		} else if ("naver".equals(registrationId)) {
-			return ofNaver(userNameAttributeName, attributes);
+			return ofNaver(attributes);
 		}
 		throw new OAuth2AuthenticationException("해당 소셜 로그인은 지원하지 않습니다.");
 	}
@@ -69,11 +69,10 @@ public class OAuthUserConverter {
 
 	/**
 	 * 네이버 유저 변환
-	 * @param userNameAttributeName 소셜 로그인 고유 ID
 	 * @param attributes 소셜 로그인 유저 정보
 	 * @return {@link OAuthAttributes}
 	 */
-	private OAuthAttributes ofNaver(String userNameAttributeName, Map<String, Object> attributes) {
+	private OAuthAttributes ofNaver(Map<String, Object> attributes) {
 		Map<String, Object> response = (Map<String, Object>)attributes.get("response");
 
 		return OAuthAttributes.builder()
