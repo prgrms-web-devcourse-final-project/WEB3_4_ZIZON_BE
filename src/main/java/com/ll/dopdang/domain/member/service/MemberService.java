@@ -3,7 +3,9 @@ package com.ll.dopdang.domain.member.service;
 import java.time.LocalDateTime;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ll.dopdang.domain.member.dto.request.MemberSignupRequest;
@@ -16,6 +18,7 @@ import com.ll.dopdang.domain.member.repository.MemberRepository;
 import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.global.redis.repository.RedisRepository;
+import com.ll.dopdang.global.redis.repository.RedisRepository;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
 
 import lombok.RequiredArgsConstructor;
@@ -26,10 +29,17 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class MemberService {
+
 	private final MemberRepository memberRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final RedisRepository redisRepository;
 	private final MemberUtilService memberUtilService;
+
+	// Todo: MemberUtilService의 findMember() 사용하도록 코드 수정
+	public Member getMemberById(Long id) {
+		return memberRepository.findById(id)
+			.orElseThrow(() -> new ServiceException(ErrorCode.MEMBER_NOT_FOUND));
+	}
 
 	/**
 	 * 회원가입 메서드
