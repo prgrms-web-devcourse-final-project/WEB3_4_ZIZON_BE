@@ -48,6 +48,9 @@ public enum ErrorCode {
 	// 전문가 관련 에러
 	EXPERT_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 전문가입니다."),
 	INVALID_EXPERT_ASSIGNMENT(HttpStatus.BAD_REQUEST, "지정된 전문가 정보를 확인할 수 없습니다."),
+	// 프로젝트 관련 에러
+	PROJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "프로젝트를 찾을 수 없습니다."),
+	INVALID_PROJECT_STATUS(HttpStatus.BAD_REQUEST, "프로젝트 상태 값이 올바르지 않습니다."),
 	// S3 Presigned URL 생성 관련
 	PRESIGNED_URL_CREATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Presigned URL 생성 중 알 수 없는 오류가 발생했습니다."),
 	INVALID_S3_REQUEST(HttpStatus.BAD_REQUEST, "잘못된 요청으로 인해 S3 Presigned URL 생성에 실패했습니다."),
