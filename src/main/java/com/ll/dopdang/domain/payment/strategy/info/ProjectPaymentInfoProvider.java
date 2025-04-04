@@ -42,6 +42,7 @@ public class ProjectPaymentInfoProvider implements PaymentOrderInfoProvider {
 		additionalInfo.put("endDate", contract.getEndDate());
 		additionalInfo.put("project", project);
 		additionalInfo.put("contract", contract);
+		additionalInfo.put("expert", contract.getExpert());
 
 		return additionalInfo;
 	}
