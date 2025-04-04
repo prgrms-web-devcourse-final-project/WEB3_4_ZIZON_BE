@@ -71,6 +71,7 @@ public class Payment {
 	@Column(name = "total_price", precision = 10, scale = 2)
 	private BigDecimal totalPrice;
 
+	@Deprecated
 	@Column(name = "total_fee", precision = 10, scale = 2)
 	private BigDecimal totalFee;
 
