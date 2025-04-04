@@ -151,6 +151,7 @@ public class MemberController {
 		@AuthenticationPrincipal CustomUserDetails customUserDetails) {
 		memberService.deleteMember(userId, customUserDetails);
 		return ResponseEntity.ok("회원 탈퇴가 정상적으로 처리되었습니다.");
+	}
 
 	@GetMapping("/me")
 	public ResponseEntity<MemberInfoResponse> getCurrentUser(
