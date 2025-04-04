@@ -1,18 +1,20 @@
 package com.ll.dopdang.global.s3;
 
-import lombok.RequiredArgsConstructor;
+import java.net.URL;
+import java.time.Duration;
+
 import org.springframework.stereotype.Service;
+
+import com.ll.dopdang.global.exception.ErrorCode;
+import com.ll.dopdang.global.exception.PresignedUrlException;
+
+import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
-import java.net.URL;
-import java.time.Duration;
-
-import com.ll.dopdang.global.exception.ErrorCode;
-import com.ll.dopdang.global.exception.PresignedUrlException;
 
 /**
  * S3 Presigned URL 생성을 담당하는 서비스
@@ -54,7 +56,7 @@ public class S3Service {
 	 *        ContentType: 업로드할 이미지 파일의 MIME 타입 (ex. "image/jpeg")
 	 * @return 프론트에서 사용할 수 있는 미리 서명된 업로드 URL
 	 */
-	private URL generatePresignedUrl(String key,String contentType) {
+	private URL generatePresignedUrl(String key, String contentType) {
 		// try-with-resources 문으로 S3Presigner 객체를 자동으로 닫음
 		try (S3Presigner presigner = S3Presigner.builder()
 			.region(Region.AP_NORTHEAST_2)
@@ -83,17 +85,19 @@ public class S3Service {
 			throw new PresignedUrlException(ErrorCode.PRESIGNED_URL_CREATION_FAILED);
 		}
 	}
+
 	/**
 	 * S3Exception을 ErrorCode로 매핑해주는 도우미 메서드
 	 */
-	private PresignedUrlException convertS3Exception(S3Exception e) {
-		String code = e.awsErrorDetails().errorCode();
+	private PresignedUrlException convertS3Exception(S3Exception exception) {
+		String code = exception.awsErrorDetails().errorCode();
 		return switch (code) {
 			case "AccessDenied" -> new PresignedUrlException(ErrorCode.S3_ACCESS_DENIED);
 			case "NoSuchBucket" -> new PresignedUrlException(ErrorCode.S3_BUCKET_NOT_FOUND);
 			default -> new PresignedUrlException(ErrorCode.INVALID_S3_REQUEST);
 		};
 	}
+
 	/**
 	 * S3에 저장할 프로젝트 이미지의 Key(파일 경로)를 생성합니다.
 	 * 예시 결과: "projects/42/image1.png"
@@ -105,6 +109,7 @@ public class S3Service {
 	private String buildProjectImageKey(Long projectId, String fileName) {
 		return String.format("projects/%d/%s", projectId, fileName);
 	}
+
 	/**
 	 * S3에 저장할 회원 프로필 이미지의 Key(파일 경로)를 생성합니다.
 	 * 예시 결과: "members/profile/42/profile.png"

@@ -25,17 +25,17 @@ public class GlobalExceptionHandler {
 	/**
 	 * ServiceException 처리를 위한 핸들러
 	 *
-	 * @param e ServiceException
+	 * @param exception ServiceException
 	 * @return 에러 응답
 	 */
 	@ExceptionHandler(ServiceException.class)
-	public ResponseEntity<ErrorResponse> handleServiceException(ServiceException e) {
-		log.error("ServiceException 발생: {}", e.getMessage());
+	public ResponseEntity<ErrorResponse> handleServiceException(ServiceException exception) {
+		log.error("ServiceException 발생: {}", exception.getMessage());
 
-		ErrorCode errorCode = e.getErrorCode();
+		ErrorCode errorCode = exception.getErrorCode();
 		ErrorResponse response = ErrorResponse.builder()
 			.status(errorCode.getStatus().value())
-			.message(e.getMessage())
+			.message(exception.getMessage())
 			.timestamp(LocalDateTime.now())
 			.build();
 
@@ -47,22 +47,23 @@ public class GlobalExceptionHandler {
 	 * 날짜 형식 오류에 대한 명확한 메시지 제공
 	 */
 	@ExceptionHandler(HttpMessageNotReadableException.class)
-	public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
-		log.error("메시지 변환 오류: {}", e.getMessage());
+	public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(
+		HttpMessageNotReadableException exception) {
+		log.error("메시지 변환 오류: {}", exception.getMessage());
 
 		String message = "요청 본문을 처리할 수 없습니다.";
 
 		// 날짜 형식 오류 처리
-		if (e.getCause() instanceof InvalidFormatException ife) {
+		if (exception.getCause() instanceof InvalidFormatException ife) {
 			if (ife.getTargetType() != null
 				&& (ife.getTargetType().equals(LocalDateTime.class)
 				|| ife.getTargetType().equals(LocalDate.class))) {
 				message = "날짜 형식이 올바르지 않습니다. 'yyyy-MM-dd' 또는 'yyyy-MM-dd'T'HH:mm:ss' 형식을 사용해주세요.";
 			}
-		} else if (e.getCause() instanceof IllegalArgumentException
-			&& e.getCause().getMessage() != null
-			&& e.getCause().getMessage().contains("날짜 형식이 올바르지 않습니다")) {
-			message = e.getCause().getMessage();
+		} else if (exception.getCause() instanceof IllegalArgumentException
+			&& exception.getCause().getMessage() != null
+			&& exception.getCause().getMessage().contains("날짜 형식이 올바르지 않습니다")) {
+			message = exception.getCause().getMessage();
 		}
 
 		ErrorResponse response = ErrorResponse.builder()
@@ -78,8 +79,8 @@ public class GlobalExceptionHandler {
 	 * 입력값 검증 실패 예외 처리
 	 */
 	@ExceptionHandler({MethodArgumentNotValidException.class, BindException.class})
-	public ResponseEntity<ErrorResponse> handleValidationException(Exception e) {
-		log.error("입력값 검증 실패: {}", e.getMessage());
+	public ResponseEntity<ErrorResponse> handleValidationException(Exception exception) {
+		log.error("입력값 검증 실패: {}", exception.getMessage());
 
 		ErrorResponse response = ErrorResponse.builder()
 			.status(HttpStatus.BAD_REQUEST.value())
@@ -93,12 +94,12 @@ public class GlobalExceptionHandler {
 	/**
 	 * 기타 예외 처리를 위한 핸들러
 	 *
-	 * @param e Exception
+	 * @param exception Exception
 	 * @return 에러 응답
 	 */
 	@ExceptionHandler(Exception.class)
-	public ResponseEntity<ErrorResponse> handleException(Exception e) {
-		log.error("예외 발생: {}", e.getMessage(), e);
+	public ResponseEntity<ErrorResponse> handleException(Exception exception) {
+		log.error("예외 발생: {}", exception.getMessage(), exception);
 
 		ErrorResponse response = ErrorResponse.builder()
 			.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
