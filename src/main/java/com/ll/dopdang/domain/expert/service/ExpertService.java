@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * 전문가 관련 비즈니스 로직을 처리하는 서비스 클래스.
@@ -31,7 +30,6 @@ public class ExpertService {
     private final MemberRepository memberRepository;
     private final CategoryRepository categoryRepository;
     private final ExpertCategoryRepository expertCategoryRepository;
-    //private final CertificationApiService certificationApiService;
 
     /**
      * 전문가를 등록합니다.
