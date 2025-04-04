@@ -41,7 +41,7 @@ public class Expert {
 
 	private String certification;
 
-	private Boolean gender; // 0 남자 1 여자
+	//private Boolean gender; // 0 남자 1 여자
 
 	@Column(nullable = false, length = 100)
 	private String bankName; // 은행명
@@ -49,7 +49,7 @@ public class Expert {
 	@Column(nullable = false, length = 100)
 	private String accountNumber; // 계좌번호
 
-	private boolean isAvailability;
+	private boolean availability;
 
 	private String sellerInfo;
 }
