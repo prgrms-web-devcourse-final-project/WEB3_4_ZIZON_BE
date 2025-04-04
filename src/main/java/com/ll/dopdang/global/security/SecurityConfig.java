@@ -108,14 +108,9 @@ public class SecurityConfig {
 		return provider;
 	}
 
-	/**
-	 * 권한이 필요 없는 공개 URL 리스트
-	 */
 	private static final Map<HttpMethod, List<String>> PUBLIC_URLS = new HashMap<>();
 
-	/**
-	 * 권한이 필요 없는 공개 URL 리스트
-	 */
+	//권한이 필요 없는 공개 URL 리스트
 	static {
 		PUBLIC_URLS.put(HttpMethod.GET, Arrays.asList(
 			"/h2-console/**",
@@ -124,7 +119,9 @@ public class SecurityConfig {
 			"/login/oauth2/code/naver",
 			"/oauth2/authorization/kakao",
 			"/oauth2/authorization/google",
-			"/oauth2/authorization/naver"
+			"/oauth2/authorization/naver",
+			"/swagger-ui/**",
+			"/api-docs/**"
 		));
 		PUBLIC_URLS.put(HttpMethod.POST, Arrays.asList(
 			"/users/login",
