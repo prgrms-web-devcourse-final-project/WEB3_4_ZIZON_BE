@@ -8,7 +8,7 @@ import java.util.List;
 @Getter
 @NoArgsConstructor
 public class ExpertUpdateRequestDto {
-    private String mainCategoryName; // 대분류 카테고리 이름 (Optional)
+    private String categoryName; // 대분류 카테고리 이름 (Optional)
     private List<String> subCategoryNames; // 소분류 카테고리 이름 리스트 (Optional)
     private int careerYears; // 경력 연수
     private String certification; // 자격증 정보 (Optional)

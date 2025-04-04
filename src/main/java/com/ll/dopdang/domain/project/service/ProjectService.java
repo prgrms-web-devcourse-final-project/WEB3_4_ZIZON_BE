@@ -5,8 +5,8 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import com.ll.dopdang.domain.category.entity.Category;
-import com.ll.dopdang.domain.category.repository.CategoryRepository;
+import com.ll.dopdang.domain.expert.category.entity.Category;
+import com.ll.dopdang.domain.expert.category.repository.CategoryRepository;
 import com.ll.dopdang.domain.expert.entity.Expert;
 import com.ll.dopdang.domain.expert.repository.ExpertRepository;
 import com.ll.dopdang.domain.member.entity.Member;

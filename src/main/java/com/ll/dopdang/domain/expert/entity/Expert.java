@@ -1,8 +1,8 @@
 package com.ll.dopdang.domain.expert.entity;
 
 
-import com.ll.dopdang.domain.category.entity.Category;
-import com.ll.dopdang.domain.category.entity.ExpertCategory;
+import com.ll.dopdang.domain.expert.category.entity.Category;
+import com.ll.dopdang.domain.expert.category.entity.ExpertCategory;
 import com.ll.dopdang.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -29,8 +29,8 @@ public class Expert {
     private Member member; // 해당 전문가와 연결된 회원 정보
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "main_category_id", nullable = false)
-    private Category mainCategory; // 전문가의 대분류 카테고리
+    @JoinColumn(name = "category_id", nullable = false)
+    private Category category; // 전문가의 대분류 카테고리
 
     @OneToMany(mappedBy = "expert", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -55,7 +55,7 @@ public class Expert {
     private String accountNumber; // 계좌번호
 
     @Column
-    private boolean isAvailability = false; ; // 활동 가능 여부
+    private boolean Availability = false; ; // 활동 가능 여부
 
     @Column(length = 300)
     private String sellerInfo; // 판매자 관련 정보 (Optional

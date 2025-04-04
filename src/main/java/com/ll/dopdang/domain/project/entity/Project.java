@@ -3,7 +3,7 @@ package com.ll.dopdang.domain.project.entity;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import com.ll.dopdang.domain.category.entity.Category;
+import com.ll.dopdang.domain.expert.category.entity.Category;
 import com.ll.dopdang.domain.expert.entity.Expert;
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.global.entity.BaseEntity;
