@@ -1,7 +1,9 @@
 package com.ll.dopdang.domain.member.controller;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ll.dopdang.domain.member.dto.request.MemberSignupRequest;
 import com.ll.dopdang.domain.member.dto.request.UpdateProfileRequest;
 import com.ll.dopdang.domain.member.dto.request.VerifyCodeRequest;
+import com.ll.dopdang.domain.member.dto.response.MemberInfoResponse;
 import com.ll.dopdang.domain.member.dto.response.ProfileResponse;
 import com.ll.dopdang.domain.member.service.MemberService;
 import com.ll.dopdang.domain.member.service.MemberUtilService;
@@ -23,6 +26,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -34,6 +38,7 @@ import lombok.RequiredArgsConstructor;
  *
  * @author sungyeong98
  */
+@Tag(name = "사용자 API", description = "일반 사용자 관련 API 입니다.")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/users")
@@ -50,7 +55,6 @@ public class MemberController {
 		summary = "회원 가입",
 		description = "휴대폰 인증 코드가 없으면 인증 요청을 먼저 수행하고, 있으면 회원 가입을 완료합니다."
 	)
-
 	@ApiResponse(responseCode = "200", description = "회원 가입 또는 인증 요청 성공")
 	@ApiResponse(responseCode = "400", description = "잘못된 요청", content = @Content)
 	@PostMapping("/signup")
@@ -137,5 +141,28 @@ public class MemberController {
 	) {
 		memberService.updateMember(userId, req, customUserDetails);
 		return ResponseEntity.ok("수정을 완료하였습니다.");
+	}
+
+	@DeleteMapping("/{user_id}")
+	public ResponseEntity<Object> deleteMember(
+		@PathVariable("user_id") Long userId,
+		@AuthenticationPrincipal CustomUserDetails customUserDetails) {
+		memberService.deleteMember(userId, customUserDetails);
+		return ResponseEntity.ok("회원 탈퇴가 정상적으로 처리되었습니다.");
+	}
+
+	@GetMapping("/me")
+	public ResponseEntity<MemberInfoResponse> getCurrentUser(
+		@AuthenticationPrincipal CustomUserDetails customUserDetails) {
+		if (customUserDetails == null) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+		}
+		MemberInfoResponse response = new MemberInfoResponse(
+			customUserDetails.getMember().getId(),
+			customUserDetails.getUsername(),
+			customUserDetails.getMember().getName()
+		);
+		return ResponseEntity.ok(response);
+
 	}
 }
