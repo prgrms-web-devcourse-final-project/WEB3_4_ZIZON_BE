@@ -23,11 +23,10 @@ import com.ll.dopdang.global.security.custom.CustomUserDetails;
 import com.ll.dopdang.global.sms.dto.SmsVerificationResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
-
-import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -143,7 +142,6 @@ public class MemberController {
 		memberService.updateMember(userId, req, customUserDetails);
 		return ResponseEntity.ok("수정을 완료하였습니다.");
 	}
-
 
 	@DeleteMapping("/{user_id}")
 	public ResponseEntity<Object> deleteMember(

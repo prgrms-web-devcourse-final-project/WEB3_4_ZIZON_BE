@@ -4,17 +4,19 @@ import java.util.Optional;
 
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import com.ll.dopdang.domain.member.entity.Member;
 
 /**
  * MemberRepository
  */
+@Repository
 public interface MemberRepository extends JpaRepository<Member, Long> {
 	/**
 	 * 이메일을 통한 유저 검색
 	 * @param email 이메일
-	 * @return {@link Optional<Member>}
+	 * @return {@link Optional <Member>}
 	 */
 	Optional<Member> findByEmail(String email);
 

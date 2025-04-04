@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ruleset name="quickstart"
+<ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         name="quickstart"
          xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
     <description>Custom ruleset for PMD</description>
 
@@ -12,7 +12,7 @@
     <rule ref="category/java/bestpractices.xml"/>
     <!-- <rule ref="category/java/codestyle.xml"/> --> <!-- Checkstyle로 대체 -->
     <rule ref="category/java/design.xml"/>
-    <rule ref="category/java/documentation.xml"/>
+    <!-- <rule ref="category/java/documentation.xml"/> --> <!-- 필드, 클래스, 메서드 등에 주석이 없으면 경고 발생 -->
     <!-- <rule ref="category/java/errorprone.xml"/> --> <!-- SpotBugs로 대체 -->
     <rule ref="category/java/multithreading.xml"/>
     <rule ref="category/java/performance.xml"/>

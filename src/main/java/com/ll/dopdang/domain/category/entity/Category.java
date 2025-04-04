@@ -1,5 +1,11 @@
 package com.ll.dopdang.domain.category.entity;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+import com.ll.dopdang.domain.expert.entity.Expert;
+import com.ll.dopdang.domain.project.entity.Project;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -7,8 +13,10 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,6 +24,7 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
+@Table(name = "category")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -23,21 +32,31 @@ public class Category {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "id", nullable = false)
 	private Long id;
 
-	@ManyToOne
-	@JoinColumn(name = "parent_id")
-	private Category parent;
+	@Column(name = "parent_id")
+	private Long parentId;
 
-	@Column(nullable = false, length = 100)
+	@Size(max = 100)
+	@NotNull
+	@Column(name = "name", nullable = false, length = 100)
 	private String name;
 
-	@Column(nullable = false)
-	private boolean level;
+	@Column(name = "level", nullable = false)
+	private Boolean level;
 
+	/**
+	 * 카테고리 유형 (PROJECT, PRODUCT, PROVISION)
+	 */
 	@Enumerated(EnumType.STRING)
 	@Column(name = "category_type", nullable = false, length = 50)
 	private CategoryType categoryType;
 
-}
+	@OneToMany(mappedBy = "category")
+	private Set<Expert> experts = new LinkedHashSet<>();
 
+	@OneToMany(mappedBy = "category")
+	private Set<Project> projects = new LinkedHashSet<>();
+
+}
