@@ -34,11 +34,14 @@ public class ProjectPaymentInfoProvider implements PaymentOrderInfoProvider {
 		Map<String, Object> additionalInfo = new HashMap<>();
 
 		// 계약 정보 추가
+		additionalInfo.put("title", project.getTitle());
 		additionalInfo.put("expertName", contract.getExpert().getName());
 		additionalInfo.put("category", project.getCategory().getName());
 		additionalInfo.put("price", contract.getPrice());
 		additionalInfo.put("startDate", contract.getStartDate());
 		additionalInfo.put("endDate", contract.getEndDate());
+		additionalInfo.put("project", project);
+		additionalInfo.put("contract", contract);
 
 		return additionalInfo;
 	}

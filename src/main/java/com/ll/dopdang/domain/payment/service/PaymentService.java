@@ -9,7 +9,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ll.dopdang.domain.member.entity.Member;
@@ -17,6 +20,7 @@ import com.ll.dopdang.domain.payment.client.TossPaymentClient;
 import com.ll.dopdang.domain.payment.dto.PaymentOrderInfo;
 import com.ll.dopdang.domain.payment.dto.PaymentResultResponse;
 import com.ll.dopdang.domain.payment.entity.Payment;
+import com.ll.dopdang.domain.payment.entity.PaymentManipulationDetail;
 import com.ll.dopdang.domain.payment.entity.PaymentMetadata;
 import com.ll.dopdang.domain.payment.entity.PaymentStatus;
 import com.ll.dopdang.domain.payment.entity.PaymentType;
@@ -25,10 +29,13 @@ import com.ll.dopdang.domain.payment.strategy.info.PaymentInfoProviderFactory;
 import com.ll.dopdang.domain.payment.strategy.saver.PaymentSaverFactory;
 import com.ll.dopdang.domain.payment.strategy.validator.PaymentValidatorFactory;
 import com.ll.dopdang.domain.payment.util.TossPaymentUtils;
+import com.ll.dopdang.domain.project.entity.Contract;
 import com.ll.dopdang.global.exception.ErrorCode;
+import com.ll.dopdang.global.exception.PaymentAmountManipulationException;
 import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.global.redis.repository.RedisRepository;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -110,7 +117,7 @@ public class PaymentService {
 	 * @param orderId 주문 ID
 	 * @param amount 결제 금액
 	 */
-	@Transactional
+	// 해당 메서드에 @Transactional을 붙일 경우 결제 금액 검증이 실패했을 때 데이터 저장 안됨. 각 메서드에 트랜잭션 붙일 것.
 	public Payment confirmPayment(String paymentKey, String orderId, BigDecimal amount) {
 		log.info("결제 승인 요청: paymentKey={}, orderId={}, amount={}", paymentKey, orderId, amount);
 
@@ -208,14 +215,23 @@ public class PaymentService {
 
 	/**
 	 * 결제 금액이 유효한지 검증합니다.
+	 * 금액 조작이 감지되면 관련 정보를 저장합니다.
 	 *
 	 * @param paymentType 결제 유형
 	 * @param referenceId 참조 ID
 	 * @param requestAmount 결제 요청 금액
 	 */
-	private void validatePaymentAmount(PaymentType paymentType, Long referenceId, BigDecimal requestAmount) {
-		// 전략 패턴을 사용하여 결제 유형에 맞는 검증 로직 실행
-		validatorFactory.getValidator(paymentType).validateAndGetExpectedAmount(referenceId, requestAmount);
+	public void validatePaymentAmount(PaymentType paymentType, Long referenceId, BigDecimal requestAmount) {
+		try {
+			// 전략 패턴을 사용하여 결제 유형에 맞는 검증 로직 실행
+			validatorFactory.getValidator(paymentType).validateAndGetExpectedAmount(referenceId, requestAmount);
+		} catch (PaymentAmountManipulationException e) {
+			// 금액 조작이 감지된 경우 관련 정보 저장
+			savePaymentManipulationInfo(paymentType, e.getReferenceId(), e.getExpectedAmount(), e.getRequestAmount());
+
+			// 예외를 다시 던져서 호출자에게 알림
+			throw e;
+		}
 	}
 
 	/**
@@ -244,7 +260,8 @@ public class PaymentService {
 	 * @param amount 결제 금액
 	 * @param responseBody 토스페이먼츠 응답 데이터
 	 */
-	private Payment savePaymentInformation(PaymentType paymentType, Long referenceId, BigDecimal amount,
+	@Transactional
+	public Payment savePaymentInformation(PaymentType paymentType, Long referenceId, BigDecimal amount,
 		String responseBody) {
 		try {
 			// 토스페이먼츠 응답에서 paymentKey 추출
@@ -317,5 +334,83 @@ public class PaymentService {
 		// 결제 유형에 맞는 정보 제공자를 통해 응답 보강
 		return infoProviderFactory.getProvider(payment.getPaymentType())
 			.enrichPaymentResult(payment, baseResponse);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	public void savePaymentManipulationInfo(
+		PaymentType paymentType,
+		Long referenceId,
+		BigDecimal expectedAmount,
+		BigDecimal requestAmount) {
+
+		log.warn("결제 금액 조작 감지: 유형={}, 참조ID={}, 예상금액={}, 요청금액={}",
+			paymentType, referenceId, expectedAmount, requestAmount);
+
+		// 클라이언트 정보 수집
+		String ipAddress = "unknown";
+		String userAgent = "unknown";
+
+		try {
+			ServletRequestAttributes attributes = (ServletRequestAttributes)RequestContextHolder.getRequestAttributes();
+			if (attributes != null) {
+				HttpServletRequest request = attributes.getRequest();
+				ipAddress = getClientIp(request);
+				userAgent = request.getHeader("User-Agent");
+			}
+		} catch (Exception ex) {
+			log.error("클라이언트 정보 수집 중 오류 발생", ex);
+		}
+
+		try {
+			Map<String, Object> additionalInfo = infoProviderFactory.getProvider(paymentType)
+				.provideAdditionalInfo(referenceId);
+
+			Contract contract = (Contract)additionalInfo.get("contract");
+			String title = additionalInfo.get("title").toString();
+			Member member = contract.getClient();
+
+			// 결제 정보 생성
+			Payment payment = Payment.createForAmountManipulation(paymentType, referenceId, member, title);
+
+			// 조작 세부 정보 생성
+			PaymentManipulationDetail manipulationDetail = PaymentManipulationDetail.create(
+				expectedAmount, requestAmount, ipAddress, userAgent);
+
+			// Payment에 조작 세부 정보 추가
+			payment.addManipulationDetail(manipulationDetail);
+			payment.markAsManipulated();
+
+			// 저장 및 즉시 플러시
+			payment = paymentRepository.saveAndFlush(payment);
+
+			log.info("결제 금액 조작 정보 저장 완료: 결제ID={}", payment.getId());
+		} catch (Exception ex) {
+			log.error("결제 금액 조작 정보 저장 중 오류 발생", ex);
+			throw new ServiceException(ErrorCode.PAYMENT_PROCESSING_ERROR,
+				"결제 금액 조작 정보 저장 중 오류 발생");
+		}
+	}
+
+	/**
+	 * 클라이언트 IP 주소를 가져옵니다.
+	 */
+	private String getClientIp(HttpServletRequest request) {
+		String ip = request.getHeader("X-Forwarded-For");
+		if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+			ip = request.getHeader("Proxy-Client-IP");
+		}
+		if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+			ip = request.getHeader("WL-Proxy-Client-IP");
+		}
+		if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+			ip = request.getHeader("HTTP_CLIENT_IP");
+		}
+		if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+			ip = request.getHeader("HTTP_X_FORWARDED_FOR");
+		}
+		if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+			ip = request.getRemoteAddr();
+		}
+		return ip;
 	}
 }

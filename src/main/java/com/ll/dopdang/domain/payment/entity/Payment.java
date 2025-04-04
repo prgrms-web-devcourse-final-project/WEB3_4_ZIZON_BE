@@ -99,6 +99,10 @@ public class Payment {
 	@OneToMany(mappedBy = "payment", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<PaymentCancellationDetail> cancellationDetails = new ArrayList<>();
 
+	@Builder.Default
+	@OneToMany(mappedBy = "payment", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<PaymentManipulationDetail> manipulationDetails = new ArrayList<>();
+
 	/**
 	 * 계약 정보로부터 결제 정보를 생성하는 정적 팩토리 메서드
 	 *
@@ -142,6 +146,29 @@ public class Payment {
 			.totalFee(fee)
 			.paymentDate(LocalDateTime.now())
 			.status(PaymentStatus.FAILED)
+			.build();
+	}
+
+	/**
+	 * 결제 금액 조작이 감지되었을 때 생성하는 정적 팩토리 메서드
+	 *
+	 * @param paymentType 결제 유형
+	 * @param referenceId 참조 ID
+	 * @return 생성된 Payment 엔티티
+	 */
+	public static Payment createForAmountManipulation(PaymentType paymentType, Long referenceId, Member member,
+		String title) {
+		return Payment.builder()
+			.member(member)
+			.paymentType(paymentType)
+			.referenceId(referenceId)
+			.itemsSummary(title)
+			.itemsCount(0)
+			.installmentMonths(0)
+			.totalPrice(BigDecimal.ZERO)
+			.totalFee(BigDecimal.ZERO)
+			.paymentDate(LocalDateTime.now())
+			.status(PaymentStatus.AMOUNT_MANIPULATED)
 			.build();
 	}
 
@@ -238,5 +265,20 @@ public class Payment {
 	 */
 	public boolean isPartiallyCanceled() {
 		return this.status == PaymentStatus.PARTIALLY_CANCELED;
+	}
+
+	/**
+	 * 결제 조작 세부 정보를 추가합니다.
+	 */
+	public void addManipulationDetail(PaymentManipulationDetail manipulationDetail) {
+		this.manipulationDetails.add(manipulationDetail);
+		manipulationDetail.setPayment(this);
+	}
+
+	/**
+	 * 결제 상태를 AMOUNT_MANIPULATED로 변경합니다.
+	 */
+	public void markAsManipulated() {
+		this.status = PaymentStatus.AMOUNT_MANIPULATED;
 	}
 }

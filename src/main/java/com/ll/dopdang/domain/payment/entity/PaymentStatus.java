@@ -11,7 +11,7 @@ public enum PaymentStatus {
 	PARTIALLY_CANCELED("부분 취소"),
 	FULLY_CANCELED("전체 취소"),
 	FAILED("결제 실패"),
-	VIOLATED("검증 실패");
+	AMOUNT_MANIPULATED("결제 금액 조작 감지");
 
 	private final String description;
 

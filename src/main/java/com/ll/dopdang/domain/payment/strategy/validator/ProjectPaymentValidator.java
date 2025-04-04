@@ -6,8 +6,7 @@ import org.springframework.stereotype.Component;
 
 import com.ll.dopdang.domain.project.entity.Contract;
 import com.ll.dopdang.domain.project.service.ContractService;
-import com.ll.dopdang.global.exception.ErrorCode;
-import com.ll.dopdang.global.exception.ServiceException;
+import com.ll.dopdang.global.exception.PaymentAmountManipulationException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,11 +28,8 @@ public class ProjectPaymentValidator implements PaymentAmountValidator {
 
 		if (expectedAmount.compareTo(requestAmount) != 0) {
 			log.error("결제 금액 불일치: 예상 금액={}, 요청 금액={}", expectedAmount, requestAmount);
-			throw new ServiceException(
-				ErrorCode.PAYMENT_AMOUNT_MISMATCH,
-				String.format("결제 금액이 일치하지 않습니다. 예상 금액: %s, 결제 요청 금액: %s",
-					expectedAmount, requestAmount)
-			);
+			throw new PaymentAmountManipulationException(
+				referenceId, expectedAmount, requestAmount);
 		}
 
 		log.debug("결제 금액 검증 성공: 예상 금액={}, 요청 금액={}", expectedAmount, requestAmount);
