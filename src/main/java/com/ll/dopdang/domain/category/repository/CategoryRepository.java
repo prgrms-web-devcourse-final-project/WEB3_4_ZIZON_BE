@@ -11,8 +11,10 @@ import java.util.Optional;
 @Repository
 public interface CategoryRepository extends JpaRepository<Category, Integer> {
 
+    Optional<Category> findByName(String name);
     // 대분류 카테고리를 이름으로 조회
-    Optional<Category> findByNameAndParentIsNull(String name);
+    @Query("SELECT c FROM Category c WHERE c.name = :name AND c.parent IS NULL")
+    Optional<Category> findByNameAndParentIsNull(@Param("name") String name);
 
     // 소분류 카테고리를 대분류와 이름으로 조회
     @Query("SELECT c FROM Category c WHERE c.name = :name AND c.parent = :parent")
