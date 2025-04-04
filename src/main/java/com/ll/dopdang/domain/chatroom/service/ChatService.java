@@ -44,7 +44,6 @@ public class ChatService {
 			.orElseGet(() -> {
 				ChatRoom newRoom = new ChatRoom();
 				newRoom.setRoomId(roomId);
-				// 채팅방 생성 시 sender와 receiver를 기록
 				newRoom.setMember1(sender);
 				newRoom.setMember2(receiver);
 				return chatRoomRepository.save(newRoom);
@@ -53,23 +52,38 @@ public class ChatService {
 		chatMessage.setRoomId(chatRoom.getRoomId());
 		chatMessageRepository.save(chatMessage);
 
-		// 실시간 채팅 메시지 전송
-		messagingTemplate.convertAndSend("/topic/chat/" + roomId, chatMessage);
+		// sender의 실제 이름 조회
+		Member senderMember = memberRepository.findByEmail(sender).orElse(null);
+		String senderName = (senderMember != null) ? senderMember.getName() : sender;
+
+		// ChatRoomDetailResponse를 사용하여 DTO 생성
+		ChatRoomDetailResponse responseDto = new ChatRoomDetailResponse(
+			chatMessage.getRoomId(),
+			chatMessage.getSender(),
+			chatMessage.getReceiver(),
+			chatMessage.getContent(),
+			chatMessage.getTimestamp(),
+			senderName, // 채워진 user_name
+			(senderMember != null ? senderMember.getProfileImage() : ""),
+			true  // 읽음 여부 (실시간 전송 시 보통 true 또는 false로 처리)
+		);
+
+		// 실시간 채팅 메시지 전송 시 DTO 사용
+		messagingTemplate.convertAndSend("/topic/chat/" + roomId, responseDto);
 		log.info("채팅 메시지 전송: /topic/chat/{} / sender: {} receiver: {}", roomId, sender, receiver);
 
-		// 채팅방 목록 업데이트를 위한 알림 메시지 payload 생성
+		// 채팅방 목록 업데이트를 위한 알림 payload 생성
 		Map<String, String> payload = new HashMap<>();
 		payload.put("roomId", roomId);
 		payload.put("message", "새로운 메시지가 도착했습니다.");
 
-		// 수신자(receiver)에게 알림 전송
+		// 알림 전송
 		messagingTemplate.convertAndSend("/topic/notice/" + receiver, payload);
 		log.info("알림 전송: /topic/notice/{} payload: {}", receiver, payload);
-
-		// 수정: 송신자(sender)에게도 알림 전송하여 채팅방 목록 갱신
 		messagingTemplate.convertAndSend("/topic/notice/" + sender, payload);
 		log.info("알림 전송(송신자): /topic/notice/{} payload: {}", sender, payload);
 	}
+
 
 	public String getRoomId(String sender, String receiver) {
 		return (sender.compareTo(receiver) < 0) ? sender + ":" + receiver : receiver + ":" + sender;

@@ -233,6 +233,10 @@
     let unreadCount = 0;
     let currentRoomId = null;
 
+    // [추가] 채팅방 구독 관리를 위한 전역 변수
+    let chatSubscription = null;   // 채팅 메시지 구독
+    let readSubscription = null;   // 읽음 상태 구독
+
     // 페이지 unload 시 현재 채팅방 읽음 처리
     window.addEventListener("beforeunload", function() {
         if (currentRoomId) {
@@ -254,7 +258,11 @@
                 currentUser.email = currentUser.email.trim().toLowerCase();
                 document.getElementById("currentUserInfo").innerText =
                     "현재 사용자: " + currentUser.name + " (" + currentUser.email + ")";
+
+                // 웹소켓 연결은 페이지 로드 후 단 한 번만
                 connectWebSocket();
+
+                // 채팅방 목록 불러오기
                 fetchChatRoomsDetail();
             })
             .catch(error => {
@@ -262,10 +270,11 @@
             });
     }
 
-    // 2. WebSocket 연결 및 알림 수신
+    // 2. WebSocket 연결 및 알림 수신 (연결은 한 번만)
     function connectWebSocket() {
         const socket = new SockJS('http://localhost:8080/ws-chat');
         stompClient = Stomp.over(socket);
+
         stompClient.connect({}, function(frame) {
             console.log('Connected: ' + frame);
 
@@ -308,20 +317,18 @@
                     const unreadPromise = fetch(
                         `http://localhost:8080/chatrooms/${room.roomId}/unreadCount?username=${encodeURIComponent(currentUser.email)}`,
                         { credentials: 'include' }
-                    )
-                        .then(res => {
-                            if (!res.ok) throw new Error("미읽은 개수를 불러올 수 없습니다.");
-                            return res.json();
-                        });
+                    ).then(res => {
+                        if (!res.ok) throw new Error("미읽은 개수를 불러올 수 없습니다.");
+                        return res.json();
+                    });
 
                     const historyPromise = fetch(
                         `http://localhost:8080/chatrooms?sender=${encodeURIComponent(currentUser.email)}&receiver=${encodeURIComponent(otherUser)}`,
                         { credentials: 'include' }
-                    )
-                        .then(res => {
-                            if (!res.ok) throw new Error("채팅 내역을 불러올 수 없습니다.");
-                            return res.json();
-                        });
+                    ).then(res => {
+                        if (!res.ok) throw new Error("채팅 내역을 불러올 수 없습니다.");
+                        return res.json();
+                    });
 
                     return Promise.all([unreadPromise, historyPromise]).then(([unreadCount, messages]) => {
                         let lastMessage = "";
@@ -356,6 +363,7 @@
         const chatRoomsList = document.getElementById("chatRoomsList");
         chatRoomsList.innerHTML = "";
         rooms.forEach(room => {
+            console.log("방이름:" + room.roomId +" 상대방이름: " +  room.otherUserName);
             const roomDiv = document.createElement("div");
             roomDiv.className = "chat-room-item";
             roomDiv.id = "chat-room-" + room.roomId;
@@ -400,6 +408,16 @@
 
     // 5. 채팅방 선택 시 동작
     function selectChatRoom(roomId, otherUserName) {
+        // 기존에 선택된 채팅방과 다르면 기존 구독을 해제
+        if (chatSubscription) {
+            chatSubscription.unsubscribe();
+            chatSubscription = null;
+        }
+        if (readSubscription) {
+            readSubscription.unsubscribe();
+            readSubscription = null;
+        }
+
         if (currentRoomId && currentRoomId !== roomId) {
             markRoomAsRead(currentRoomId);
         }
@@ -414,10 +432,11 @@
         clearNotification(roomId);
         fetchChatHistory(roomId);
 
-        stompClient.subscribe('/topic/chat/' + roomId, function(messageOutput) {
+        // [추가] 새로운 채팅방에 대한 구독을 등록
+        chatSubscription = stompClient.subscribe('/topic/chat/' + roomId, function(messageOutput) {
             showMessage(JSON.parse(messageOutput.body));
         });
-        stompClient.subscribe('/topic/read/' + roomId, function(messageOutput) {
+        readSubscription = stompClient.subscribe('/topic/read/' + roomId, function(messageOutput) {
             console.log("읽음 상태 업데이트:", messageOutput.body);
             updateReadStatusForRoom();
         });
@@ -537,7 +556,7 @@
         unreadCount = Object.values(notifications).reduce((acc, obj) => acc + obj.count, 0);
         if (unreadCount > 0) {
             badge.innerText = unreadCount;
-            badge.style.display = 'inline';
+            badge.style.display = "inline";
         } else {
             badge.style.display = 'none';
         }
