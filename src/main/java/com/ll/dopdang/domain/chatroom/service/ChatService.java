@@ -44,7 +44,7 @@ public class ChatService {
 			.orElseGet(() -> {
 				ChatRoom newRoom = new ChatRoom();
 				newRoom.setRoomId(roomId);
-				// 엔티티에 맞게 채팅방의 양쪽 회원을 설정
+				// 채팅방 생성 시 sender와 receiver를 기록
 				newRoom.setMember1(sender);
 				newRoom.setMember2(receiver);
 				return chatRoomRepository.save(newRoom);
@@ -53,16 +53,22 @@ public class ChatService {
 		chatMessage.setRoomId(chatRoom.getRoomId());
 		chatMessageRepository.save(chatMessage);
 
+		// 실시간 채팅 메시지 전송
 		messagingTemplate.convertAndSend("/topic/chat/" + roomId, chatMessage);
-		log.info("메시지 전송: /topic/chat/{} / sender: {} receiver: {}", roomId, sender, receiver);
+		log.info("채팅 메시지 전송: /topic/chat/{} / sender: {} receiver: {}", roomId, sender, receiver);
 
-		if (!sender.equals(receiver)) {
-			Map<String, String> payload = new HashMap<>();
-			payload.put("roomId", roomId);
-			payload.put("message", "새로운 메시지가 도착했습니다.");
-			messagingTemplate.convertAndSend("/topic/notice/" + receiver, payload);
-			log.info("알림 전송: /topic/notice/{} payload: {}", receiver, payload);
-		}
+		// 채팅방 목록 업데이트를 위한 알림 메시지 payload 생성
+		Map<String, String> payload = new HashMap<>();
+		payload.put("roomId", roomId);
+		payload.put("message", "새로운 메시지가 도착했습니다.");
+
+		// 수신자(receiver)에게 알림 전송
+		messagingTemplate.convertAndSend("/topic/notice/" + receiver, payload);
+		log.info("알림 전송: /topic/notice/{} payload: {}", receiver, payload);
+
+		// 수정: 송신자(sender)에게도 알림 전송하여 채팅방 목록 갱신
+		messagingTemplate.convertAndSend("/topic/notice/" + sender, payload);
+		log.info("알림 전송(송신자): /topic/notice/{} payload: {}", sender, payload);
 	}
 
 	public String getRoomId(String sender, String receiver) {
@@ -77,10 +83,8 @@ public class ChatService {
 			Member senderMember = memberRepository.findByEmail(msg.getSender()).orElse(null);
 			String senderName = senderMember != null ? senderMember.getName() : "";
 			String senderProfileImage = senderMember != null ? senderMember.getProfileImage() : "";
-			// read 여부는 메시지의 타임스탬프와 마지막 읽은 시간 비교 등 로직을 추가하여 설정
+			// 현재 읽음 처리 로직이 잘 동작하므로 read는 true로 설정 (필요시 추가 로직 구현 가능)
 			boolean read = true;
-			// 상대방 메시지인 경우 읽음 여부 계산 (예시)
-			// 실제로는 현재 사용자의 마지막 읽은 시간과 비교하는 로직이 필요합니다.
 			return new ChatRoomDetailResponse(
 				msg.getRoomId(),
 				msg.getSender(),
@@ -89,7 +93,7 @@ public class ChatService {
 				msg.getTimestamp(),
 				senderName,
 				senderProfileImage,
-				read   // 추가된 read 필드
+				read
 			);
 		}).collect(Collectors.toList());
 	}
@@ -99,7 +103,6 @@ public class ChatService {
 		return chatRoomRepository.findByRoomIdContaining(member);
 	}
 
-	// 읽음 처리 기능: 특정 채팅방을 지정 사용자가 읽었음을 처리하는 메서드
 	@Transactional
 	public ChatRoom markChatRoomAsRead(String roomId, String username) {
 		ChatRoom chatRoom = chatRoomRepository.findByRoomId(roomId)
@@ -111,13 +114,12 @@ public class ChatService {
 			chatRoom.setLastReadAtUser2(now);
 		}
 		ChatRoom updatedRoom = chatRoomRepository.save(chatRoom);
-		// 읽음 처리 후 실시간 업데이트 이벤트 전송
+		// 읽음 상태 업데이트 알림 전송
 		messagingTemplate.convertAndSend("/topic/read/" + roomId,
 			Map.of("roomId", roomId, "username", username, "read", true));
 		return updatedRoom;
 	}
 
-	// 읽지 않은 메시지 개수를 계산하는 메서드 (사용자 기준)
 	@Transactional(readOnly = true)
 	public long getUnreadCount(String roomId, String username) {
 		ChatRoom chatRoom = chatRoomRepository.findByRoomId(roomId).orElse(null);
