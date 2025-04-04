@@ -58,7 +58,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 		IOException {
 		String requestUri = req.getRequestURI();
 
-		if (requestUri.equals("/api/v1/reissue")) {
+		if ("/api/v1/reissue".equals(requestUri)) {
 			handleTokenReissue(req, resp);
 		} else {
 			handleAccessTokenValidation(req, resp, filterChain);
@@ -74,11 +74,24 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 	private void handleTokenReissue(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 		try {
 			tokenManagementService.reissueTokens(req, resp);
-		} catch (Exception e) {
+		} catch (JwtException e) {
 			AuthResponseUtil.failLogin(
 				resp,
-				ResponseEntity.badRequest().body(e.getMessage()),
+				ResponseEntity.badRequest().body("토큰이 유효하지 않습니다: " + e.getMessage()),
 				HttpServletResponse.SC_BAD_REQUEST,
+				objectMapper);
+		} catch (IllegalArgumentException e) {
+			AuthResponseUtil.failLogin(
+				resp,
+				ResponseEntity.badRequest().body("잘못된 요청입니다: " + e.getMessage()),
+				HttpServletResponse.SC_BAD_REQUEST,
+				objectMapper);
+		} catch (IOException e) {
+			AuthResponseUtil.failLogin(
+				resp,
+				ResponseEntity.status(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
+					.body("서버 내부 오류가 발생했습니다"),
+				HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
 				objectMapper);
 		}
 	}
@@ -137,10 +150,25 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 				ResponseEntity.badRequest().build(),
 				HttpServletResponse.SC_UNAUTHORIZED,
 				objectMapper);
-		} catch (Exception e) {
+		} catch (IllegalArgumentException e) {
 			AuthResponseUtil.failLogin(
 				resp,
-				ResponseEntity.badRequest().build(),
+				ResponseEntity.badRequest().body("잘못된 요청 파라미터: " + e.getMessage()),
+				HttpServletResponse.SC_BAD_REQUEST,
+				objectMapper);
+		} catch (IOException e) {
+			AuthResponseUtil.failLogin(
+				resp,
+				ResponseEntity.status(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
+					.body("서버 내부 오류가 발생했습니다"),
+				HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+				objectMapper);
+		} catch (RuntimeException e) {
+			// 마지막 보루로 RuntimeException 처리
+			AuthResponseUtil.failLogin(
+				resp,
+				ResponseEntity.status(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
+					.body("처리 중 오류가 발생했습니다"),
 				HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
 				objectMapper);
 		}
@@ -156,11 +184,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 		HttpMethod method = HttpMethod.valueOf(request.getMethod());
 
 		var patterns = SecurityConfig.getPublicUrls().get(method);
-		if (patterns == null) {
-			return false;
-		}
-
-		return patterns.stream()
+		return patterns != null && patterns.stream()
 			.anyMatch(pattern -> new AntPathMatcher().match(pattern, requestUri));
 	}
 

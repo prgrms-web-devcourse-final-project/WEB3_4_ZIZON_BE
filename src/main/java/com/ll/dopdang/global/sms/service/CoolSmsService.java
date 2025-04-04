@@ -85,7 +85,10 @@ public class CoolSmsService implements SmsService {
 				.build();
 
 		} catch (Exception e) {
-			log.error("SMS 발송 실패: {}", e.getMessage(), e);
+			if (log.isErrorEnabled()) {
+				log.error("SMS 발송 실패: {}", e.getMessage(), e);
+			}
+
 			throw new ServiceException(ErrorCode.MESSAGE_SENDING_ERROR);
 		}
 	}
