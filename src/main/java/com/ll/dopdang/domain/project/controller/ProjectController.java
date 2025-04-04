@@ -3,6 +3,8 @@ package com.ll.dopdang.domain.project.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ll.dopdang.domain.project.dto.ProjectCreateRequest;
 import com.ll.dopdang.domain.project.dto.ProjectCreateResponse;
+import com.ll.dopdang.domain.project.dto.ProjectDetailResponse;
 import com.ll.dopdang.domain.project.service.ProjectService;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
 
@@ -55,4 +58,19 @@ public class ProjectController {
 			));
 	}
 
+	@Operation(
+		summary = "프로젝트 단건 조회",
+		description = "프로젝트 ID를 기반으로 단일 프로젝트의 상세 정보를 조회합니다.",
+		tags = {"Project"}
+	)
+	@ApiResponse(responseCode = "200", description = "프로젝트 조회 성공")
+	@ApiResponse(responseCode = "404", description = "해당 프로젝트를 찾을 수 없음")
+	@GetMapping("/{projectId}")
+	public ResponseEntity<ProjectDetailResponse> getProjectById(
+		@Parameter(description = "조회할 프로젝트의 ID", required = true, example = "1")
+		@PathVariable Long projectId
+	) {
+		ProjectDetailResponse response = projectService.getProjectById(projectId);
+		return ResponseEntity.ok(response);
+	}
 }
