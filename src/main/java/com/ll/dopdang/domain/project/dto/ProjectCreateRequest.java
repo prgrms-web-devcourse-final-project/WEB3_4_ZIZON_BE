@@ -19,7 +19,7 @@ import lombok.Setter;
 public class ProjectCreateRequest {
 
 	@NotNull(message = "카테고리 ID는 필수입니다.")
-	private Long categoryId;
+	private Integer categoryId;
 
 	@NotBlank(message = "프로젝트 제목은 필수입니다.")
 	private String title;
