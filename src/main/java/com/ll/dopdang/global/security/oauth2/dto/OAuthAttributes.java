@@ -69,7 +69,7 @@ public class OAuthAttributes {
 	public Member toEntity() {
 		String userEmail = email;
 		if (userEmail == null) {
-			userEmail = name + "@" + provider + ".com";
+			userEmail = memberId + "@" + provider + ".com";
 		}
 
 		return Member.builder()
