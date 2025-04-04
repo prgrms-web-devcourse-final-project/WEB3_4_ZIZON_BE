@@ -54,7 +54,7 @@ public class Expert {
     private String accountNumber; // 계좌번호
 
     @Column(nullable = false)
-    private boolean isAvailability; // 활동 가능 여부
+    private boolean isAvailability = false; // 활동 가능 여부
 
     @Column(length = 300)
     private String sellerInfo; // 판매자 관련 정보 (Optional

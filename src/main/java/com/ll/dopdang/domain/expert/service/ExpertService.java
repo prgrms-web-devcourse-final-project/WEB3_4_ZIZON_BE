@@ -5,6 +5,7 @@ import com.ll.dopdang.domain.category.entity.ExpertCategory;
 import com.ll.dopdang.domain.category.repository.CategoryRepository;
 import com.ll.dopdang.domain.category.repository.ExpertCategoryRepository;
 import com.ll.dopdang.domain.expert.dto.request.ExpertRequestDto;
+import com.ll.dopdang.domain.expert.dto.request.ExpertUpdateRequestDto;
 import com.ll.dopdang.domain.expert.dto.response.ExpertDetailResponseDto;
 import com.ll.dopdang.domain.expert.dto.response.ExpertResponseDto;
 import com.ll.dopdang.domain.expert.entity.Expert;
@@ -30,6 +31,7 @@ public class ExpertService {
     private final MemberRepository memberRepository;
     private final CategoryRepository categoryRepository;
     private final ExpertCategoryRepository expertCategoryRepository;
+    //private final CertificationApiService certificationApiService;
 
     /**
      * 전문가를 등록합니다.
@@ -39,7 +41,7 @@ public class ExpertService {
      * @throws IllegalArgumentException 회원 또는 카테고리가 존재하지 않을 경우 예외 발생.
      */
     @Transactional
-    public void createExpert(ExpertRequestDto expertRequestDto, Long memberId) {
+    public void createExpert(ExpertRequestDto expertRequestDto, Long memberId) throws Exception {
         // 1. 회원 조회 및 검증
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("Member not found"));
@@ -52,7 +54,7 @@ public class ExpertService {
         List<Category> subCategories = expertRequestDto.getSubCategoryNames().stream()
                 .map(subCategoryName -> categoryRepository.findByNameAndParent(subCategoryName, mainCategory)
                         .orElseThrow(() -> new IllegalArgumentException("Subcategory not found: " + subCategoryName)))
-                .collect(Collectors.toList());
+                .toList();
 
         // 4. Expert 엔티티 생성 및 저장
         Expert expert = Expert.builder()
@@ -66,7 +68,6 @@ public class ExpertService {
                 .accountNumber(expertRequestDto.getAccountNumber())
                 .sellerInfo(expertRequestDto.getSellerInfo())
                 .build();
-
         expertRepository.save(expert);
 
         // 5. ExpertCategory 엔티티 생성 및 저장
@@ -112,6 +113,7 @@ public class ExpertService {
         }
 
         // 데이터베이스 조회를 통한 필터링 결과
+
         List<Expert> experts = expertRepository.findByFilters(categoryNames, minYears, maxYears);
 
         // Expert 데이터를 DTO로 변환하여 반환
@@ -128,6 +130,65 @@ public class ExpertService {
         return mapToDetailResponseDto(expert);
     }
 
+    /**
+     * 전문가 정보 업데이트 서비스 메서드
+     *
+     * @param expertId 전문가 ID
+     * @param updateRequestDto 업데이트 내용이 담긴 DTO
+     * @throws IllegalArgumentException 전문가 또는 카테고리를 찾을 수 없는 경우 예외 발생
+     */
+    @Transactional
+    public void updateExpert(Long expertId, ExpertUpdateRequestDto updateRequestDto) {
+        // 1. 전문가 조회
+        Expert existingExpert = expertRepository.findById(expertId)
+                .orElseThrow(() -> new IllegalArgumentException("Expert not found with ID: " + expertId));
+
+        // 2. 대분류 카테고리 변경 처리
+        Category mainCategory = existingExpert.getMainCategory(); // 기존 대분류
+        if (updateRequestDto.getMainCategoryName() != null) {
+            mainCategory = categoryRepository.findByNameAndParentIsNull(updateRequestDto.getMainCategoryName())
+                    .orElseThrow(() -> new IllegalArgumentException("Main category not found: " + updateRequestDto.getMainCategoryName()));
+        }
+
+        // 3. 소분류 카테고리 변경 처리
+        if (updateRequestDto.getSubCategoryNames() != null && !updateRequestDto.getSubCategoryNames().isEmpty()) {
+            // 기존 소분류 삭제
+            expertCategoryRepository.deleteAllByExpertId(expertId);
+
+            // 새로운 소분류 생성 및 저장
+            List<Category> subCategories = updateRequestDto.getSubCategoryNames().stream()
+                    .map(name -> categoryRepository.findByName(name)
+                            .orElseThrow(() -> new IllegalArgumentException("Subcategory not found: " + name)))
+                    .toList();
+
+            subCategories.forEach(category -> {
+                ExpertCategory expertCategory = ExpertCategory.builder()
+                        .expert(existingExpert)
+                        .subCategory(category)
+                        .build();
+                expertCategoryRepository.save(expertCategory);
+            });
+        }
+
+        // 4. 빌더 패턴으로 Expert 객체 업데이트
+        Expert updatedExpert = Expert.builder()
+                .id(existingExpert.getId()) // 기존 ID 그대로 사용
+                .member(existingExpert.getMember()) // 기존 Member 그대로 사용
+                .mainCategory(mainCategory) // 변경된 대분류
+                .subCategories(existingExpert.getSubCategories()) // 소분류는 별도 처리됨
+                .careerYears(updateRequestDto.getCareerYears())
+                .certification(updateRequestDto.getCertification())
+                .introduction(updateRequestDto.getIntroduction())
+                .bankName(updateRequestDto.getBankName())
+                .accountNumber(updateRequestDto.getAccountNumber())
+                .sellerInfo(updateRequestDto.getSellerInfo())
+                .gender(existingExpert.getGender()) // 성별은 그대로 유지
+                .isAvailability(existingExpert.isAvailability()) // 활동 가능 여부 유지
+                .build();
+
+        // 5. 저장
+        expertRepository.save(updatedExpert);
+    }
     /**
      * Expert 엔티티를 ExpertResponseDto로 변환합니다.
      */
@@ -150,11 +211,29 @@ public class ExpertService {
                 .mainCategoryName(expert.getMainCategory().getName())
                 .subCategoryNames(expert.getSubCategories().stream()
                         .map(sc -> sc.getSubCategory().getName())
-                        .collect(Collectors.toList()))
+                        .toList())
                 .introduction(expert.getIntroduction())
                 .careerYears(expert.getCareerYears())
                 .certification(expert.getCertification())
                 .gender(expert.getGender())
                 .build();
+    }
+    /**
+     * 전문가 삭제
+     *
+     * @param expertId 삭제하려는 전문가 ID
+     * @throws IllegalArgumentException 존재하지 않는 전문가 ID일 경우 예외 발생
+     */
+    @Transactional
+    public void deleteExpert(Long expertId) {
+        // 1. 전문가 조회
+        Expert expert = expertRepository.findById(expertId)
+                .orElseThrow(() -> new IllegalArgumentException("Expert not found with ID: " + expertId));
+
+        // 2. 연관된 소분류(ExpertCategory) 삭제
+        expertCategoryRepository.deleteAllByExpertId(expertId);
+
+        // 3. 전문가 삭제
+        expertRepository.delete(expert);
     }
 }
