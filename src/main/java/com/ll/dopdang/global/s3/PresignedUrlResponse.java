@@ -8,4 +8,5 @@ public record PresignedUrlResponse(
 	@Schema(description = "S3에 파일을 업로드할 수 있는 미리 서명된 URL", example = "https://bucket-name.s3.ap-northeast-2.amazonaws.com/path/to/file?X-Amz-Algorithm=...")
 	String presignedUrl
 
-) {}
+) {
+}

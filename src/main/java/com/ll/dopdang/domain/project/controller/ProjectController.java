@@ -27,7 +27,8 @@ public class ProjectController {
 
 	@Operation(
 		summary = "프로젝트 생성",
-		description = "고객이 새로운 프로젝트를 생성합니다. 인증된 사용자의 ID를 기반으로 프로젝트가 생성되며, 요청 본문에는 프로젝트의 카테고리, 제목, 지역, 예산, 마감일 등이 포함되어야 합니다.",
+		description = "고객이 새로운 프로젝트를 생성합니다. 인증된 사용자의 ID를 기반으로 프로젝트가 생성되며, "
+			+ "요청 본문에는 프로젝트의 카테고리, 제목, 지역, 예산, 마감일 등이 포함되어야 합니다.",
 		tags = {"Project"}
 	)
 	@ApiResponse(responseCode = "201", description = "프로젝트 생성 성공")

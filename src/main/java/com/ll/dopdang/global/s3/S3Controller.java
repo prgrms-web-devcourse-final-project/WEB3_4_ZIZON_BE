@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -33,8 +34,10 @@ public class S3Controller {
 	@GetMapping("/project-image")
 	public ResponseEntity<PresignedUrlResponse> getProjectImagePresignedUrl(
 		@Parameter(description = "프로젝트 ID", example = "1") @RequestParam Long projectId,
-		@Parameter(description = "저장할 파일 이름 (확장자 포함)", example = "project_image.png") @RequestParam String fileName,
-		@Parameter(description = "파일 MIME 타입 (예: image/png, image/jpeg)", example = "image/png") @RequestParam String contentType
+		@Parameter(description = "저장할 파일 이름 (확장자 포함)",
+			example = "project_image.png") @RequestParam String fileName,
+		@Parameter(description = "파일 MIME 타입 (예: image/png, image/jpeg)",
+			example = "image/png") @RequestParam String contentType
 	) {
 		URL url = s3Service.generatePresignedUrlForProjectImage(projectId, fileName, contentType);
 		return ResponseEntity.ok(new PresignedUrlResponse(url.toString()));
@@ -47,8 +50,10 @@ public class S3Controller {
 	@GetMapping("/member-profile")
 	public ResponseEntity<PresignedUrlResponse> getMemberProfilePresignedUrl(
 		@Parameter(description = "회원 ID", example = "42") @RequestParam Long memberId,
-		@Parameter(description = "저장할 파일 이름 (확장자 포함)", example = "profile_image.png") @RequestParam String fileName,
-		@Parameter(description = "파일 MIME 타입 (예: image/png, image/jpeg)", example = "image/png") @RequestParam String contentType
+		@Parameter(description = "저장할 파일 이름 (확장자 포함)",
+			example = "profile_image.png") @RequestParam String fileName,
+		@Parameter(description = "파일 MIME 타입 (예: image/png, image/jpeg)",
+			example = "image/png") @RequestParam String contentType
 	) {
 		URL url = s3Service.generatePresignedUrlForMemberProfile(memberId, fileName, contentType);
 		return ResponseEntity.ok(new PresignedUrlResponse(url.toString()));
