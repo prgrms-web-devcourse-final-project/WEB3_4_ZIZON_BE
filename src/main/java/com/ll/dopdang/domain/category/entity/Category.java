@@ -3,7 +3,7 @@ package com.ll.dopdang.domain.category.entity;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import com.ll.dopdang.domain.member.entity.Expert;
+import com.ll.dopdang.domain.expert.entity.Expert;
 import com.ll.dopdang.domain.project.entity.Project;
 
 import jakarta.persistence.Column;
@@ -22,13 +22,14 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Getter
 @Entity
+@Getter
 @Table(name = "category")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Category {
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "id", nullable = false)
@@ -42,19 +43,17 @@ public class Category {
 	@Column(name = "name", nullable = false, length = 100)
 	private String name;
 
-	@NotNull
 	@Column(name = "level", nullable = false)
 	private Boolean level;
 
 	/**
 	 * 카테고리 유형 (PROJECT, PRODUCT, PROVISION)
 	 */
-	@NotNull
 	@Enumerated(EnumType.STRING)
-	@Column(name = "category_type", nullable = false)
+	@Column(name = "category_type", nullable = false, length = 50)
 	private CategoryType categoryType;
 
-	@OneToMany(mappedBy = "categoryId")
+	@OneToMany(mappedBy = "category")
 	private Set<Expert> experts = new LinkedHashSet<>();
 
 	@OneToMany(mappedBy = "category")

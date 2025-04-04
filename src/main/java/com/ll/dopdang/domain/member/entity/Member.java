@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.util.ObjectUtils;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -113,29 +114,16 @@ public class Member {
 	 */
 	@PrePersist
 	protected void onCreate() {
-		if (this.uniqueKey == null) {
+		if (ObjectUtils.isEmpty(uniqueKey)) {
 			this.uniqueKey = UUID.randomUUID().toString();
 		}
 	}
 
 	/**
-	 * 소셜 로그인 시, 내용을 업데이트 하기 위한 메서드
-	 * @param name 유저 이름
-	 * @param profileImage 유저 프로필 사진
-	 * @return {@link Member}
+	 * 유저를 활성화 상태로 설정하는 메서드
 	 */
-	public Member update(String name, String profileImage) {
-		this.name = name;
-		this.profileImage = profileImage;
-		return this;
-	}
-
-	/**
-	 * 소셜 ID를 설정하기 위한 메서드
-	 * @param memberId 소셜 ID
-	 */
-	public void assignMemberId(String memberId) {
-		this.memberId = memberId;
+	public void activateMember() {
+		this.status = MemberStatus.ACTIVE.toString();
 	}
 
 	/**
