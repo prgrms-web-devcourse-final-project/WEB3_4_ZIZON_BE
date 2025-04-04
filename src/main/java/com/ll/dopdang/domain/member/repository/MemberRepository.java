@@ -30,5 +30,6 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 	 * @param id ID
 	 * @return {@link Optional<Member>}
 	 */
+	@Override
 	@NotNull Optional<Member> findById(@NotNull Long id);
 }
