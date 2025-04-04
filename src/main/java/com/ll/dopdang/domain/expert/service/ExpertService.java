@@ -188,6 +188,25 @@ public class ExpertService {
         expertRepository.save(updatedExpert);
     }
     /**
+     * 전문가 삭제
+     *
+     * @param expertId 삭제하려는 전문가 ID
+     * @throws IllegalArgumentException 존재하지 않는 전문가 ID일 경우 예외 발생
+     */
+    @Transactional
+    public void deleteExpert(Long expertId) {
+        // 1. 전문가 조회
+        Expert expert = expertRepository.findById(expertId)
+                .orElseThrow(() -> new IllegalArgumentException("Expert not found with ID: " + expertId));
+
+        // 2. 연관된 소분류(ExpertCategory) 삭제
+        expertCategoryRepository.deleteAllByExpertId(expertId);
+
+        // 3. 전문가 삭제
+        expertRepository.delete(expert);
+    }
+
+    /**
      * Expert 엔티티를 ExpertResponseDto로 변환합니다.
      */
     private ExpertResponseDto mapToResponseDto(Expert expert) {
@@ -215,23 +234,5 @@ public class ExpertService {
                 .certification(expert.getCertification())
                 .gender(expert.getGender())
                 .build();
-    }
-    /**
-     * 전문가 삭제
-     *
-     * @param expertId 삭제하려는 전문가 ID
-     * @throws IllegalArgumentException 존재하지 않는 전문가 ID일 경우 예외 발생
-     */
-    @Transactional
-    public void deleteExpert(Long expertId) {
-        // 1. 전문가 조회
-        Expert expert = expertRepository.findById(expertId)
-                .orElseThrow(() -> new IllegalArgumentException("Expert not found with ID: " + expertId));
-
-        // 2. 연관된 소분류(ExpertCategory) 삭제
-        expertCategoryRepository.deleteAllByExpertId(expertId);
-
-        // 3. 전문가 삭제
-        expertRepository.delete(expert);
     }
 }

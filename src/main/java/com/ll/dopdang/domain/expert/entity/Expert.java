@@ -33,6 +33,7 @@ public class Expert {
     private Category mainCategory; // 전문가의 대분류 카테고리
 
     @OneToMany(mappedBy = "expert", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<ExpertCategory> subCategories = new ArrayList<>(); // ExpertCategory와의 1:N 관계
 
     @Column(length = 200)
@@ -53,8 +54,8 @@ public class Expert {
     @Column(nullable = false, length = 100)
     private String accountNumber; // 계좌번호
 
-    @Column(nullable = false)
-    private boolean isAvailability = false; // 활동 가능 여부
+    @Column
+    private boolean isAvailability = false; ; // 활동 가능 여부
 
     @Column(length = 300)
     private String sellerInfo; // 판매자 관련 정보 (Optional
