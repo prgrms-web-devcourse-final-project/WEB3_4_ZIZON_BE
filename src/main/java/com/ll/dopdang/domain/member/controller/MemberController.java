@@ -1,5 +1,6 @@
 package com.ll.dopdang.domain.member.controller;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ll.dopdang.domain.member.dto.request.MemberSignupRequest;
 import com.ll.dopdang.domain.member.dto.request.UpdateProfileRequest;
 import com.ll.dopdang.domain.member.dto.request.VerifyCodeRequest;
+import com.ll.dopdang.domain.member.dto.response.MemberInfoResponse;
 import com.ll.dopdang.domain.member.dto.response.ProfileResponse;
 import com.ll.dopdang.domain.member.service.MemberService;
 import com.ll.dopdang.domain.member.service.MemberUtilService;
@@ -142,11 +144,26 @@ public class MemberController {
 		return ResponseEntity.ok("수정을 완료하였습니다.");
 	}
 
+
 	@DeleteMapping("/{user_id}")
 	public ResponseEntity<Object> deleteMember(
 		@PathVariable("user_id") Long userId,
 		@AuthenticationPrincipal CustomUserDetails customUserDetails) {
 		memberService.deleteMember(userId, customUserDetails);
 		return ResponseEntity.ok("회원 탈퇴가 정상적으로 처리되었습니다.");
+
+	@GetMapping("/me")
+	public ResponseEntity<MemberInfoResponse> getCurrentUser(
+		@AuthenticationPrincipal CustomUserDetails customUserDetails) {
+		if (customUserDetails == null) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+		}
+		MemberInfoResponse response = new MemberInfoResponse(
+			customUserDetails.getMember().getId(),
+			customUserDetails.getUsername(),
+			customUserDetails.getMember().getName()
+		);
+		return ResponseEntity.ok(response);
+
 	}
 }
