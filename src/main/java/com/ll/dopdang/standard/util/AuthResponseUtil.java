@@ -29,7 +29,7 @@ public class AuthResponseUtil {
 		response.setStatus(status);
 		response.setContentType("application/json");
 		response.setCharacterEncoding("UTF-8");
-		response.getWriter().write(om.writeValueAsString(rsData));
+		response.getWriter().write(om.writeValueAsString(rsData.getBody()));
 	}
 
 	/**

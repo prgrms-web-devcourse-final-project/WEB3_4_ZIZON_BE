@@ -36,7 +36,7 @@ public class TokenService {
 		String accessToken = null;
 
 		for (Cookie cookie : request.getCookies()) {
-			if (cookie.getName().equals("accessToken")) {
+			if ("accessToken".equals(cookie.getName())) {
 				accessToken = cookie.getValue();
 				break;
 			}

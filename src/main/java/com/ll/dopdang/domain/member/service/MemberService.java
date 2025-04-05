@@ -129,10 +129,8 @@ public class MemberService {
 			.id(member.getId())
 			.email(member.getEmail())
 			.password(member.getPassword())
-			.name((req.getName() != null && !req.getName().trim().isEmpty()) ? req.getName() : member.getName())
-			.profileImage(
-				(req.getProfileImage() != null && !req.getProfileImage().trim().isEmpty()) ? req.getProfileImage() :
-					member.getProfileImage())
+			.name(!req.getName().isBlank() ? req.getName() : member.getName())
+			.profileImage(!req.getProfileImage().isBlank() ? req.getProfileImage() : member.getProfileImage())
 			.phone(member.getPhone())
 			.status(member.getStatus())
 			.userRole(member.getUserRole())
