@@ -2,10 +2,13 @@ package com.ll.dopdang.domain.project.service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ll.dopdang.domain.project.dto.ContractSummaryResponse;
 import com.ll.dopdang.domain.project.entity.Contract;
 import com.ll.dopdang.domain.project.entity.Offer;
 import com.ll.dopdang.domain.project.repository.ContractRepository;
@@ -55,5 +58,23 @@ public class ContractService {
 
 		// 6. 계약 ID 반환
 		return savedContract.getId();
+	}
+
+	public List<ContractSummaryResponse> getContractsForExpert(Long expertMemberId, Pageable pageable) {
+		List<Contract> contracts = contractRepository.findContractsByExpertMemberId(expertMemberId, pageable);
+
+		return contracts.stream()
+			.map(contract -> ContractSummaryResponse.builder()
+				.contractId(contract.getId())
+				.projectId(contract.getProject().getId())
+				.projectTitle(contract.getProject().getTitle())
+				.clientName(contract.getClient().getName())
+				.price(contract.getPrice())
+				.startDate(contract.getStartDate())
+				.endDate(contract.getEndDate())
+				.status(contract.getStatus().name())
+				.build()
+			)
+			.toList();
 	}
 }
