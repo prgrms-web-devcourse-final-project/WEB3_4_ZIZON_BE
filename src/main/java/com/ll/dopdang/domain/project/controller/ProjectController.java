@@ -1,5 +1,10 @@
 package com.ll.dopdang.domain.project.controller;
 
+import java.util.Map;
+
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -10,9 +15,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ll.dopdang.domain.project.dto.MyProjectPageResponse;
 import com.ll.dopdang.domain.project.dto.ProjectCreateRequest;
 import com.ll.dopdang.domain.project.dto.ProjectCreateResponse;
 import com.ll.dopdang.domain.project.dto.ProjectDetailResponse;
+import com.ll.dopdang.domain.project.dto.ProjectListForAllPageResponse;
+import com.ll.dopdang.domain.project.service.ProjectImageService;
 import com.ll.dopdang.domain.project.service.ProjectService;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
 
@@ -27,6 +35,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/projects")
 public class ProjectController {
 	private final ProjectService projectService;
+	private final ProjectImageService projectImageService;
 
 	@Operation(
 		summary = "프로젝트 생성",
@@ -73,4 +82,47 @@ public class ProjectController {
 		ProjectDetailResponse response = projectService.getProjectById(projectId);
 		return ResponseEntity.ok(response);
 	}
+
+	@Operation(
+		summary = "전체 사용자용 프로젝트 목록 조회",
+		description = "비회원 포함 누구나 조회 가능한 프로젝트 목록을 반환합니다.",
+		tags = {"Project"}
+	)
+	@GetMapping("/all")
+	public ResponseEntity<ProjectListForAllPageResponse> getProjectsForAll(
+		@PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+	) {
+		Map<Long, String> thumbnailMap = projectImageService.getThumbnails();
+
+		ProjectListForAllPageResponse response = projectService.getProjectListForAll(pageable, thumbnailMap);
+		return ResponseEntity.ok(response);
+	}
+
+	/**
+	 * 마이페이지 - 로그인한 클라이언트가 등록한 프로젝트 목록을 조회합니다.
+	 *
+	 * @param pageable     페이지 정보 (Offset 기반)
+	 * @param userDetails  로그인한 사용자 정보 (CustomUserDetails)
+	 * @return 클라이언트가 등록한 프로젝트 목록 응답
+	 */
+	@Operation(
+		summary = "클라이언트가 등록한 프로젝트 목록 조회",
+		description = "마이페이지에서 로그인한 클라이언트가 등록한 프로젝트 목록을 조회합니다.",
+		tags = {"Project"}
+	)
+	@GetMapping("/my")
+	public ResponseEntity<MyProjectPageResponse> getMyProjects(
+		@PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+		@AuthenticationPrincipal CustomUserDetails userDetails
+	) {
+		Long clientId = userDetails.getId(); // 로그인한 클라이언트 ID
+
+		// 썸네일 이미지 매핑 (이미지 URL 가져오기)
+		Map<Long, String> thumbnailMap = projectImageService.getThumbnails();
+
+		// 클라이언트가 등록한 프로젝트 목록 조회
+		MyProjectPageResponse response = projectService.getMyProjectList(clientId, pageable, thumbnailMap);
+		return ResponseEntity.ok(response);
+	}
 }
+
