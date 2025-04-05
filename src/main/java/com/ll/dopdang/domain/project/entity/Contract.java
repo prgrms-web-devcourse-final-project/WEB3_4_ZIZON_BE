@@ -3,6 +3,7 @@ package com.ll.dopdang.domain.project.entity;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.ll.dopdang.domain.expert.entity.Expert;
 import com.ll.dopdang.domain.member.entity.Member;
 
 import jakarta.persistence.Column;
@@ -47,7 +48,7 @@ public class Contract {
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "expert_id")
-	private Member expert;
+	private Expert expert;
 
 	private BigDecimal price;
 
