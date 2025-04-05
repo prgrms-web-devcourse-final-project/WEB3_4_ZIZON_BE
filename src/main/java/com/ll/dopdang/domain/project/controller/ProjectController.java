@@ -20,7 +20,6 @@ import com.ll.dopdang.domain.project.dto.ProjectCreateRequest;
 import com.ll.dopdang.domain.project.dto.ProjectCreateResponse;
 import com.ll.dopdang.domain.project.dto.ProjectDetailResponse;
 import com.ll.dopdang.domain.project.dto.ProjectListForAllPageResponse;
-import com.ll.dopdang.domain.project.service.ContractService;
 import com.ll.dopdang.domain.project.service.ProjectImageService;
 import com.ll.dopdang.domain.project.service.ProjectService;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
@@ -40,7 +39,6 @@ public class ProjectController {
 
 	private final ProjectService projectService;
 	private final ProjectImageService projectImageService;
-	private final ContractService contractService;
 
 	@Operation(
 		summary = "프로젝트 생성",

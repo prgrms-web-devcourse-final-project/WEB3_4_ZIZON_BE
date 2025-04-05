@@ -29,7 +29,7 @@ public class ContractController {
 	 * @return 생성된 계약 ID
 	 */
 	@PostMapping
-	public ResponseEntity<?> createContract(@RequestBody ContractCreateRequest request) {
+	public ResponseEntity<Map<String, Object>> createContract(@RequestBody ContractCreateRequest request) {
 		log.info("계약 생성 요청: offerId={}, price={}, startDate={}, endDate={}",
 			request.getOfferId(), request.getPrice(), request.getStartDate(), request.getEndDate());
 
