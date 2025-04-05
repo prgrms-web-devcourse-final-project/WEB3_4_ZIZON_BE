@@ -1,7 +1,10 @@
 package com.ll.dopdang.domain.expert.repository;
 
+
+import java.util.Optional;
 import com.ll.dopdang.domain.expert.entity.Expert;
 import io.lettuce.core.dynamic.annotation.Param;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.jpa.repository.Query;
@@ -11,6 +14,7 @@ import java.util.Optional;
 
 @Repository
 public interface ExpertRepository extends JpaRepository<Expert, Long> {
+
     @Query("SELECT e FROM Expert e JOIN FETCH e.member")
     List<Expert> findAllWithMember();
 
@@ -24,4 +28,5 @@ public interface ExpertRepository extends JpaRepository<Expert, Long> {
 
 
     Optional<Expert> findByMemberId(Long memberId);
+
 }
