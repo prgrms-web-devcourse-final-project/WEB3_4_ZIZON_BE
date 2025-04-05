@@ -21,6 +21,5 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
 		+ "ORDER BY c.createdAt DESC")
 	List<Contract> findContractsByExpertMemberId(@Param("memberId") Long memberId, Pageable pageable);
 
-	@Query("SELECT c FROM Contract c WHERE c.project.id = :projectId")
-	Optional<Contract> findByProjectId(@Param("projectId") Long projectId);
+	Optional<Contract> findByProjectId(Long projectId);
 }
