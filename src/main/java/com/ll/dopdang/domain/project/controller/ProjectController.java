@@ -5,6 +5,9 @@ import java.util.Map;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -16,6 +19,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ll.dopdang.domain.project.dto.MyProjectPageResponse;
+import com.ll.dopdang.domain.project.dto.ContractCreateRequest;
+import com.ll.dopdang.domain.project.service.ContractService;
 import com.ll.dopdang.domain.project.dto.ProjectCreateRequest;
 import com.ll.dopdang.domain.project.dto.ProjectCreateResponse;
 import com.ll.dopdang.domain.project.dto.ProjectDetailResponse;
@@ -29,13 +34,17 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/projects")
 public class ProjectController {
+
 	private final ProjectService projectService;
 	private final ProjectImageService projectImageService;
+	private final ContractService contractService;
 
 	@Operation(
 		summary = "프로젝트 생성",
@@ -65,6 +74,24 @@ public class ProjectController {
 				projectId,
 				"프로젝트가 성공적으로 생성되었습니다. (ID: " + projectId + ")"
 			));
+	}
+	// TODO: 컨트랙트 분리
+	@PostMapping("/contract")
+	public ResponseEntity<?> createContract(@RequestBody ContractCreateRequest request) {
+		log.info("계약 생성 요청: offerId={}, price={}, startDate={}, endDate={}",
+			request.getOfferId(), request.getPrice(), request.getStartDate(), request.getEndDate());
+
+		Long contractId = contractService.createContractFromOffer(
+			request.getOfferId(),
+			request.getPrice(),
+			request.getStartDate(),
+			request.getEndDate()
+		);
+
+		Map<String, Object> response = new HashMap<>();
+		response.put("contractId", contractId);
+
+		return ResponseEntity.ok(response);
 	}
 
 	@Operation(

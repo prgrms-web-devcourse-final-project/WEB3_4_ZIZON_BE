@@ -1,9 +1,11 @@
 package com.ll.dopdang.domain.project.entity;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import com.ll.dopdang.domain.expert.entity.Expert;
 import com.ll.dopdang.global.entity.BaseEntity;
+import com.ll.dopdang.domain.member.entity.Member;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -21,6 +23,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Getter
@@ -43,6 +46,9 @@ public class Offer extends BaseEntity {
 
 	@Column(nullable = false)
 	private BigDecimal price;
+
+	@Column(columnDefinition = "TEXT")
+	private String description;
 
 	@Column(name = "delivery_days", nullable = false)
 	private Integer deliveryDays;

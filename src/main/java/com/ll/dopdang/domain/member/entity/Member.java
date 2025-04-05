@@ -62,7 +62,6 @@ public class Member {
 	/**
 	 * 전화번호
 	 */
-	@Column(nullable = true)
 	private String phone;
 
 	/**

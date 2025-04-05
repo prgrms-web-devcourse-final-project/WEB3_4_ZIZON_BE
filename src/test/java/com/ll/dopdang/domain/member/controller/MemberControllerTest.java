@@ -33,6 +33,7 @@ import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.entity.MemberRole;
 import com.ll.dopdang.domain.member.entity.MemberStatus;
 import com.ll.dopdang.domain.member.repository.MemberRepository;
+import com.ll.dopdang.global.config.S3Config;
 import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.global.redis.repository.RedisRepository;
@@ -60,6 +61,8 @@ class MemberControllerTest {
 	private RedisRepository redisRepository;
 	@MockBean
 	private CoolSmsService coolSmsService;
+	@MockBean
+	private S3Config s3Config;
 
 	@BeforeEach
 	void setUp() {
@@ -375,5 +378,40 @@ class MemberControllerTest {
 			.andExpect(jsonPath("$.name").value(newName))
 			.andExpect(jsonPath("$.profileImage").value(newProfile))
 			.andDo(print());
+	}
+
+	@Test
+	@DisplayName("탈퇴 테스트")
+	void test11() throws Exception {
+		MvcResult loginResult = mvc.perform(post("/users/login")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(new LoginRequest("test1@test.com", "test1234!"))))
+			.andExpect(status().isOk())
+			.andDo(print())
+			.andReturn();
+
+		Cookie[] cookies = loginResult.getResponse().getCookies();
+		assertNotNull(cookies, "로그인 응답에 쿠키가 없습니다.");
+		assertTrue(cookies.length > 0, "로그인 응답에 쿠키가 없습니다.");
+
+		Cookie accessTokenCookie = Arrays.stream(cookies)
+			.filter(cookie -> cookie.getName().equals("accessToken"))
+			.findFirst()
+			.orElseThrow(() -> new RuntimeException("액세스 토큰 쿠키를 찾을 수 없습니다."));
+
+		String accessTokenValue = accessTokenCookie.getValue();
+		assertFalse("액세스 토큰이 비어있습니다.", accessTokenValue.isEmpty());
+
+		Long userId = jwtUtil.getUserId(accessTokenValue);
+		mvc.perform(delete("/users/{user_id}", userId)
+				.cookie(accessTokenCookie)
+				.contentType(MediaType.APPLICATION_JSON))
+			.andExpect(status().isOk())
+			.andDo(print())
+			.andReturn();
+		Member member = memberRepository.findById(userId).orElseThrow(
+			() -> new ServiceException(ErrorCode.MEMBER_NOT_FOUND)
+		);
+		assertEquals("유저 상태", member.getStatus(), "DEACTIVATED");
 	}
 }

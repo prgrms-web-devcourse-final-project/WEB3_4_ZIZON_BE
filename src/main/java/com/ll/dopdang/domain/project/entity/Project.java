@@ -66,5 +66,4 @@ public class Project extends BaseEntity {
 	@JoinColumn(name = "expert_id")
 	private Expert expert;
 
-	// 생성자, 비즈니스 로직 등...
 }

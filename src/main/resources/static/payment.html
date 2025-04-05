@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8"/>
+    <!-- SDK 추가 -->
+    <script src="https://js.tosspayments.com/v2/standard"></script>
+</head>
+<body>
+<!-- 결제하기 버튼 -->
+<button class="button" onclick="requestPayment()" style="margin-top: 30px">결제하기</button>
+
+<script>
+    // ------ SDK 초기화 ------
+    const clientKey = "test_ck_Poxy1XQL8RmYXXlBgjDXr7nO5Wml";
+    const tossPayments = TossPayments(clientKey);
+
+    // ------ '결제하기' 버튼 누르면 결제창 띄우기 ------
+    async function requestPayment() {
+        // 먼저 서버에서 orderId 발급받기
+        const paymentType = "PROJECT" // 의뢰에 대한 결제 타입은 PROJECT
+        const referenceId = 2; // 특정 Offer에 대해 생성된 ContractId
+        const orderIdResponse = await fetch('/payments/orderId', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                paymentType: paymentType,
+                referenceId: referenceId
+            })
+        });
+        const orderData = await orderIdResponse.json();
+
+        const orderId = orderData.orderId;
+        const customerKey = orderData.customerKey;
+
+        console.log("발급받은 orderId:", orderId);
+        console.log("발급받은 customerKey:", customerKey);
+
+        // 결제 요청
+        const payment = tossPayments.payment({customerKey});
+
+        await payment.requestPayment({
+            method: "CARD", // 카드 결제
+            amount: {
+                currency: "KRW",
+                value: 190000,
+            },
+            orderId: orderId, // 서버에서 발급받은 주문번호 사용
+            orderName: "토스 티셔츠 외 2건",
+            successUrl: window.location.origin + "/payments/success", // 결제 성공 콜백 URL. http://localhost:8080/payments/success
+            failUrl: window.location.origin + "/payments/fail", // 결제 실패 콜백 URL. http://localhost:8080/payments/fail
+            customerEmail: "customer123@gmail.com",
+            customerName: "김토스",
+            customerMobilePhone: "01012341234",
+            card: {
+                useEscrow: false,
+                flowMode: "DEFAULT",
+                useCardPoint: false,
+                useAppCardOnly: false,
+            },
+        });
+    }
+</script>
+</body>
+</html>
