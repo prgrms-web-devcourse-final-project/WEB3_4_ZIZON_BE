@@ -220,6 +220,7 @@ public class ExpertService {
 			.categoryName(expert.getCategory().getName())
 			.careerYears(expert.getCareerYears())
 			.introduction(expert.getIntroduction())
+			.mainCategoryId(expert.getCategory().getId())
 			.profileImage(expert.getMember().getProfileImage())
 			.build();
 	}
@@ -230,6 +231,7 @@ public class ExpertService {
 	private ExpertDetailResponseDto mapToDetailResponseDto(Expert expert) {
 		return ExpertDetailResponseDto.builder()
 			.id(expert.getId())
+			.mainCategoryId(expert.getCategory().getId())
 			.name(expert.getMember().getName()) // Member 엔티티의 name
 			.categoryName(expert.getCategory().getName())
 			.subCategoryNames(expert.getSubCategories().stream()

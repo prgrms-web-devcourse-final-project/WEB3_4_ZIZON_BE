@@ -10,10 +10,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ExpertResponseDto {
-
     private String name; // 전문가 이름
     private String categoryName; // 대분류 카테고리 이름
     private int careerYears; // 경력 연수
     private String introduction; // 자기소개
     private String profileImage;
+    private Long mainCategoryId;
 }
