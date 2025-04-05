@@ -1,5 +1,10 @@
 package com.ll.dopdang.domain.expert.service;
 
+import java.util.List;
+import java.util.Objects;
+
+import org.springframework.stereotype.Service;
+
 import com.ll.dopdang.domain.expert.category.entity.Category;
 import com.ll.dopdang.domain.expert.category.entity.ExpertCategory;
 import com.ll.dopdang.domain.expert.category.repository.CategoryRepository;
@@ -15,11 +20,6 @@ import com.ll.dopdang.domain.member.repository.MemberRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Objects;
 
 /**
  * 전문가 관련 비즈니스 로직을 처리하는 서비스 클래스.
@@ -216,10 +216,11 @@ public class ExpertService {
 	 */
 	private ExpertResponseDto mapToResponseDto(Expert expert) {
 		return ExpertResponseDto.builder()
-			.name(expert.getMember().getName()) // Member 이름 (추가적으로 Member 엔티티에 getter 필요)
+			.name(expert.getMember().getName()) // Member 이름
 			.categoryName(expert.getCategory().getName())
 			.careerYears(expert.getCareerYears())
 			.introduction(expert.getIntroduction())
+			.profileImage(expert.getMember().getProfileImage())
 			.build();
 	}
 
@@ -237,6 +238,7 @@ public class ExpertService {
 			.introduction(expert.getIntroduction())
 			.careerYears(expert.getCareerYears())
 			.certification(expert.getCertification())
+			.profileImage(expert.getMember().getProfileImage())
 			.gender(expert.getGender())
 			.build();
 	}
