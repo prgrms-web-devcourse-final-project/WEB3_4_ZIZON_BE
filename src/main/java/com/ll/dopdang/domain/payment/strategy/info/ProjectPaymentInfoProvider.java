@@ -35,7 +35,7 @@ public class ProjectPaymentInfoProvider implements PaymentOrderInfoProvider {
 
 		// 계약 정보 추가
 		additionalInfo.put("title", project.getTitle());
-		additionalInfo.put("expertName", contract.getExpert().getName());
+		additionalInfo.put("expertName", contract.getExpert().getMember().getName());
 		additionalInfo.put("category", project.getCategory().getName());
 		additionalInfo.put("price", contract.getPrice());
 		additionalInfo.put("startDate", contract.getStartDate());
@@ -58,7 +58,7 @@ public class ProjectPaymentInfoProvider implements PaymentOrderInfoProvider {
 			.amount(baseResponse.getAmount())
 			.errorCode(baseResponse.getErrorCode())
 			.message(baseResponse.getMessage())
-			.expertName(contract.getExpert().getName())
+			.expertName(contract.getExpert().getMember().getName())
 			.paymentName(payment.getItemsSummary())
 			.build();
 	}

@@ -2,9 +2,9 @@ package com.ll.dopdang.domain.project.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 
 import com.ll.dopdang.domain.member.entity.Member;
+import com.ll.dopdang.domain.project.entity.Offer;
 import com.ll.dopdang.domain.project.entity.Project;
 
 import lombok.AllArgsConstructor;
@@ -16,38 +16,45 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ProjectDetailResponse {
+public class OfferSummaryResponse {
 
-	private Long id;
+	private Long offerId;
+	private String offerStatus; // pending, accepted, rejected
+	private BigDecimal price;
+	private Integer deliveryDays;
+
+	private Long projectId;
 	private String title;
 	private String summary;
-	private String description;
 	private String region;
-	private BigDecimal budget;
+	private String status; // 프로젝트 상태 (OPEN, IN_PROGRESS 등)
 	private LocalDateTime deadline;
-	private String status;
 
+	// 의뢰인 정보
 	private String clientName;
 	private String clientProfileImageUrl;
 
-	private List<String> imageUrls;
+	private String thumbnailImageUrl;
 
-	// 이 방법!!
-	public static ProjectDetailResponse of(Project project, List<String> imageUrls) {
+	public static OfferSummaryResponse of(Offer offer, Project project, String thumbnailImageUrl) {
 		Member client = project.getClient();
 
-		return ProjectDetailResponse.builder()
-			.id(project.getId())
+		return OfferSummaryResponse.builder()
+			.offerId(offer.getId())
+			.offerStatus(String.valueOf(offer.getStatus()))
+			.price(offer.getPrice())
+			.deliveryDays(offer.getDeliveryDays())
+
+			.projectId(project.getId())
 			.title(project.getTitle())
 			.summary(project.getSummary())
-			.description(project.getDescription())
 			.region(project.getRegion())
-			.budget(project.getBudget())
-			.deadline(project.getDeadline())
 			.status(project.getStatus().name())
+			.deadline(project.getDeadline())
+
 			.clientName(client.getName())
 			.clientProfileImageUrl(client.getProfileImage())
-			.imageUrls(imageUrls)
+			.thumbnailImageUrl(thumbnailImageUrl)
 			.build();
 	}
 }

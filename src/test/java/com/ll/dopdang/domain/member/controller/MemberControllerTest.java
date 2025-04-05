@@ -1,5 +1,6 @@
 package com.ll.dopdang.domain.member.controller;
 
+import static org.hibernate.validator.internal.util.Contracts.*;
 import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
 import static org.hibernate.validator.internal.util.Contracts.assertTrue;
 import static org.mockito.Mockito.*;
@@ -108,9 +109,9 @@ class MemberControllerTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(new LoginRequest("test1@test.com", "test1234!"))))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.body.email").value("test1@test.com"))
-			.andExpect(jsonPath("$.body.profileImage").value(""))
-			.andExpect(jsonPath("$.body.name").value("test1"))
+			.andExpect(jsonPath("$.email").value("test1@test.com"))
+			.andExpect(jsonPath("$.profileImage").value(""))
+			.andExpect(jsonPath("$.name").value("test1"))
 			.andDo(print())
 			.andReturn();
 
@@ -196,6 +197,33 @@ class MemberControllerTest {
 		String accessTokenValue = accessTokenCookie.getValue();
 		assertFalse("액세스 토큰이 비어있습니다.", accessTokenValue.isEmpty());
 
+		Long userId = jwtUtil.getUserId(accessTokenValue);
+
+		// 3. isClient 값을 false로 설정
+		Member member = memberRepository.findById(userId)
+			.orElseThrow(() -> new ServiceException(ErrorCode.MEMBER_NOT_FOUND));
+
+		Member updatedMember = Member.builder()
+			.id(member.getId())
+			.email(member.getEmail())
+			.password(member.getPassword())
+			.name(member.getName())
+			.profileImage(member.getProfileImage())
+			.phone(member.getPhone())
+			.status(member.getStatus())
+			.userRole(member.getUserRole())
+			.memberId(member.getMemberId())
+			.uniqueKey(member.getUniqueKey())
+			.isClient(false)
+			.createdAt(member.getCreatedAt())
+			.updatedAt(member.getUpdatedAt())
+			.build();
+		memberRepository.save(updatedMember);
+
+		// 저장 후 확인
+		member = memberRepository.findById(userId).orElseThrow();
+		assertFalse("테스트 전 isClient는 false여야 합니다", member.isClient());
+
 		MvcResult logoutResult = mvc.perform(post("/users/logout")
 				.contentType(MediaType.APPLICATION_JSON)
 				.cookie(accessTokenCookie))
@@ -204,6 +232,9 @@ class MemberControllerTest {
 			.andExpect(jsonPath("$.message").value("로그아웃 되었습니다."))
 			.andDo(print())
 			.andReturn();
+
+		Member resultMember = memberRepository.findById(userId).orElseThrow();
+		assertTrue(resultMember.isClient(), "로그아웃 후 isClient는 true여야 합니다");
 
 		Cookie[] logoutCookies = logoutResult.getResponse().getCookies();
 		assertNotNull(logoutCookies, "로그아웃 응답에 쿠키가 없습니다.");

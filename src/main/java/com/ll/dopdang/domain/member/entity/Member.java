@@ -110,6 +110,12 @@ public class Member {
 	private String uniqueKey;
 
 	/**
+	 * 현재 사용자의 상태 확인 (true = 의뢰자, false = 전문가)
+	 */
+	@Column(name = "is_client", nullable = false)
+	private boolean isClient;
+
+	/**
 	 * 유저 생성 시, 자동으로 uniqueKey를 생성해주는 메서드
 	 */
 	@PrePersist
@@ -117,6 +123,7 @@ public class Member {
 		if (ObjectUtils.isEmpty(uniqueKey)) {
 			this.uniqueKey = UUID.randomUUID().toString();
 		}
+		this.isClient = true;
 	}
 
 	/**
