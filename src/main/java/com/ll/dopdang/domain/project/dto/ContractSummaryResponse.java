@@ -18,4 +18,9 @@ public class ContractSummaryResponse {
 	private LocalDateTime startDate;
 	private LocalDateTime endDate;
 	private String status;
+	//방어적 복사 객체지향
+	// 	public static ContractSummaryResponse of(Offer offer, Project project, String thumbnailImageUrl) {
+	// 		return ContractSummaryResponse.builder().contractId(offer.expert());
+	// 	}
+	// }
 }

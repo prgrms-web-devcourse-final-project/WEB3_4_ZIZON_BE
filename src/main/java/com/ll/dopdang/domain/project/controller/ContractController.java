@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.project.dto.ContractCreateRequest;
+import com.ll.dopdang.domain.project.dto.ContractDetailResponse;
 import com.ll.dopdang.domain.project.dto.ContractSummaryResponse;
 import com.ll.dopdang.domain.project.service.ContractService;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
@@ -75,5 +77,19 @@ public class ContractController {
 
 		List<ContractSummaryResponse> contracts = contractService.getContractsForExpert(member.getId(), pageable);
 		return ResponseEntity.ok(contracts);
+	}
+
+	@GetMapping("/by-project/{projectId}")
+	@Operation(summary = "계약 단건 조회", description = "프로젝트 ID로 계약을 단건 조회합니다. (클라이언트 또는 전문가 본인만 접근 가능)")
+	@ApiResponse(responseCode = "200", description = "조회 성공")
+	@ApiResponse(responseCode = "403", description = "접근 권한 없음")
+	@ApiResponse(responseCode = "404", description = "계약 정보 없음")
+	public ResponseEntity<ContractDetailResponse> getContractByProjectId(
+		@PathVariable Long projectId,
+		@AuthenticationPrincipal CustomUserDetails userDetails) {
+
+		Member member = userDetails.getMember();
+		ContractDetailResponse response = contractService.getContractDetail(projectId, member);
+		return ResponseEntity.ok(response);
 	}
 }

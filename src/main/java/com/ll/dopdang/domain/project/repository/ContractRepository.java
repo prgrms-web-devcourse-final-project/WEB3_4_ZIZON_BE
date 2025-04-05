@@ -1,6 +1,7 @@
 package com.ll.dopdang.domain.project.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -20,4 +21,6 @@ public interface ContractRepository extends JpaRepository<Contract, Long> {
 		+ "ORDER BY c.createdAt DESC")
 	List<Contract> findContractsByExpertMemberId(@Param("memberId") Long memberId, Pageable pageable);
 
+	@Query("SELECT c FROM Contract c WHERE c.project.id = :projectId")
+	Optional<Contract> findByProjectId(@Param("projectId") Long projectId);
 }
