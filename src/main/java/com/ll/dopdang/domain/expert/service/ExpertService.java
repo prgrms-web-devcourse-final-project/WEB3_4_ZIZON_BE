@@ -194,7 +194,7 @@ public class ExpertService {
 			if (updateRequestDto.getCertificateNames() != null && !updateRequestDto.getCertificateNames().isEmpty()) {
 				// 기존 자격증 삭제
 				expertCertificateRepository.deleteAllByExpertId(expertId);
-				expertCategoryRepository.flush();
+				expertCertificateRepository.flush();
 
 				// 새로운 자격증 저장
 				List<Certificate> certificates = updateRequestDto.getCertificateNames().stream()
@@ -207,7 +207,6 @@ public class ExpertService {
 						.expert(existingExpert)
 						.certificate(certificate)
 						.build();
-					existingExpert.getExpertCertificates().add(expertCertificate);
 					expertCertificateRepository.save(expertCertificate);
 				});
 			}
