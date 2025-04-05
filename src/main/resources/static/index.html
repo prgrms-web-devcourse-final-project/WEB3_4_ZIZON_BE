@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<html lang="ko">
 <head>
     <meta charset="UTF-8" />
     <title>채팅 UI</title>
@@ -184,6 +184,13 @@
         #currentUserInfo {
             margin: 10px;
         }
+        /* [추가] 오른쪽 프로젝트 정보 영역 스타일 */
+        .project-info {
+            width: 30%;
+            border-left: 1px solid #ccc;
+            padding: 10px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body>
@@ -224,6 +231,15 @@
             <button onclick="sendMessage()">전송</button>
         </div>
     </div>
+
+    <!-- [추가] 오른쪽 프로젝트 정보 영역 -->
+    <div class="project-info">
+        <h3>프로젝트 정보</h3>
+        <div id="projectDetails">
+            <!-- 선택한 채팅방의 projectId를 이용해 프로젝트 정보를 렌더링 -->
+            <p>프로젝트 정보가 없습니다.</p>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -232,10 +248,9 @@
     let notifications = {};   // { roomId: { otherUserName, message, count } }
     let unreadCount = 0;
     let currentRoomId = null;
-
-    // [추가] 채팅방 구독 관리를 위한 전역 변수
+    // 채팅방 구독 관리를 위한 전역 변수
     let chatSubscription = null;   // 채팅 메시지 구독
-    let readSubscription = null;   // 읽음 상태 구독
+    let readSubscription = null;     // 읽음 상태 구독
 
     // 페이지 unload 시 현재 채팅방 읽음 처리
     window.addEventListener("beforeunload", function() {
@@ -258,10 +273,8 @@
                 currentUser.email = currentUser.email.trim().toLowerCase();
                 document.getElementById("currentUserInfo").innerText =
                     "현재 사용자: " + currentUser.name + " (" + currentUser.email + ")";
-
                 // 웹소켓 연결은 페이지 로드 후 단 한 번만
                 connectWebSocket();
-
                 // 채팅방 목록 불러오기
                 fetchChatRoomsDetail();
             })
@@ -274,17 +287,14 @@
     function connectWebSocket() {
         const socket = new SockJS('http://localhost:8080/ws-chat');
         stompClient = Stomp.over(socket);
-
         stompClient.connect({}, function(frame) {
             console.log('Connected: ' + frame);
-
             // 알림 구독 (송신자, 수신자 모두 해당)
             stompClient.subscribe('/topic/notice/' + currentUser.email, function(messageOutput) {
                 let payload = JSON.parse(messageOutput.body);
                 let roomId = payload.roomId;
                 let otherUser = payload.otherUser || "알 수 없음";
                 let alarmMsg = payload.message || "";
-
                 if (notifications[roomId]) {
                     notifications[roomId].count++;
                 } else {
@@ -313,7 +323,6 @@
             .then(rooms => {
                 const detailPromises = rooms.map(room => {
                     const otherUser = (room.member1 === currentUser.email) ? room.member2 : room.member1;
-
                     const unreadPromise = fetch(
                         `http://localhost:8080/chatrooms/${room.roomId}/unreadCount?username=${encodeURIComponent(currentUser.email)}`,
                         { credentials: 'include' }
@@ -321,7 +330,6 @@
                         if (!res.ok) throw new Error("미읽은 개수를 불러올 수 없습니다.");
                         return res.json();
                     });
-
                     const historyPromise = fetch(
                         `http://localhost:8080/chatrooms?sender=${encodeURIComponent(currentUser.email)}&receiver=${encodeURIComponent(otherUser)}`,
                         { credentials: 'include' }
@@ -329,7 +337,6 @@
                         if (!res.ok) throw new Error("채팅 내역을 불러올 수 없습니다.");
                         return res.json();
                     });
-
                     return Promise.all([unreadPromise, historyPromise]).then(([unreadCount, messages]) => {
                         let lastMessage = "";
                         let lastMessageTime = "";
@@ -344,7 +351,8 @@
                             otherUserProfile: "https://via.placeholder.com/40",
                             lastMessage: lastMessage,
                             lastMessageTime: lastMessageTime,
-                            unreadCount: unreadCount
+                            unreadCount: unreadCount,
+                            projectId: room.projectId // [추가] 채팅방 요약에 projectId 포함
                         };
                     });
                 });
@@ -358,39 +366,31 @@
             });
     }
 
-    // 4. 채팅방 목록 렌더링
+    // 4. 채팅방 목록 렌더링 (projectId 포함)
     function renderChatRooms(rooms) {
         const chatRoomsList = document.getElementById("chatRoomsList");
         chatRoomsList.innerHTML = "";
         rooms.forEach(room => {
-            console.log("방이름:" + room.roomId +" 상대방이름: " +  room.otherUserName);
             const roomDiv = document.createElement("div");
             roomDiv.className = "chat-room-item";
             roomDiv.id = "chat-room-" + room.roomId;
-
             const imgElem = document.createElement("img");
             imgElem.src = room.otherUserProfile;
             roomDiv.appendChild(imgElem);
-
             const infoDiv = document.createElement("div");
             infoDiv.style.flex = "1";
-
             const nameSpan = document.createElement("span");
             nameSpan.innerText = room.otherUserName;
             infoDiv.appendChild(nameSpan);
             infoDiv.appendChild(document.createElement("br"));
-
             const lastMsgSpan = document.createElement("span");
             lastMsgSpan.innerText = room.lastMessage;
             infoDiv.appendChild(lastMsgSpan);
             infoDiv.appendChild(document.createElement("br"));
-
             const timeSmall = document.createElement("small");
             timeSmall.innerText = room.lastMessageTime ? formatDate(room.lastMessageTime) : "";
             infoDiv.appendChild(timeSmall);
-
             roomDiv.appendChild(infoDiv);
-
             const badge = document.createElement("span");
             badge.className = "badge";
             if (room.unreadCount > 0) {
@@ -398,17 +398,16 @@
                 badge.style.display = "inline";
             }
             roomDiv.appendChild(badge);
-
             roomDiv.onclick = function() {
-                selectChatRoom(room.roomId, room.otherUserName);
+                // 채팅방 선택 시 projectId도 함께 넘김
+                selectChatRoom(room.roomId, room.otherUserName, room.projectId);
             };
             chatRoomsList.appendChild(roomDiv);
         });
     }
 
-    // 5. 채팅방 선택 시 동작
-    function selectChatRoom(roomId, otherUserName) {
-        // 기존에 선택된 채팅방과 다르면 기존 구독을 해제
+    // 5. 채팅방 선택 시 동작 (projectId 추가)
+    function selectChatRoom(roomId, otherUserName, projectId) {
         if (chatSubscription) {
             chatSubscription.unsubscribe();
             chatSubscription = null;
@@ -417,7 +416,6 @@
             readSubscription.unsubscribe();
             readSubscription = null;
         }
-
         if (currentRoomId && currentRoomId !== roomId) {
             markRoomAsRead(currentRoomId);
         }
@@ -425,14 +423,13 @@
         document.getElementById("chatRoomHeader").innerText =
             "채팅방: " + roomId + " (상대: " + otherUserName + ")";
         document.getElementById("chatLog").innerHTML = "";
-
         markRoomAsRead(roomId).then(() => {
             fetchChatRoomsDetail();
         });
         clearNotification(roomId);
         fetchChatHistory(roomId);
-
-        // [추가] 새로운 채팅방에 대한 구독을 등록
+        // [추가] projectId를 이용해 프로젝트 정보를 불러와 오른쪽 영역에 렌더링
+        fetchProjectDetails(projectId);
         chatSubscription = stompClient.subscribe('/topic/chat/' + roomId, function(messageOutput) {
             showMessage(JSON.parse(messageOutput.body));
         });
@@ -447,7 +444,6 @@
         const sender = currentUser.email;
         const parts = roomId.split(":");
         let receiver = (parts[0] === sender) ? parts[1] : parts[0];
-
         fetch(`http://localhost:8080/chatrooms?sender=${encodeURIComponent(sender)}&receiver=${encodeURIComponent(receiver)}`,
             { credentials: 'include' }
         )
@@ -482,7 +478,6 @@
         }
         const parts = currentRoomId.split(":");
         let receiver = (parts[0] === currentUser.email) ? parts[1] : parts[0];
-
         const chatMessage = {
             sender: currentUser.email,
             receiver: receiver,
@@ -502,41 +497,32 @@
             messageContainer.classList.add("my-message");
         } else {
             messageContainer.classList.add("other-message");
-            // 다른 사람 메시지인 경우 프로필 이미지 추가
             const profileImg = document.createElement("img");
             profileImg.classList.add("profile-image");
             profileImg.src = message.user_profile_image || "https://via.placeholder.com/40";
             messageContainer.appendChild(profileImg);
         }
-
         const messageInfo = document.createElement("div");
         messageInfo.classList.add("message-info");
-
         const senderName = document.createElement("div");
         senderName.classList.add("sender-name");
         senderName.innerText = message.user_name || message.sender;
-
         const messageText = document.createElement("div");
         messageText.classList.add("message-text");
         messageText.innerText = message.content;
-
         const messageFooter = document.createElement("div");
         messageFooter.classList.add("message-footer");
-
         const messageTime = document.createElement("span");
         messageTime.classList.add("message-time");
         messageTime.innerText = message.timestamp ? formatDate(message.timestamp) : "";
         messageFooter.appendChild(messageTime);
-
         const readStatus = document.createElement("span");
         readStatus.classList.add("read-status");
         readStatus.innerText = message.read ? "읽음" : "미읽음";
         messageFooter.appendChild(readStatus);
-
         messageInfo.appendChild(senderName);
         messageInfo.appendChild(messageText);
         messageInfo.appendChild(messageFooter);
-
         messageContainer.appendChild(messageInfo);
         chatLog.appendChild(messageContainer);
         chatLog.scrollTop = chatLog.scrollHeight;
@@ -567,7 +553,6 @@
         event.stopPropagation();
         const panel = document.getElementById("notificationPanel");
         panel.innerHTML = "";
-
         for (const roomId in notifications) {
             const item = document.createElement("div");
             item.classList.add("notification-item");
@@ -622,6 +607,34 @@
             })
             .catch(error => {
                 console.error("Error marking room as read:", error);
+            });
+    }
+
+    // [추가] 프로젝트 정보 불러오기 (projectId 이용)
+    function fetchProjectDetails(projectId) {
+        if (!projectId) {
+            document.getElementById("projectDetails").innerHTML = "<p>프로젝트 정보가 없습니다.</p>";
+            return;
+        }
+        fetch(`http://localhost:8080/projects/${projectId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("프로젝트 정보를 불러올 수 없습니다.");
+                }
+                return response.json();
+            })
+            .then(project => {
+                let html = `<h4>${project.title}</h4>`;
+                html += `<p><strong>요약:</strong> ${project.summary}</p>`;
+                html += `<p><strong>설명:</strong> ${project.description}</p>`;
+                html += `<p><strong>지역:</strong> ${project.region}</p>`;
+                html += `<p><strong>예산:</strong> ${project.budget}</p>`;
+                html += `<p><strong>마감일:</strong> ${project.deadline}</p>`;
+                document.getElementById("projectDetails").innerHTML = html;
+            })
+            .catch(error => {
+                console.error("Error fetching project details:", error);
+                document.getElementById("projectDetails").innerHTML = "<p>프로젝트 정보를 불러오지 못했습니다.</p>";
             });
     }
 
