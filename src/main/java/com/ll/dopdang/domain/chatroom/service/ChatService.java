@@ -123,7 +123,7 @@ public class ChatService {
 	/**
 	 * 채팅방 타임스탬프 정보를 업데이트합니다.
 	 *
-	 * @param roomId 채팅방 ID
+	 * @param roomId    채팅방 ID
 	 * @param timestamp 최신 메시지 타임스탬프
 	 */
 	private void updateChatRoomTimestamp(String roomId, LocalDateTime timestamp) {
@@ -256,7 +256,8 @@ public class ChatService {
 				String roomId = room.getRoomId();
 				List<ChatMessage> messages = chatMessageRepository.findTopMessagesByRoomIdOrderByTimestampDesc(roomId, 1);
 				ChatMessage lastMessage = messages.isEmpty() ? null : messages.get(0);
-				String roomSummary = createRoomSummaryJson(roomId, lastMessage);
+				Long projectId = room.getProjectId();
+				String roomSummary = createRoomSummaryJson(roomId, lastMessage, projectId);
 				redisTemplate.opsForHash().put(redisKey, roomId, roomSummary);
 				if (lastMessage != null) {
 					updateChatRoomTimestamp(roomId, lastMessage.getTimestamp());
@@ -293,9 +294,12 @@ public class ChatService {
 	 */
 	private void updateChatRoomCache(String roomId, ChatMessage chatMessage) {
 		if (chatMessage == null) return;
+		ChatRoom room = chatRoomRepository.findByRoomId(roomId)
+			.orElseThrow(() -> new IllegalStateException("채팅방을 찾을 수 없습니다."));
+		Long projectId = room.getProjectId();
 		String keySender = String.format(CHAT_ROOMS_KEY_TEMPLATE, chatMessage.getSender());
 		String keyReceiver = String.format(CHAT_ROOMS_KEY_TEMPLATE, chatMessage.getReceiver());
-		String roomSummary = createRoomSummaryJson(roomId, chatMessage);
+		String roomSummary = createRoomSummaryJson(roomId, chatMessage, projectId);
 		redisTemplate.opsForHash().put(keySender, roomId, roomSummary);
 		redisTemplate.expire(keySender, CACHE_EXPIRATION, TimeUnit.MINUTES);
 		redisTemplate.opsForHash().put(keyReceiver, roomId, roomSummary);
@@ -308,9 +312,10 @@ public class ChatService {
 	 *
 	 * @param roomId      채팅방 식별자
 	 * @param chatMessage 최신 메시지 (없으면 null)
+	 * @param projectId   채팅방에 연결된 프로젝트의 ID
 	 * @return 채팅방 요약 JSON 문자열
 	 */
-	private String createRoomSummaryJson(String roomId, ChatMessage chatMessage) {
+	private String createRoomSummaryJson(String roomId, ChatMessage chatMessage, Long projectId) {
 		if (chatMessage != null) {
 			String content = chatMessage.getContent()
 				.replace("\"", "\\\"")
@@ -319,7 +324,8 @@ public class ChatService {
 				"\"lastMessage\":\"" + content + "\"," +
 				"\"timestamp\":\"" + chatMessage.getTimestamp() + "\"}";
 		} else {
-			return "{\"roomId\":\"" + roomId + "\"}";
+			return "{\"roomId\":\"" + roomId + "\"," +
+				"\"projectId\":" + projectId + "}";
 		}
 	}
 
