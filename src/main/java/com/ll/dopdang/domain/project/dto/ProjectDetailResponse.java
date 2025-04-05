@@ -32,6 +32,7 @@ public class ProjectDetailResponse {
 
 	private List<String> imageUrls;
 
+	// 이 방법!!
 	public static ProjectDetailResponse of(Project project, List<String> imageUrls) {
 		Member client = project.getClient();
 

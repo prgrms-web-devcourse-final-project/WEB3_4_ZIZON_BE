@@ -26,4 +26,6 @@ public class MyProjectSummaryResponse {
 	private LocalDateTime deadline; // 마감일
 
 	private String thumbnailImageUrl; // 대표 이미지 URL (없으면 기본 이미지)
+
+	private Long contractId; // 연결된 계약 ID (없으면 null)
 }

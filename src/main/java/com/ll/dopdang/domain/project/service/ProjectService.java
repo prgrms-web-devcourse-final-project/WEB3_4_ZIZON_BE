@@ -3,6 +3,7 @@ package com.ll.dopdang.domain.project.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,10 +21,11 @@ import com.ll.dopdang.domain.project.dto.MyProjectSummaryResponse;
 import com.ll.dopdang.domain.project.dto.ProjectCreateRequest;
 import com.ll.dopdang.domain.project.dto.ProjectDetailResponse;
 import com.ll.dopdang.domain.project.dto.ProjectListForAllPageResponse;
+import com.ll.dopdang.domain.project.entity.Contract;
 import com.ll.dopdang.domain.project.entity.Project;
 import com.ll.dopdang.domain.project.entity.ProjectImage;
 import com.ll.dopdang.domain.project.entity.ProjectStatus;
-import com.ll.dopdang.domain.project.repository.OfferRepository;
+import com.ll.dopdang.domain.project.repository.ContractRepository;
 import com.ll.dopdang.domain.project.repository.ProjectImageRepository;
 import com.ll.dopdang.domain.project.repository.ProjectRepository;
 import com.ll.dopdang.global.exception.ErrorCode;
@@ -39,7 +41,7 @@ public class ProjectService {
 	private final CategoryRepository categoryRepository;
 	private final ExpertRepository expertRepository;
 	private final ProjectImageRepository projectImageRepository;
-	private final OfferRepository offerRepository;
+	private final ContractRepository contractRepository;
 
 	/**
 	 * 새로운 프로젝트를 생성하고, 프로젝트 이미지가 있다면 함께 저장합니다.
@@ -146,18 +148,15 @@ public class ProjectService {
 	 * @return 마이페이지에서 클라이언트가 등록한 프로젝트 목록 응답
 	 */
 	public MyProjectPageResponse getMyProjectList(Long clientId, Pageable pageable, Map<Long, String> thumbnailMap) {
-
-		// 클라이언트가 등록한 프로젝트 조회
 		Page<Project> myProjects = projectRepository.findByClientId(clientId, pageable);
 
-		// 프로젝트 목록을 MyProjectSummaryResponse 형태로 변환
-		List<MyProjectSummaryResponse> projectSummaries = myProjects.getContent().stream()
+		List<MyProjectSummaryResponse> summaries = myProjects.getContent().stream()
 			.map(project -> {
-				// 대표 이미지가 없다면 기본 이미지 사용
-				String thumbnailUrl = thumbnailMap.get(project.getId());
-				if (thumbnailUrl == null) {
-					thumbnailUrl = "https://devcouse4-team16-bucket.s3.ap-northeast-2.amazonaws.com/projects/1/project_image.jpg";  // 기본 이미지 URL 추가
-				}
+				String thumbnailUrl = thumbnailMap.getOrDefault(project.getId(),
+					"https://devcouse4-team16-bucket.s3.ap-northeast-2.amazonaws.com/projects/1/project_image.jpg");
+
+				// 🔍 프로젝트에 연결된 계약이 있는지 확인
+				Optional<Contract> optionalContract = contractRepository.findByProjectId(project.getId());
 
 				return MyProjectSummaryResponse.builder()
 					.id(project.getId())
@@ -168,13 +167,13 @@ public class ProjectService {
 					.status(project.getStatus().name())
 					.deadline(project.getDeadline())
 					.thumbnailImageUrl(thumbnailUrl)
+					.contractId(optionalContract.map(Contract::getId).orElse(null)) // ✅ 있으면 ID, 없으면 null
 					.build();
 			})
 			.toList();
 
-		// 페이지 응답 객체 생성
 		return MyProjectPageResponse.builder()
-			.projects(projectSummaries)
+			.projects(summaries)
 			.currentPage(myProjects.getNumber())
 			.pageSize(myProjects.getSize())
 			.hasNext(myProjects.hasNext())
