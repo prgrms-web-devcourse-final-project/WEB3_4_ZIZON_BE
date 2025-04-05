@@ -22,5 +22,5 @@ public class ExpertDetailResponseDto {
 	private Boolean gender;       // 성별 (0 = 남자, 1 = 여자)
 	private String profileImage;
 	private Long mainCategoryId;
-	private List<String> subCategoryIds;
+	private List<Long> subCategoryIds;
 }
