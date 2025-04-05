@@ -127,33 +127,53 @@ public class MemberController {
 	 * @return {@link ResponseEntity}
 	 */
 	@Operation(
-		summary = "회원 정보 수정 (마이페이지)",
+		summary = "회원 정보 수정",
 		description = "인증된 사용자의 프로필 정보를 수정합니다."
 	)
-	@ApiResponse(responseCode = "200", description = "조회 성공")
+	@ApiResponse(responseCode = "200", description = "수정 완료")
 	@ApiResponse(responseCode = "403", description = "접근 권한 없음")
+	@ApiResponse(responseCode = "400", description = "잘못된 요청")
 	@PatchMapping("/{user_id}")
 	public ResponseEntity<Object> updateMember(
-		@Parameter(description = "유저 ID", example = "1")
+		@Parameter(description = "수정할 회원의 ID", example = "1")
 		@PathVariable("user_id") Long userId,
+
+		@Parameter(description = "수정 요청 정보")
 		@Valid @RequestBody UpdateProfileRequest req,
+
 		@AuthenticationPrincipal CustomUserDetails customUserDetails
 	) {
 		memberService.updateMember(userId, req, customUserDetails);
 		return ResponseEntity.ok("수정을 완료하였습니다.");
 	}
 
+	@Operation(
+		summary = "회원 탈퇴",
+		description = "인증된 사용자의 회원 정보를 삭제합니다."
+	)
+	@ApiResponse(responseCode = "200", description = "회원 탈퇴 성공")
+	@ApiResponse(responseCode = "403", description = "접근 권한 없음")
 	@DeleteMapping("/{user_id}")
 	public ResponseEntity<Object> deleteMember(
+		@Parameter(description = "삭제할 회원의 ID", example = "1")
 		@PathVariable("user_id") Long userId,
-		@AuthenticationPrincipal CustomUserDetails customUserDetails) {
+
+		@AuthenticationPrincipal CustomUserDetails customUserDetails
+	) {
 		memberService.deleteMember(userId, customUserDetails);
 		return ResponseEntity.ok("회원 탈퇴가 정상적으로 처리되었습니다.");
 	}
 
+	@Operation(
+		summary = "내 정보 조회",
+		description = "현재 로그인된 사용자의 정보를 조회합니다."
+	)
+	@ApiResponse(responseCode = "200", description = "조회 성공")
+	@ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
 	@GetMapping("/me")
 	public ResponseEntity<MemberInfoResponse> getCurrentUser(
-		@AuthenticationPrincipal CustomUserDetails customUserDetails) {
+		@AuthenticationPrincipal CustomUserDetails customUserDetails
+	) {
 		if (customUserDetails == null) {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 		}
@@ -163,6 +183,5 @@ public class MemberController {
 			customUserDetails.getMember().getName()
 		);
 		return ResponseEntity.ok(response);
-
 	}
 }

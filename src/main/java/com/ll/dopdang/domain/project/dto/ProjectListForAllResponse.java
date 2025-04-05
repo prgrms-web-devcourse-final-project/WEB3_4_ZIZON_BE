@@ -2,7 +2,6 @@ package com.ll.dopdang.domain.project.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.project.entity.Project;
@@ -16,38 +15,38 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ProjectDetailResponse {
+public class ProjectListForAllResponse {
 
 	private Long id;
 	private String title;
 	private String summary;
-	private String description;
 	private String region;
 	private BigDecimal budget;
-	private LocalDateTime deadline;
 	private String status;
+	private LocalDateTime deadline;
 
 	private String clientName;
 	private String clientProfileImageUrl;
 
-	private List<String> imageUrls;
+	private String thumbnailImageUrl;
 
-	// 이 방법!!
-	public static ProjectDetailResponse of(Project project, List<String> imageUrls) {
+	/**
+	 * 정적 팩토리 메서드 - 전체 사용자용 프로젝트 요약 응답
+	 */
+	public static ProjectListForAllResponse from(Project project, String thumbnailImageUrl) {
 		Member client = project.getClient();
 
-		return ProjectDetailResponse.builder()
+		return ProjectListForAllResponse.builder()
 			.id(project.getId())
 			.title(project.getTitle())
 			.summary(project.getSummary())
-			.description(project.getDescription())
 			.region(project.getRegion())
 			.budget(project.getBudget())
-			.deadline(project.getDeadline())
 			.status(project.getStatus().name())
+			.deadline(project.getDeadline())
 			.clientName(client.getName())
 			.clientProfileImageUrl(client.getProfileImage())
-			.imageUrls(imageUrls)
+			.thumbnailImageUrl(thumbnailImageUrl)
 			.build();
 	}
 }

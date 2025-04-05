@@ -5,6 +5,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -17,7 +18,6 @@ import com.ll.dopdang.domain.member.dto.response.SocialLoginResponse;
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.entity.MemberRole;
 import com.ll.dopdang.domain.member.entity.MemberStatus;
-import com.ll.dopdang.global.config.AppConfig;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
 import com.ll.dopdang.global.security.jwt.service.TokenManagementService;
 
@@ -39,6 +39,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 	 * ObjectMapper
 	 */
 	private final ObjectMapper objectMapper;
+
+	@Value("${site.url.frontend}")
+	private String frontendUrl;
 
 	/**
 	 * 소셜 로그인 성공을 다루는 메서드
@@ -193,7 +196,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 		IOException {
 		String encodedUserInfo = URLEncoder.encode(objectMapper.writeValueAsString(userInfo), StandardCharsets.UTF_8);
 		String redirectUrl = String.format("%s/login?token=%s&user=%s",
-			AppConfig.getSiteFrontUrl(),
+			frontendUrl,
 			accessToken,
 			encodedUserInfo
 		);

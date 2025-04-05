@@ -23,6 +23,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ll.dopdang.domain.member.repository.MemberRepository;
 import com.ll.dopdang.global.security.custom.CustomUserDetailsService;
 import com.ll.dopdang.global.security.jwt.filter.JwtAuthenticationFilter;
 import com.ll.dopdang.global.security.jwt.filter.JwtAuthorizationFilter;
@@ -76,6 +77,7 @@ public class SecurityConfig {
 	private final TokenManagementService tokenManagementService;
 
 	private final CustomUserDetailsService userDetailsService;
+	private final MemberRepository memberRepository;
 
 	/**
 	 * 비밀번호 인코딩
@@ -121,7 +123,8 @@ public class SecurityConfig {
 			"/oauth2/authorization/google",
 			"/oauth2/authorization/naver",
 			"/swagger-ui/**",
-			"/api-docs/**"
+			"/api-docs/**",
+			"/projects/all"
 		));
 		PUBLIC_URLS.put(HttpMethod.POST, Arrays.asList(
 			"/users/login",
@@ -170,7 +173,7 @@ public class SecurityConfig {
 				)))
 			.logout(logout -> logout
 				.logoutUrl("/users/logout")
-				.addLogoutHandler(new JwtLogoutHandler(tokenService, tokenManagementService))
+				.addLogoutHandler(new JwtLogoutHandler(tokenService, tokenManagementService, jwtUtil, memberRepository))
 				.logoutSuccessHandler(new JwtLogoutSuccessHandler(objectMapper)))
 			.oauth2Login(oauth2 -> oauth2
 				.userInfoEndpoint(userInfo -> userInfo
