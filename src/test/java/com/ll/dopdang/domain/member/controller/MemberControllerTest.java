@@ -109,9 +109,9 @@ class MemberControllerTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(new LoginRequest("test1@test.com", "test1234!"))))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.body.email").value("test1@test.com"))
-			.andExpect(jsonPath("$.body.profileImage").value(""))
-			.andExpect(jsonPath("$.body.name").value("test1"))
+			.andExpect(jsonPath("$.email").value("test1@test.com"))
+			.andExpect(jsonPath("$.profileImage").value(""))
+			.andExpect(jsonPath("$.name").value("test1"))
 			.andDo(print())
 			.andReturn();
 

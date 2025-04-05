@@ -50,7 +50,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 				oauth2User.getAttributes());
 
 			Member user = oAuth2UserSaveService.saveIfNotExist(attributes);
-			log.info("OAuth2 로그인 사용자 정보: id={}, email={}, name={}", user.getId(), user.getEmail(), user.getName());
+			if (log.isInfoEnabled()) {
+				log.info("OAuth2 로그인 사용자 정보: id={}, email={}, name={}", user.getId(), user.getEmail(), user.getName());
+			}
 
 			Map<String, Object> updatedAttributes = new HashMap<>(attributes.getAttributes());
 			updatedAttributes.put("id", user.getId());
@@ -61,7 +63,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 				userNameAttributeName
 			);
 		} catch (Exception e) {
-			log.error("OAuth2 사용자 정보 처리 중 오류 발생: {}", e.getMessage(), e);
+			if (log.isErrorEnabled()) {
+				log.error("OAuth2 사용자 정보 처리 중 오류 발생: {}", e.getMessage(), e);
+			}
 			OAuth2Error oauth2Error = new OAuth2Error(
 				"user_mapping_error",
 				"OAuth2 사용자 정보 처리 중 오류가 발생했습니다: " + e.getMessage(),
