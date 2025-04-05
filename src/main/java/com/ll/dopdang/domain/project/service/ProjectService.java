@@ -39,6 +39,7 @@ public class ProjectService {
 	private final CategoryRepository categoryRepository;
 	private final ExpertRepository expertRepository;
 	private final ProjectImageRepository projectImageRepository;
+	private final OfferRepository offerRepository;
 
 	/**
 	 * 새로운 프로젝트를 생성하고, 프로젝트 이미지가 있다면 함께 저장합니다.
