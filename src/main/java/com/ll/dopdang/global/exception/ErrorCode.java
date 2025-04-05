@@ -39,18 +39,30 @@ public enum ErrorCode {
 	// 회원 관련 에러
 	MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "회원 정보를 찾을 수 없습니다."),
 	NOT_A_SOCIAL_USER(HttpStatus.BAD_REQUEST, "해당 유저는 소셜 유저가 아닙니다."),
+	NOT_A_EXPERT_USER(HttpStatus.FORBIDDEN, "해당 유저는 전문가가 아닙니다."),
 	PHONE_ALREADY_VERIFIED(HttpStatus.BAD_REQUEST, "해당 유저는 이미 전화번호를 인증하였습니다."),
 	PHONE_VERIFICATION_FAILED(HttpStatus.BAD_REQUEST, "전화번호 인증에 실패하였습니다."),
 	PASSWORD_SAME_AS_CURRENT(HttpStatus.BAD_REQUEST, "현재 사용중인 비밀번호와 일치합니다."),
 	UNAUTHORIZED_USER(HttpStatus.UNAUTHORIZED, "인증되지 않은 유저입니다."),
+
 	// 카테고리 관련 에러
 	CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 카테고리입니다."),
+
 	// 전문가 관련 에러
 	EXPERT_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 전문가입니다."),
 	INVALID_EXPERT_ASSIGNMENT(HttpStatus.BAD_REQUEST, "지정된 전문가 정보를 확인할 수 없습니다."),
+
 	// 프로젝트 관련 에러
 	PROJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "프로젝트를 찾을 수 없습니다."),
 	INVALID_PROJECT_STATUS(HttpStatus.BAD_REQUEST, "프로젝트 상태 값이 올바르지 않습니다."),
+
+	//계약서 관련에러
+	UNAUTHORIZED_CONTRACT_CREATION(HttpStatus.FORBIDDEN, "해당 프로젝트의 클라이언트만 계약을 생성할 수 있습니다."),
+
+	// 제안서 관련 에러
+	OFFER_NOT_FOUND(HttpStatus.NOT_FOUND, "제안서를 찾을 수 없습니다."),
+	INVALID_OFFER_PROJECT(HttpStatus.BAD_REQUEST, "제안서에 대한 프로젝트 정보가 올바르지 않습니다."),
+
 	// S3 Presigned URL 생성 관련
 	PRESIGNED_URL_CREATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Presigned URL 생성 중 알 수 없는 오류가 발생했습니다."),
 	INVALID_S3_REQUEST(HttpStatus.BAD_REQUEST, "잘못된 요청으로 인해 S3 Presigned URL 생성에 실패했습니다."),
