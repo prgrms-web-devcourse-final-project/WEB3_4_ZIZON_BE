@@ -18,9 +18,9 @@ public class ExpertDetailResponseDto {
 	private List<String> subCategoryNames; // 소분류 카테고리 이름 목록
 	private String introduction; // 자기소개
 	private int careerYears;      // 경력 연수
-	private String certification; // 자격증 정보
 	private Boolean gender;       // 성별 (0 = 남자, 1 = 여자)
 	private String profileImage;
 	private Long mainCategoryId;
 	private List<Long> subCategoryIds;
+	private List<String> certificateNames;
 }
