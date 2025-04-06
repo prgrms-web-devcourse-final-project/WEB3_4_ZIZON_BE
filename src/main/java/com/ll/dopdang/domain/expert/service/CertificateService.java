@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.ll.dopdang.domain.expert.dto.response.CertificateResponseDto;
 import com.ll.dopdang.domain.expert.entity.Certificate;
 import com.ll.dopdang.domain.expert.repository.CertificateRepository;
 
@@ -26,6 +27,20 @@ public class CertificateService {
 	private final CertificateRepository certificateRepository; // DB 접근 레포지토리
 	@Value("${service-key}") // 환경변수로부터 서비스 키 값 주입
 	private String serviceKey;
+
+	public List<CertificateResponseDto> getAllCertificates() {
+		// 데이터베이스에서 모든 Certificate 조회
+		List<Certificate> certificates = certificateRepository.findAll();
+
+		// Certificate 데이터를 CertificateResponseDto로 매핑
+		return certificates.stream()
+			.map(certificate -> CertificateResponseDto.builder()
+				.id(certificate.getId())
+				.name(certificate.getName())
+				.build())
+			.toList();
+	}
+
 
 	public void fetchAndSaveCertificates() {
 		try {

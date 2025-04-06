@@ -13,7 +13,11 @@ import com.ll.dopdang.domain.expert.dto.request.ExpertRequestDto;
 import com.ll.dopdang.domain.expert.dto.request.ExpertUpdateRequestDto;
 import com.ll.dopdang.domain.expert.dto.response.ExpertDetailResponseDto;
 import com.ll.dopdang.domain.expert.dto.response.ExpertResponseDto;
+import com.ll.dopdang.domain.expert.entity.Certificate;
 import com.ll.dopdang.domain.expert.entity.Expert;
+import com.ll.dopdang.domain.expert.entity.ExpertCertificate;
+import com.ll.dopdang.domain.expert.repository.CertificateRepository;
+import com.ll.dopdang.domain.expert.repository.ExpertCertificateRepository;
 import com.ll.dopdang.domain.expert.repository.ExpertRepository;
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.repository.MemberRepository;
@@ -31,7 +35,9 @@ public class ExpertService {
 	private final ExpertRepository expertRepository;
 	private final MemberRepository memberRepository;
 	private final CategoryRepository categoryRepository;
+	private final CertificateRepository certificateRepository;
 	private final ExpertCategoryRepository expertCategoryRepository;
+	private final ExpertCertificateRepository expertCertificateRepository;
 
 	/**
 	 * 전문가를 등록합니다.
@@ -56,13 +62,16 @@ public class ExpertService {
 				.orElseThrow(() -> new IllegalArgumentException("Subcategory not found: " + subCategoryName)))
 			.toList();
 
+		List<Certificate> certificates = expertRequestDto.getCertificateNames().stream()
+			.map(certificateName -> certificateRepository.findByName(certificateName)
+				.orElseThrow(() -> new IllegalArgumentException("Certificate not found: " + certificateName)))
+			.toList();
 		// 4. Expert 엔티티 생성 및 저장
 		Expert expert = Expert.builder()
 			.member(member)
 			.category(category)
 			.careerYears(expertRequestDto.getCareerYears())
 			.introduction(expertRequestDto.getIntroduction())
-			.certification(expertRequestDto.getCertification())
 			.bankName(expertRequestDto.getBankName())
 			.gender(expertRequestDto.getGender())
 			.accountNumber(expertRequestDto.getAccountNumber())
@@ -79,6 +88,14 @@ public class ExpertService {
 
 			expertCategoryRepository.save(expertCategory);
 		});
+		certificates.forEach(certificate -> {
+			ExpertCertificate expertCertificate = ExpertCertificate.builder()
+				.expert(expert)
+				.certificate(certificate)
+				.build();
+			expertCertificateRepository.save(expertCertificate);
+		});
+
 	}
 
 	/**
@@ -157,6 +174,7 @@ public class ExpertService {
 		if (updateRequestDto.getSubCategoryNames() != null && !updateRequestDto.getSubCategoryNames().isEmpty()) {
 			// 기존 소분류 삭제
 			expertCategoryRepository.deleteAllByExpertId(expertId);
+			expertCategoryRepository.flush();
 
 			// 새로운 소분류 생성 및 저장
 			List<Category> subCategories = updateRequestDto.getSubCategoryNames().stream()
@@ -171,25 +189,45 @@ public class ExpertService {
 					.build();
 				expertCategoryRepository.save(expertCategory);
 			});
+
+			// 4. 자격증 처리
+			if (updateRequestDto.getCertificateNames() != null && !updateRequestDto.getCertificateNames().isEmpty()) {
+				// 기존 자격증 삭제
+				expertCertificateRepository.deleteAllByExpertId(expertId);
+				expertCertificateRepository.flush();
+
+				// 새로운 자격증 저장
+				List<Certificate> certificates = updateRequestDto.getCertificateNames().stream()
+					.map(name -> certificateRepository.findByName(name)
+						.orElseThrow(() -> new IllegalArgumentException("Certificate not found: " + name)))
+					.toList();
+
+				certificates.forEach(certificate -> {
+					ExpertCertificate expertCertificate = ExpertCertificate.builder()
+						.expert(existingExpert)
+						.certificate(certificate)
+						.build();
+					expertCertificateRepository.save(expertCertificate);
+				});
+			}
+
+			// 4. 빌더 패턴으로 Expert 객체 업데이트
+			Expert updatedExpert = Expert.builder()
+				.id(existingExpert.getId()) // 기존 ID 그대로 사용
+				.member(existingExpert.getMember()) // 기존 Member 그대로 사용
+				.category(category) // 변경된 대분류
+				.subCategories(existingExpert.getSubCategories()) // 소분류는 별도 처리됨
+				.careerYears(updateRequestDto.getCareerYears())
+				.introduction(updateRequestDto.getIntroduction())
+				.bankName(updateRequestDto.getBankName())
+				.accountNumber(updateRequestDto.getAccountNumber())
+				.sellerInfo(updateRequestDto.getSellerInfo())
+				.gender(existingExpert.getGender()) // 성별은 그대로 유지
+				.build();
+
+			// 5. 저장
+			expertRepository.save(updatedExpert);
 		}
-
-		// 4. 빌더 패턴으로 Expert 객체 업데이트
-		Expert updatedExpert = Expert.builder()
-			.id(existingExpert.getId()) // 기존 ID 그대로 사용
-			.member(existingExpert.getMember()) // 기존 Member 그대로 사용
-			.category(category) // 변경된 대분류
-			.subCategories(existingExpert.getSubCategories()) // 소분류는 별도 처리됨
-			.careerYears(updateRequestDto.getCareerYears())
-			.certification(updateRequestDto.getCertification())
-			.introduction(updateRequestDto.getIntroduction())
-			.bankName(updateRequestDto.getBankName())
-			.accountNumber(updateRequestDto.getAccountNumber())
-			.sellerInfo(updateRequestDto.getSellerInfo())
-			.gender(existingExpert.getGender()) // 성별은 그대로 유지
-			.build();
-
-		// 5. 저장
-		expertRepository.save(updatedExpert);
 	}
 
 	/**
@@ -210,6 +248,8 @@ public class ExpertService {
 		// 3. 전문가 삭제
 		expertRepository.delete(expert);
 	}
+
+
 
 	/**
 	 * Expert 엔티티를 ExpertResponseDto로 변환합니다.
@@ -237,11 +277,16 @@ public class ExpertService {
 			.subCategoryNames(expert.getSubCategories().stream()
 				.map(sc -> sc.getSubCategory().getName())
 				.toList())
+			.subCategoryIds(expert.getSubCategories().stream()
+				.map(sc -> sc.getSubCategory().getId())
+				.toList())
 			.introduction(expert.getIntroduction())
 			.careerYears(expert.getCareerYears())
-			.certification(expert.getCertification())
 			.profileImage(expert.getMember().getProfileImage())
 			.gender(expert.getGender())
+			.certificateNames(expert.getExpertCertificates().stream() // 자격증 추가
+				.map(expertCertificate -> expertCertificate.getCertificate().getName())
+				.toList())
 			.build();
 	}
 }
