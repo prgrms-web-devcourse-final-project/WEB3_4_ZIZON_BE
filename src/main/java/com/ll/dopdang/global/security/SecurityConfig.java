@@ -124,7 +124,9 @@ public class SecurityConfig {
 			"/oauth2/authorization/naver",
 			"/swagger-ui/**",
 			"/api-docs/**",
-			"/projects/all"
+			"/projects/all",
+			"/experts/**"
+
 		));
 		PUBLIC_URLS.put(HttpMethod.POST, Arrays.asList(
 			"/users/login",
