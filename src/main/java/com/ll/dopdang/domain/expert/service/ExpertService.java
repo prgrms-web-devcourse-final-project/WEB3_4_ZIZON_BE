@@ -1,5 +1,6 @@
 package com.ll.dopdang.domain.expert.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -189,7 +190,7 @@ public class ExpertService {
 					.build();
 				expertCategoryRepository.save(expertCategory);
 			});
-
+			List<ExpertCertificate>expertCertificates = new ArrayList<>();
 			// 4. 자격증 처리
 			if (updateRequestDto.getCertificateNames() != null && !updateRequestDto.getCertificateNames().isEmpty()) {
 				// 기존 자격증 삭제
@@ -202,13 +203,15 @@ public class ExpertService {
 						.orElseThrow(() -> new IllegalArgumentException("Certificate not found: " + name)))
 					.toList();
 
-				certificates.forEach(certificate -> {
-					ExpertCertificate expertCertificate = ExpertCertificate.builder()
+				expertCertificates = certificates.stream()
+					.map(certificate -> ExpertCertificate.builder()
 						.expert(existingExpert)
 						.certificate(certificate)
-						.build();
-					expertCertificateRepository.save(expertCertificate);
-				});
+						.build()
+					)
+					.toList();
+
+				expertCertificateRepository.saveAll(expertCertificates);
 			}
 
 			// 4. 빌더 패턴으로 Expert 객체 업데이트
@@ -223,6 +226,7 @@ public class ExpertService {
 				.accountNumber(updateRequestDto.getAccountNumber())
 				.sellerInfo(updateRequestDto.getSellerInfo())
 				.gender(existingExpert.getGender()) // 성별은 그대로 유지
+				.expertCertificates(expertCertificates)
 				.build();
 
 			// 5. 저장
