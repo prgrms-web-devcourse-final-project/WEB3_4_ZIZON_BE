@@ -47,7 +47,7 @@ public class ExpertService {
 	 * @throws IllegalArgumentException 회원 또는 카테고리가 존재하지 않을 경우 예외 발생.
 	 */
 	@Transactional
-	public void createExpert(ExpertRequestDto expertRequestDto, Long memberId) throws Exception {
+	public Long createExpert(ExpertRequestDto expertRequestDto, Long memberId) throws Exception {
 		// 1. 회원 조회 및 검증
 		Member member = memberRepository.findById(memberId)
 			.orElseThrow(() -> new IllegalArgumentException("Member not found"));
@@ -95,7 +95,7 @@ public class ExpertService {
 				.build();
 			expertCertificateRepository.save(expertCertificate);
 		});
-
+		return expert.getId();
 	}
 
 	/**
@@ -256,6 +256,7 @@ public class ExpertService {
 	 */
 	private ExpertResponseDto mapToResponseDto(Expert expert) {
 		return ExpertResponseDto.builder()
+			.expertId(expert.getId())
 			.name(expert.getMember().getName()) // Member 이름
 			.categoryName(expert.getCategory().getName())
 			.careerYears(expert.getCareerYears())
