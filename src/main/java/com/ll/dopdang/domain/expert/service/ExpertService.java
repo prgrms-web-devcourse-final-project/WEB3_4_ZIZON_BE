@@ -1,5 +1,6 @@
 package com.ll.dopdang.domain.expert.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -47,7 +48,7 @@ public class ExpertService {
 	 * @throws IllegalArgumentException 회원 또는 카테고리가 존재하지 않을 경우 예외 발생.
 	 */
 	@Transactional
-	public void createExpert(ExpertRequestDto expertRequestDto, Long memberId) throws Exception {
+	public Long createExpert(ExpertRequestDto expertRequestDto, Long memberId) throws Exception {
 		// 1. 회원 조회 및 검증
 		Member member = memberRepository.findById(memberId)
 			.orElseThrow(() -> new IllegalArgumentException("Member not found"));
@@ -95,7 +96,7 @@ public class ExpertService {
 				.build();
 			expertCertificateRepository.save(expertCertificate);
 		});
-
+		return expert.getId();
 	}
 
 	/**
@@ -189,7 +190,7 @@ public class ExpertService {
 					.build();
 				expertCategoryRepository.save(expertCategory);
 			});
-
+			List<ExpertCertificate>expertCertificates = new ArrayList<>();
 			// 4. 자격증 처리
 			if (updateRequestDto.getCertificateNames() != null && !updateRequestDto.getCertificateNames().isEmpty()) {
 				// 기존 자격증 삭제
@@ -202,13 +203,15 @@ public class ExpertService {
 						.orElseThrow(() -> new IllegalArgumentException("Certificate not found: " + name)))
 					.toList();
 
-				certificates.forEach(certificate -> {
-					ExpertCertificate expertCertificate = ExpertCertificate.builder()
+				expertCertificates = certificates.stream()
+					.map(certificate -> ExpertCertificate.builder()
 						.expert(existingExpert)
 						.certificate(certificate)
-						.build();
-					expertCertificateRepository.save(expertCertificate);
-				});
+						.build()
+					)
+					.toList();
+
+				expertCertificateRepository.saveAll(expertCertificates);
 			}
 
 			// 4. 빌더 패턴으로 Expert 객체 업데이트
@@ -223,6 +226,7 @@ public class ExpertService {
 				.accountNumber(updateRequestDto.getAccountNumber())
 				.sellerInfo(updateRequestDto.getSellerInfo())
 				.gender(existingExpert.getGender()) // 성별은 그대로 유지
+				.expertCertificates(expertCertificates)
 				.build();
 
 			// 5. 저장
@@ -256,6 +260,7 @@ public class ExpertService {
 	 */
 	private ExpertResponseDto mapToResponseDto(Expert expert) {
 		return ExpertResponseDto.builder()
+			.expertId(expert.getId())
 			.name(expert.getMember().getName()) // Member 이름
 			.categoryName(expert.getCategory().getName())
 			.careerYears(expert.getCareerYears())

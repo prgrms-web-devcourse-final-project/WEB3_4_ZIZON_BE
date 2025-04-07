@@ -43,14 +43,15 @@ public class ExpertController {
 	@ApiResponse(responseCode = "401", description = "인증 실패")
 	@ApiResponse(responseCode = "400", description = "잘못된 요청")
 	@PostMapping
-	public ResponseEntity<Map<String, String>> createExpert(
+
+	public ResponseEntity<Map<Long, String>> createExpert(
 		@AuthenticationPrincipal CustomUserDetails customUserDetails,
 		@RequestBody ExpertRequestDto requestDto) throws Exception {
 		Long memberId = customUserDetails.getId();
-		expertService.createExpert(requestDto, memberId);
+		Long expertId = expertService.createExpert(requestDto, memberId);
 
-		Map<String, String> response = new HashMap<>();
-		response.put(MESSAGE, "전문가 프로필을 등록하였습니다");
+		Map<Long, String> response = new HashMap<>();
+		response.put(expertId, "전문가 프로필을 등록하였습니다");
 		return ResponseEntity.ok(response);
 	}
 
