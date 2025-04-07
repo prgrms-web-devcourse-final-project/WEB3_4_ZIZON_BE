@@ -47,35 +47,13 @@ import lombok.RequiredArgsConstructor;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-	/**
-	 * jwt 유틸리티
-	 */
 	private final JwtUtil jwtUtil;
-	/**
-	 * Object mapper
-	 */
 	private final ObjectMapper objectMapper;
-	/**
-	 * 소셜 유저 서비스
-	 */
 	private final CustomOAuth2UserService customOAuth2UserService;
-	/**
-	 * 소셜 로그인 성공 핸들러
-	 */
 	private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
-	/**
-	 * 소셜 로그인 실패 핸들러
-	 */
 	private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
-	/**
-	 * 토큰 서비스
-	 */
 	private final TokenService tokenService;
-	/**
-	 * 토큰 관리 서비스
-	 */
 	private final TokenManagementService tokenManagementService;
-
 	private final CustomUserDetailsService userDetailsService;
 	private final MemberRepository memberRepository;
 
@@ -154,6 +132,7 @@ public class SecurityConfig {
 		http.headers(head -> head
 				.frameOptions(option -> option.sameOrigin()))
 			.csrf(csrf -> csrf.disable())
+			.cors(cors -> cors.configurationSource(corsConfigurationSource()))
 			.sessionManagement(config -> config.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(authorizeRequests -> {
 				PUBLIC_URLS.forEach((method, urls) ->
