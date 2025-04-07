@@ -75,6 +75,7 @@ public enum ErrorCode {
 	INVALID_S3_REQUEST(HttpStatus.BAD_REQUEST, "잘못된 요청으로 인해 S3 Presigned URL 생성에 실패했습니다."),
 	S3_ACCESS_DENIED(HttpStatus.FORBIDDEN, "S3 접근 권한이 없습니다."),
 	S3_BUCKET_NOT_FOUND(HttpStatus.NOT_FOUND, "지정된 S3 버킷을 찾을 수 없습니다."),
+	S3_FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "지정된 S3 버킷을 찾을 수 없습니다."),
 	AWS_CLIENT_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "AWS 클라이언트 설정 오류 또는 자격 증명 오류가 발생했습니다.");
 
 	private final HttpStatus status;
