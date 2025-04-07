@@ -102,6 +102,8 @@ dependencies {
 
     // Hibernate6Module
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-hibernate6'
+
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
 }
 
 // Spring Cloud 의존성 관리 적용
