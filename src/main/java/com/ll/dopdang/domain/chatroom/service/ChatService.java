@@ -21,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ll.dopdang.domain.chatroom.dto.ChatRoomDetailResponse;
+import com.ll.dopdang.domain.chatroom.dto.NotificationPayload;
 import com.ll.dopdang.domain.chatroom.entity.ChatMessage;
 import com.ll.dopdang.domain.chatroom.entity.ChatRoom;
 import com.ll.dopdang.domain.chatroom.repository.ChatMessageRepository;
@@ -106,18 +107,33 @@ public class ChatService {
 		// 실시간 브로드캐스트 (WebSocket 이용)
 		messagingTemplate.convertAndSend("/topic/chat/" + chatRoom.getRoomId(), chatMessage);
 
-		// 상대방의 읽지 않은 메시지 수 증가
-		String unreadKey = String.format(UNREAD_COUNT_KEY_TEMPLATE, roomId, chatMessage.getReceiver());
-		Object value = redisTemplate.opsForValue().get(unreadKey);
-		long currentUnread = 0;
-		if (value != null) {
-			try {
-				currentUnread = Long.parseLong(value.toString());
-			} catch (NumberFormatException e) {
-				log.error("Failed to parse unread count: {}", e.getMessage());
+		// --- 알림 및 미읽은 메시지 처리 ---
+		// 수신자가 현재 활성 채팅방에 있는지 확인
+		String activeRoomKey = "active_chat_room:" + chatMessage.getReceiver();
+		Object activeRoomObj = redisTemplate.opsForValue().get(activeRoomKey);
+		if (activeRoomObj == null || !activeRoomObj.toString().equals(chatRoom.getRoomId())) {
+			// 수신자가 해당 채팅방에 있지 않으면 미읽은 메시지 처리 및 알림 전송
+			String unreadKey = String.format(UNREAD_COUNT_KEY_TEMPLATE, roomId, chatMessage.getReceiver());
+			Object value = redisTemplate.opsForValue().get(unreadKey);
+			long currentUnread = 0;
+			if (value != null) {
+				try {
+					currentUnread = Long.parseLong(value.toString());
+				} catch (NumberFormatException e) {
+					log.error("Failed to parse unread count: {}", e.getMessage());
+				}
 			}
+			long updatedUnread = currentUnread + 1;
+			redisTemplate.opsForValue().set(unreadKey, updatedUnread);
+
+			NotificationPayload notification = new NotificationPayload(
+				chatRoom.getRoomId(),         // 채팅방 ID
+				chatMessage.getSender(),        // 발신자
+				chatMessage.getContent(),       // 메시지 내용(요약)
+				(int) updatedUnread            // 업데이트된 읽지 않은 메시지 수
+			);
+			messagingTemplate.convertAndSend("/topic/notice/" + chatMessage.getReceiver(), notification);
 		}
-		redisTemplate.opsForValue().set(unreadKey, currentUnread + 1);
 	}
 
 	/**
