@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -11,7 +12,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.service.MemberService;
 import com.ll.dopdang.domain.payment.dto.OrderIdRequest;
 import com.ll.dopdang.domain.payment.dto.PaymentCancellationRequest;
@@ -20,6 +20,7 @@ import com.ll.dopdang.domain.payment.dto.PaymentResultResponse;
 import com.ll.dopdang.domain.payment.entity.Payment;
 import com.ll.dopdang.domain.payment.service.PaymentCancellationService;
 import com.ll.dopdang.domain.payment.service.PaymentService;
+import com.ll.dopdang.global.security.custom.CustomUserDetails;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -52,12 +53,14 @@ public class PaymentController {
 	@ApiResponse(responseCode = "200", description = "주문 ID 생성 성공")
 	@ApiResponse(responseCode = "400", description = "요청 파라미터 오류")
 	@PostMapping("/orderId")
-	public ResponseEntity<?> createPaymentOrderInfo(@RequestBody @Valid OrderIdRequest request) {
+	public ResponseEntity<?> createPaymentOrderInfo(
+		@RequestBody @Valid OrderIdRequest request,
+		@AuthenticationPrincipal CustomUserDetails userDetails) {
 		log.info("주문 ID 생성 요청: paymentType={}, referenceId={}", request.getPaymentType(), request.getReferenceId());
-		// TODO: JWT 연동 시 인증 사용자 기반으로 변경
-		Member member = memberService.getMemberById(1L);
-		Map<String, Object> response = paymentService.createOrderIdWithInfo(request.getPaymentType(),
-			request.getReferenceId(), member);
+
+		Map<String, Object> response = paymentService.createOrderIdWithInfo(
+			request.getPaymentType(), request.getReferenceId(), userDetails.getMember().getId());
+
 		return ResponseEntity.ok(response);
 	}
 

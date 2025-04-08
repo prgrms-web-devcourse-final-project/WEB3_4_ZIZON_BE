@@ -71,11 +71,11 @@ public class PaymentService {
 	 *
 	 * @param paymentType 결제 유형
 	 * @param referenceId 참조 ID
-	 * @param member 회원 정보
+	 * @param memberId 회원 ID
 	 * @return 주문 ID와 고객 키, 결제 유형별 추가 정보가 포함된 맵
 	 * @throws ServiceException 이미 결제가 완료된 경우
 	 */
-	public Map<String, Object> createOrderIdWithInfo(PaymentType paymentType, Long referenceId, Member member) {
+	public Map<String, Object> createOrderIdWithInfo(PaymentType paymentType, Long referenceId, Long memberId) {
 		// 이미 성공적으로 결제가 완료된 건인지 확인 (실패한 결제는 제외)
 		Optional<Payment> successfulPayment = paymentRepository.findByPaymentTypeAndReferenceIdAndStatus(
 			paymentType, referenceId, PaymentStatus.PAID);
@@ -96,6 +96,7 @@ public class PaymentService {
 		log.info("주문 ID 생성 완료: orderId={}, paymentType={}, referenceId={}",
 			orderId, paymentType, referenceId);
 
+		Member member = memberService.getMemberById(memberId);
 		// 기본 응답 정보
 		Map<String, Object> response = new HashMap<>();
 		response.put("orderId", orderId);
