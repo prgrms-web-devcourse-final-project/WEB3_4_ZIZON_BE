@@ -43,6 +43,7 @@ public class ProjectPaymentInfoProvider implements PaymentOrderInfoProvider {
 		additionalInfo.put("projectId", project.getId());
 		additionalInfo.put("contractId", contract.getId());
 		additionalInfo.put("expertId", contract.getExpert().getId());
+		additionalInfo.put("clientId", contract.getClient().getId());
 
 		return additionalInfo;
 	}
