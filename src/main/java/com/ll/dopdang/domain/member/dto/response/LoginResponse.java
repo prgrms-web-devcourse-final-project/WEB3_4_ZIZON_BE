@@ -19,6 +19,7 @@ public class LoginResponse {
 	private String profileImage;
 	private String status;
 	private Long expertId;
+	private String phone;
 
 	public static LoginResponse of(Member member) {
 		return LoginResponse.builder()
@@ -28,6 +29,7 @@ public class LoginResponse {
 			.profileImage(member.getProfileImage())
 			.status(member.getStatus())
 			.expertId(member.getExpert() != null ? member.getExpert().getId() : null)
+			.phone(member.getPhone() != null ? member.getPhone() : null)
 			.build();
 	}
 }

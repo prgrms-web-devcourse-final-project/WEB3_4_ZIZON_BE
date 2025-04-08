@@ -17,6 +17,7 @@ public class SocialLoginResponse {
 	private String profileImage;
 	private String status;
 	private Long expertId;
+	private String phone;
 
 	public static SocialLoginResponse of(Member member) {
 		return SocialLoginResponse.builder()
@@ -26,6 +27,7 @@ public class SocialLoginResponse {
 			.profileImage(member.getProfileImage())
 			.status(member.getStatus())
 			.expertId(member.getExpert() != null ? member.getExpert().getId() : null)
+			.phone(member.getPhone() != null ? member.getPhone() : null)
 			.build();
 	}
 }
