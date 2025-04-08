@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -29,6 +30,8 @@ import com.ll.dopdang.domain.chatroom.repository.ChatMessageRepository;
 import com.ll.dopdang.domain.chatroom.repository.ChatRoomRepository;
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.repository.MemberRepository;
+import com.ll.dopdang.domain.project.dto.ProjectDetailResponse;
+import com.ll.dopdang.domain.project.service.ProjectService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +46,7 @@ public class ChatService {
 	private final SimpMessagingTemplate messagingTemplate;
 	private final MemberRepository memberRepository;
 	private final RedisTemplate<String, Object> redisTemplate;
+	private final ProjectService projectService;
 	private final ObjectMapper objectMapper;
 
 	private static final int RECENT_MESSAGE_LIMIT = 100;
@@ -497,4 +501,37 @@ public class ChatService {
 			}
 		}
 	}
+
+	/**
+	 * 채팅방 생성 로직
+	 *
+	 * @param email   현재 로그인한 사용자의 이메일
+	 * @param projectId project 작성자 정보를 찾기 위한 id
+	 * @return void
+	 */
+	@Transactional
+	public void createChatroom(String email, Long projectId) {
+		ProjectDetailResponse projectDetail = projectService.getProjectById(projectId);
+
+		// 2. 프로젝트 작성자(채팅 상대)의 이메일을 추출 (문의를 위한 정보)
+		String receiverEmail = projectDetail.getEmails().trim().toLowerCase();
+		email = email.trim().toLowerCase();
+
+		String roomId = getRoomId(email, receiverEmail);
+
+		// 4. 채팅방이 이미 존재하는지 확인
+		Optional<ChatRoom> existingChatRoom = chatRoomRepository.findByRoomId(roomId);
+		ChatRoom chatRoom;
+		if (existingChatRoom.isPresent()) {
+			chatRoom = existingChatRoom.get();
+		} else {
+			chatRoom = new ChatRoom();
+			chatRoom.setRoomId(roomId);
+			chatRoom.setMember1(email);
+			chatRoom.setMember2(receiverEmail);
+			chatRoom.setProjectId(projectId);
+			chatRoom = chatRoomRepository.save(chatRoom);
+		}
+	}
+
 }
