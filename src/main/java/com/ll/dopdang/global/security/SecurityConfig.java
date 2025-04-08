@@ -109,7 +109,8 @@ public class SecurityConfig {
 		));
 		PUBLIC_URLS.put(HttpMethod.POST, Arrays.asList(
 			"/users/login",
-			"/users/signup"
+			"/users/signup",
+			"/api/s3/**"
 		));
 	}
 
