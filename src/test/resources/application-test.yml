@@ -42,3 +42,15 @@ coolsms:
   api_key: test-api-key
   api_secret: test-api-secret
   from_number: 01000000000
+
+service: # 자격증 API
+  key: 123123123123
+
+payment:
+  fee:
+    rate: 0.1  # 결제 수수료율 10%
+  toss:
+    secretKey: 123123123123123123123
+    api-url: https://api.tosspayments.com
+    elasticsearch:
+      uris: http://localhost:9200

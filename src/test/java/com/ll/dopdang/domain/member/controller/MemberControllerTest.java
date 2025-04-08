@@ -1,6 +1,5 @@
 package com.ll.dopdang.domain.member.controller;
 
-import static org.hibernate.validator.internal.util.Contracts.*;
 import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
 import static org.hibernate.validator.internal.util.Contracts.assertTrue;
 import static org.mockito.Mockito.*;
@@ -27,6 +26,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ll.dopdang.domain.expert.service.CertificateService;
 import com.ll.dopdang.domain.member.dto.request.LoginRequest;
 import com.ll.dopdang.domain.member.dto.request.UpdateProfileRequest;
 import com.ll.dopdang.domain.member.entity.Member;
@@ -63,6 +63,8 @@ class MemberControllerTest {
 	private CoolSmsService coolSmsService;
 	@MockBean
 	private S3Config s3Config;
+	@MockBean
+	private CertificateService certificateService;
 
 	@BeforeEach
 	void setUp() {
