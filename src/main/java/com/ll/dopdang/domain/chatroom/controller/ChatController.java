@@ -1,15 +1,24 @@
 package com.ll.dopdang.domain.chatroom.controller;
 
 import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
 import com.ll.dopdang.domain.chatroom.dto.ChatRoomDetailResponse;
+import com.ll.dopdang.domain.chatroom.dto.ChatRoomResponse;
 import com.ll.dopdang.domain.chatroom.entity.ChatMessage;
-import com.ll.dopdang.domain.chatroom.entity.ChatRoom;
 import com.ll.dopdang.domain.chatroom.service.ChatService;
+import com.ll.dopdang.global.security.custom.CustomUserDetails;
+
 import lombok.RequiredArgsConstructor;
 
 @Controller
@@ -42,8 +51,8 @@ public class ChatController {
 	 * @return 사용자가 참여 중인 채팅방 리스트
 	 */
 	@GetMapping("/rooms")
-	public ResponseEntity<List<ChatRoom>> getChatRooms(@RequestParam String member) {
-		List<ChatRoom> rooms = chatService.getChatRoomsForUser(member);
+	public ResponseEntity<List<ChatRoomResponse>> getChatRooms(@RequestParam String member) {
+		List<ChatRoomResponse> rooms = chatService.getChatRoomsForUser(member);
 		return ResponseEntity.ok(rooms);
 	}
 
@@ -87,5 +96,22 @@ public class ChatController {
 		@RequestParam String username) {
 		long count = chatService.getUnreadCount(roomId, username);
 		return ResponseEntity.ok(count);
+	}
+
+	/**
+	 * 채팅방 생성 로직
+	 *
+	 * @param customUserDetails   현재 로그인한 사용자의 정보
+	 * @param projectId project 작성자 정보를 찾기 위한 id
+	 * @return void
+	 */
+	@PostMapping
+	public ResponseEntity<String> createChatroom(@RequestParam Long projectId,
+		@AuthenticationPrincipal CustomUserDetails customUserDetails) {
+		String senderEmail = customUserDetails.getMember().getEmail();
+
+		chatService.createChatroom(senderEmail, projectId);
+
+		return ResponseEntity.ok("채팅방이 생성되었습니다.");
 	}
 }
