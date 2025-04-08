@@ -16,6 +16,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ll.dopdang.domain.member.entity.Member;
+import com.ll.dopdang.domain.member.service.MemberService;
 import com.ll.dopdang.domain.payment.client.TossPaymentClient;
 import com.ll.dopdang.domain.payment.dto.PaymentOrderInfo;
 import com.ll.dopdang.domain.payment.dto.PaymentResultResponse;
@@ -29,7 +30,6 @@ import com.ll.dopdang.domain.payment.strategy.info.PaymentInfoProviderFactory;
 import com.ll.dopdang.domain.payment.strategy.saver.PaymentSaverFactory;
 import com.ll.dopdang.domain.payment.strategy.validator.PaymentValidatorFactory;
 import com.ll.dopdang.domain.payment.util.TossPaymentUtils;
-import com.ll.dopdang.domain.project.entity.Contract;
 import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.PaymentAmountManipulationException;
 import com.ll.dopdang.global.exception.ServiceException;
@@ -57,6 +57,7 @@ public class PaymentService {
 	private final PaymentValidatorFactory validatorFactory;
 	private final PaymentSaverFactory saverFactory;
 	private final PaymentInfoProviderFactory infoProviderFactory;
+	private final MemberService memberService;
 
 	@Value("${payment.toss.secretKey}")
 	private String tossSecretKey;
@@ -210,7 +211,7 @@ public class PaymentService {
 				"주문 ID에 해당하는 결제 정보를 찾을 수 없습니다: " + orderId);
 		}
 
-		return (PaymentOrderInfo)value;
+		return PaymentOrderInfo.fromMap((Map<String, Object>)value);
 	}
 
 	/**
@@ -365,9 +366,8 @@ public class PaymentService {
 			Map<String, Object> additionalInfo = infoProviderFactory.getProvider(paymentType)
 				.provideAdditionalInfo(referenceId);
 
-			Contract contract = (Contract)additionalInfo.get("contract");
 			String title = additionalInfo.get("title").toString();
-			Member member = contract.getClient();
+			Member member = memberService.getMemberById((Long)additionalInfo.get("clientId"));
 
 			// 결제 정보 생성
 			Payment payment = Payment.createForAmountManipulation(paymentType, referenceId, member, title);
