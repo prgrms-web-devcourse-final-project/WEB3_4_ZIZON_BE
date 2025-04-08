@@ -261,7 +261,7 @@
 
     // 1. 현재 사용자 정보 불러오기
     function fetchCurrentUser() {
-        fetch('http://localhost:8080/users/me', { credentials: 'include' })
+        fetch('http://3.35.98.202:8080/users/me', {credentials: 'include'})
             .then(response => {
                 if (!response.ok) {
                     throw new Error("현재 사용자 정보를 불러올 수 없습니다.");
@@ -285,7 +285,7 @@
 
     // 2. WebSocket 연결 및 알림 수신 (연결은 한 번만)
     function connectWebSocket() {
-        const socket = new SockJS('http://localhost:8080/ws-chat');
+        const socket = new SockJS('http://3.35.98.202:8080/ws-chat');
         stompClient = Stomp.over(socket);
         stompClient.connect({}, function(frame) {
             console.log('Connected: ' + frame);
@@ -311,7 +311,7 @@
     // 3. 채팅방 목록 데이터 불러오기
     function fetchChatRoomsDetail() {
         if (!currentUser) return;
-        fetch(`http://localhost:8080/chatrooms/rooms?member=${encodeURIComponent(currentUser.email)}`, {
+        fetch(`http://3.35.98.202:8080/chatrooms/rooms?member=${encodeURIComponent(currentUser.email)}`, {
             credentials: 'include'
         })
             .then(response => {
@@ -324,15 +324,15 @@
                 const detailPromises = rooms.map(room => {
                     const otherUser = (room.member1 === currentUser.email) ? room.member2 : room.member1;
                     const unreadPromise = fetch(
-                        `http://localhost:8080/chatrooms/${room.roomId}/unreadCount?username=${encodeURIComponent(currentUser.email)}`,
-                        { credentials: 'include' }
+                        `http://3.35.98.202:8080/chatrooms/${room.roomId}/unreadCount?username=${encodeURIComponent(currentUser.email)}`,
+                        {credentials: 'include'}
                     ).then(res => {
                         if (!res.ok) throw new Error("미읽은 개수를 불러올 수 없습니다.");
                         return res.json();
                     });
                     const historyPromise = fetch(
-                        `http://localhost:8080/chatrooms?sender=${encodeURIComponent(currentUser.email)}&receiver=${encodeURIComponent(otherUser)}`,
-                        { credentials: 'include' }
+                        `http://3.35.98.202:8080/chatrooms?sender=${encodeURIComponent(currentUser.email)}&receiver=${encodeURIComponent(otherUser)}`,
+                        {credentials: 'include'}
                     ).then(res => {
                         if (!res.ok) throw new Error("채팅 내역을 불러올 수 없습니다.");
                         return res.json();
@@ -444,8 +444,8 @@
         const sender = currentUser.email;
         const parts = roomId.split(":");
         let receiver = (parts[0] === sender) ? parts[1] : parts[0];
-        fetch(`http://localhost:8080/chatrooms?sender=${encodeURIComponent(sender)}&receiver=${encodeURIComponent(receiver)}`,
-            { credentials: 'include' }
+        fetch(`http://3.35.98.202:8080/chatrooms?sender=${encodeURIComponent(sender)}&receiver=${encodeURIComponent(receiver)}`,
+            {credentials: 'include'}
         )
             .then(response => {
                 if (!response.ok) {
@@ -597,7 +597,7 @@
     // 15. 채팅방 읽음 처리 API 호출
     function markRoomAsRead(roomId) {
         if (!roomId || !currentUser) return Promise.resolve();
-        return fetch(`http://localhost:8080/chatrooms/${roomId}/read?username=${encodeURIComponent(currentUser.email)}`, {
+        return fetch(`http://3.35.98.202:8080/chatrooms/${roomId}/read?username=${encodeURIComponent(currentUser.email)}`, {
             method: 'POST',
             credentials: 'include'
         })
@@ -616,7 +616,7 @@
             document.getElementById("projectDetails").innerHTML = "<p>프로젝트 정보가 없습니다.</p>";
             return;
         }
-        fetch(`http://localhost:8080/projects/${projectId}`)
+        fetch(`http://3.35.98.202:8080/projects/${projectId}`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error("프로젝트 정보를 불러올 수 없습니다.");
