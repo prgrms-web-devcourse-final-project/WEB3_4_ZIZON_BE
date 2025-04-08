@@ -10,9 +10,7 @@ import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.PresignedUrlException;
 
 import lombok.RequiredArgsConstructor;
-import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.core.exception.SdkClientException;
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
@@ -27,10 +25,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 public class S3Service {
 
 	private static final String BUCKET_NAME = "devcouse4-team16-bucket"; // S3 버킷 이름
-	private final S3Presigner presigner = S3Presigner.builder()
-		.region(Region.AP_NORTHEAST_2)
-		.credentialsProvider(ProfileCredentialsProvider.create()) // 또는 EnvironmentVariableCredentialsProvider
-		.build();
+	private final S3Presigner presigner;
 
 	/**
 	 * Presigned PUT URL을 생성하고, 업로드 후 접근 가능한 S3 URL도 함께 반환합니다.
