@@ -3,9 +3,7 @@ package com.ll.dopdang.domain.member.service;
 import java.time.LocalDateTime;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ll.dopdang.domain.member.dto.request.MemberSignupRequest;
@@ -17,7 +15,6 @@ import com.ll.dopdang.domain.member.entity.MemberStatus;
 import com.ll.dopdang.domain.member.repository.MemberRepository;
 import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
-import com.ll.dopdang.global.redis.repository.RedisRepository;
 import com.ll.dopdang.global.redis.repository.RedisRepository;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
 
