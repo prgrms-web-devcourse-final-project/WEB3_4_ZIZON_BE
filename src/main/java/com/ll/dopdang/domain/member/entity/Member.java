@@ -8,12 +8,16 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.util.ObjectUtils;
 
+import com.ll.dopdang.domain.expert.entity.Expert;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.validation.constraints.Email;
 import lombok.AccessLevel;
@@ -114,6 +118,9 @@ public class Member {
 	 */
 	@Column(name = "is_client", nullable = false)
 	private boolean isClient;
+
+	@OneToOne(mappedBy = "member", cascade = CascadeType.ALL)
+	private Expert expert;
 
 	/**
 	 * 유저 생성 시, 자동으로 uniqueKey를 생성해주는 메서드
