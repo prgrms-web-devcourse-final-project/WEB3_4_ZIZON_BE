@@ -210,7 +210,7 @@ public class PaymentService {
 				"주문 ID에 해당하는 결제 정보를 찾을 수 없습니다: " + orderId);
 		}
 
-		return (PaymentOrderInfo)value;
+		return PaymentOrderInfo.fromMap((Map<String, Object>)value);
 	}
 
 	/**
