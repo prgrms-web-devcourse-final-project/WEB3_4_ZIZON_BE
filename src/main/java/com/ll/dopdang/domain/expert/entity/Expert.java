@@ -29,44 +29,66 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class Expert {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; // 전문가 고유 ID
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id; // 전문가 고유 ID
 
-    @OneToOne(optional = false)
-    @JoinColumn(name = "member_id", nullable = false)
-    private Member member; // 해당 전문가와 연결된 회원 정보
+	@OneToOne(optional = false)
+	@JoinColumn(name = "member_id", nullable = false)
+	private Member member; // 해당 전문가와 연결된 회원 정보
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "category_id", nullable = false)
-    private Category category; // 전문가의 대분류 카테고리
+	@ManyToOne(optional = false)
+	@JoinColumn(name = "category_id", nullable = false)
+	private Category category; // 전문가의 대분류 카테고리
 
-    @OneToMany(mappedBy = "expert", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<ExpertCategory> subCategories = new ArrayList<>(); // ExpertCategory와의 1:N 관계
+	@OneToMany(mappedBy = "expert", cascade = CascadeType.ALL, orphanRemoval = true)
+	@Builder.Default
+	private List<ExpertCategory> subCategories = new ArrayList<>(); // ExpertCategory와의 1:N 관계
 
-    @Column(length = 200)
-    private String introduction; // 자기소개
+	@Column(length = 200)
+	private String introduction; // 자기소개
 
-    @Column(nullable = false)
-    private int careerYears; // 경력 연수
+	@Column(nullable = false)
+	private int careerYears; // 경력 연수
 
-    @Column(nullable = false)
-    private Boolean gender; // 0 = 남자, 1 = 여자
+	@Column(nullable = false)
+	private Boolean gender; // 0 = 남자, 1 = 여자
 
-    @Column(nullable = false, length = 100)
-    private String bankName; // 은행명
+	@Column(nullable = false, length = 100)
+	private String bankName; // 은행명
 
-    @Column(nullable = false, length = 100)
-    private String accountNumber; // 계좌번호
+	@Column(nullable = false, length = 100)
+	private String accountNumber; // 계좌번호
 
-    @Column
-    private boolean Availability = false; // 활동 가능 여부
+	@Column
+	private boolean Availability = false; // 활동 가능 여부
 
-    @Column(length = 300)
-    private String sellerInfo; // 판매자 관련 정보 (Optional
+	@Column(length = 300)
+	private String sellerInfo; // 판매자 관련 정보 (Optional
 
-    @OneToMany(mappedBy = "expert", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<ExpertCertificate> expertCertificates = new ArrayList<>();
+	@OneToMany(mappedBy = "expert", cascade = CascadeType.ALL, orphanRemoval = true)
+	@Builder.Default
+	private List<ExpertCertificate> expertCertificates = new ArrayList<>();
+
+	/**
+	 * 전문가를 생성하고 회원과의 양방향 관계를 설정하는 정적 메서드
+	 */
+	public static Expert createExpert(Member member, Category category, String introduction,
+		int careerYears, Boolean gender, String bankName, String accountNumber, boolean availability) {
+		Expert expert = Expert.builder()
+			.member(member)
+			.category(category)
+			.introduction(introduction)
+			.careerYears(careerYears)
+			.gender(gender)
+			.bankName(bankName)
+			.accountNumber(accountNumber)
+			.Availability(availability)
+			.build();
+
+		// 양방향 관계 설정
+		member.connectExpert(expert);
+
+		return expert;
+	}
 }

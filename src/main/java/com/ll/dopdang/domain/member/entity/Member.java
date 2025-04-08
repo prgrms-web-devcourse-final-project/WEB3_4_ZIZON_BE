@@ -8,6 +8,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.util.ObjectUtils;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ll.dopdang.domain.expert.entity.Expert;
 
 import jakarta.persistence.CascadeType;
@@ -119,6 +120,7 @@ public class Member {
 	@Column(name = "is_client", nullable = false)
 	private boolean isClient;
 
+	@JsonIgnore
 	@OneToOne(mappedBy = "member", cascade = CascadeType.ALL)
 	private Expert expert;
 
@@ -148,4 +150,12 @@ public class Member {
 		this.phone = phone;
 	}
 
+	/**
+	 * 전문가와의 양방향 관계를 설정하는 메서드
+	 * @param expert 연결할 전문가 객체
+	 */
+	public void connectExpert(Expert expert) {
+		this.expert = expert;
+		this.isClient = false;
+	}
 }
