@@ -21,6 +21,7 @@ import com.ll.dopdang.domain.project.dto.MyProjectSummaryResponse;
 import com.ll.dopdang.domain.project.dto.ProjectCreateRequest;
 import com.ll.dopdang.domain.project.dto.ProjectDetailResponse;
 import com.ll.dopdang.domain.project.dto.ProjectListForAllPageResponse;
+import com.ll.dopdang.domain.project.dto.ProjectWithClientEmailResponse;
 import com.ll.dopdang.domain.project.entity.Contract;
 import com.ll.dopdang.domain.project.entity.Project;
 import com.ll.dopdang.domain.project.entity.ProjectImage;
@@ -180,4 +181,16 @@ public class ProjectService {
 			.build();
 	}
 
+	public ProjectWithClientEmailResponse getProjectSummaryWithEmail(Long projectId) {
+		Project project = projectRepository.findWithClientById(projectId)
+			.orElseThrow(() -> new ServiceException(ErrorCode.PROJECT_NOT_FOUND));
+
+		return new ProjectWithClientEmailResponse(
+			project.getId(),
+			project.getTitle(),
+			project.getSummary(),
+			project.getRegion(),
+			project.getClient().getEmail()
+		);
+	}
 }
