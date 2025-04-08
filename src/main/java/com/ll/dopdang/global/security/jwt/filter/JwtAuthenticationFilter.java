@@ -141,8 +141,7 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 			tokenManagementService.getAccessToken(),
 			tokenManagementService.getRefreshTokenCookie(),
 			HttpServletResponse.SC_OK,
-			ResponseEntity.ok(new LoginResponse(userDetails.getMember().getName(), userDetails.getUsername(),
-				userDetails.getMember().getProfileImage())),
+			ResponseEntity.ok(LoginResponse.of(userDetails.getMember())),
 			objectMapper
 		);
 	}
