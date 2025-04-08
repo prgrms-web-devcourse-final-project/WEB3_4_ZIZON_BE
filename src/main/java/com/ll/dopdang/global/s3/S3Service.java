@@ -2,6 +2,7 @@ package com.ll.dopdang.global.s3;
 
 import java.net.URL;
 import java.time.Duration;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
@@ -17,77 +18,102 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 /**
- * S3 Presigned URL 생성을 담당하는 서비스
+ * S3 Presigned URL 생성을 담당하는 서비스 클래스입니다.
+ * - 업로드용 Presigned URL과, 접근 가능한 S3 URL을 함께 반환합니다.
+ * - UUID 기반 파일명으로 경로 충돌을 방지하며, 폴더 단위로 구분 가능합니다.
  */
 @Service
 @RequiredArgsConstructor
 public class S3Service {
 
-	private static final String BUCKET_NAME = "devcouse4-team16-bucket";
+	private static final String BUCKET_NAME = "devcouse4-team16-bucket"; // S3 버킷 이름
+	private final S3Presigner presigner = S3Presigner.builder()
+		.region(Region.AP_NORTHEAST_2)
+		.credentialsProvider(ProfileCredentialsProvider.create()) // 또는 EnvironmentVariableCredentialsProvider
+		.build();
 
 	/**
-	 * 프로젝트 이미지 업로드용 Presigned URL 생성
+	 * Presigned PUT URL을 생성하고, 업로드 후 접근 가능한 S3 URL도 함께 반환합니다.
+	 * - UUID는 중복 방지를 위해 사용되며, 폴더 이름에 따라 저장 위치가 구분됩니다.
+	 * - 접근 URL은 공개 폴더인 경우에만 외부에서 직접 접근 가능합니다.
 	 *
-	 * @param projectId 프로젝트 ID
-	 * @param fileName 저장할 파일 이름 (ex. image_0.png)
-	 * @return Presigned URL
+	 * @param request Presigned URL 생성을 위한 요청 정보 (폴더, 파일명, MIME 타입 포함)
+	 * @return 업로드용 Presigned URL과 접근 가능한 S3 URL을 포함한 응답 객체
 	 */
-	public URL generatePresignedUrlForProjectImage(Long projectId, String fileName, String contentType) {
-		String key = buildProjectImageKey(projectId, fileName);
-		return generatePresignedUrl(key, contentType);
+	public PresignedUrlResponse generatePresignedUrl(PresignedUrlRequest request) {
+		String folder = request.getFolder();
+		String fileName = request.getFileName();
+		String contentType = request.getContentType();
+
+		// UUID로 중복 방지 → S3 키 구성
+		String uuid = UUID.randomUUID().toString();
+		String key = String.format("%s/%s_%s", folder, uuid, fileName);
+
+		// 업로드용 presigned URL 생성
+		URL presignedUrl = generatePresignedUrlInternal(key, contentType);
+
+		// 퍼블릭 URL (private 파일의 경우 접근 안 될 수 있음)
+		String accessUrl = "https://" + BUCKET_NAME + ".s3.ap-northeast-2.amazonaws.com/" + key;
+
+		return new PresignedUrlResponse(presignedUrl.toString(), accessUrl);
 	}
 
 	/**
-	 * 회원 프로필 이미지 업로드용 Presigned URL 생성
+	 * S3에 파일을 업로드할 수 있도록 10분 유효한 Presigned PUT URL을 생성합니다.
+	 *폴더 경로를 기준으로 공개 폴더인 경우, ACL을 public-read로 설정합니다.
 	 *
-	 * @param memberId 회원 ID
-	 * @param fileName 저장할 파일 이름 (ex. image_0.png)
-	 * @return Presigned URL
+	 * @param key          저장될 S3 키 (경로 + 파일명)
+	 * @param contentType  파일 MIME 타입
+	 * @return 업로드용 presigned URL
 	 */
-	public URL generatePresignedUrlForMemberProfile(Long memberId, String fileName, String contentType) {
-		String key = buildMemberProfileKey(memberId, fileName);
-		return generatePresignedUrl(key, contentType);
-	}
-
-	/**
-	 * 지정된 key에 대해 S3에 presigned URL을 생성하는 메서드입니다.
-	 *
-	 * @param key 업로드할 S3 오브젝트 키 (예: "project-images/uuid.jpg")
-	 *        ContentType: 업로드할 이미지 파일의 MIME 타입 (ex. "image/jpeg")
-	 * @return 프론트에서 사용할 수 있는 미리 서명된 업로드 URL
-	 */
-	private URL generatePresignedUrl(String key, String contentType) {
-		// try-with-resources 문으로 S3Presigner 객체를 자동으로 닫음
-		try (S3Presigner presigner = S3Presigner.builder()
-			.region(Region.AP_NORTHEAST_2)
-			.credentialsProvider(ProfileCredentialsProvider.create()) // 로컬 AWS 인증 정보(profile 설정) 사용
-			.build()) {
-
-			// 미리 서명된 업로드 URL 생성을 위한 요청 객체 생성
+	private URL generatePresignedUrlInternal(String key, String contentType) {
+		try {
 			PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
-				.signatureDuration(Duration.ofMinutes(10)) // URL 유효 기간: 10분
-				.putObjectRequest(builder -> builder
-					.bucket(BUCKET_NAME) // 대상 S3 버킷
-					.key(key) // 업로드할 파일 경로 (ex: "projects/1/image.png")
-					.contentType(contentType) // 업로드할 파일의 MIME 타입 (ex: image/png)
-					.build())
+				.signatureDuration(Duration.ofMinutes(10))
+				.putObjectRequest(b -> b.bucket(BUCKET_NAME)
+					.key(key)
+					.contentType(contentType))
 				.build();
 
-			// presigner를 사용해 실제 presigned URL 생성 후 반환
 			return presigner.presignPutObject(presignRequest).url();
+
 		} catch (S3Exception e) {
-			throw convertS3Exception(e); // 💡 핵심 개선 포인트
+			throw convertS3Exception(e);
 		} catch (SdkClientException e) {
 			throw new PresignedUrlException(ErrorCode.AWS_CLIENT_ERROR);
-		} catch (IllegalArgumentException e) {
-			throw new PresignedUrlException(ErrorCode.INVALID_S3_REQUEST);
 		} catch (Exception e) {
 			throw new PresignedUrlException(ErrorCode.PRESIGNED_URL_CREATION_FAILED);
 		}
 	}
 
 	/**
-	 * S3Exception을 ErrorCode로 매핑해주는 도우미 메서드
+	 * Presigned GET URL을 생성해 파일 다운로드를 허용합니다.
+	 * 단, 요청자가 해당 리소스에 접근 가능한지 검사 후 허용합니다.
+	 */
+	// public URL generateDownloadUrl(String key, Member requester) {
+	// 	if (!hasAccessPermission(key, requester)) {
+	// 		throw new ServiceException(ErrorCode.S3_FILE_NOT_FOUND); // 접근 불가 시 404
+	// 	}
+	//
+	// 	try (S3Presigner presigner = S3Presigner.builder()
+	// 		.region(Region.AP_NORTHEAST_2)
+	// 		.credentialsProvider(ProfileCredentialsProvider.create())
+	// 		.build()) {
+	//
+	// 		GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+	// 			.signatureDuration(Duration.ofMinutes(5))
+	// 			.getObjectRequest(builder -> builder
+	// 				.bucket(BUCKET_NAME)
+	// 				.key(key)
+	// 				.build())
+	// 			.build();
+	//
+	// 		return presigner.presignGetObject(presignRequest).url();
+	// 	}
+	// }
+
+	/**
+	 * AWS SDK의 예외를 내부 정의된 커스텀 예외로 변환합니다.
 	 */
 	private PresignedUrlException convertS3Exception(S3Exception exception) {
 		String code = exception.awsErrorDetails().errorCode();
@@ -99,27 +125,35 @@ public class S3Service {
 	}
 
 	/**
-	 * S3에 저장할 프로젝트 이미지의 Key(파일 경로)를 생성합니다.
-	 * 예시 결과: "projects/42/image1.png"
-	 *
-	 * @param projectId 프로젝트 ID
-	 * @param fileName 저장할 파일 이름
-	 * @return S3 업로드용 Key 문자열
+	 * 해당 S3 객체에 요청자가 접근 권한이 있는지 검사합니다.
+	 * - 공개 폴더는 누구나 접근 가능
+	 * - 디지털 파일은 구매자 또는 판매자만 접근 가능
 	 */
-	private String buildProjectImageKey(Long projectId, String fileName) {
-		return String.format("projects/%d/%s", projectId, fileName);
-	}
+	// private boolean hasAccessPermission(String key, Member requester) {
+	// 	// // 공개 폴더는 접근 허용
+	// 	// if (isPublicFolder(key)) return true;
+	// 	//
+	// 	// // 디지털 파일은 접근 제한
+	// 	// if (key.startsWith("digital/")) {
+	// 	// 	Long productId = extractProductIdFromKey(key);
+	// 	// 	// return digitalProductService.hasAccess(productId, requester);
+	// 	// 	return false; // TODO: 실제 로직 연결 필요
+	// 	// }
+	//
+	// 	// 그 외는 접근 차단
+	// 	return false;
+	// }
 
-	/**
-	 * S3에 저장할 회원 프로필 이미지의 Key(파일 경로)를 생성합니다.
-	 * 예시 결과: "members/profile/42/profile.png"
-	 *
-	 * @param memberId 회원 ID
-	 * @param fileName 저장할 파일 이름
-	 * @return S3 업로드용 Key 문자열
-	 */
-	private String buildMemberProfileKey(Long memberId, String fileName) {
-		return String.format("members/profile/%d/%s", memberId, fileName);
-	}
-
+	// /**
+	//  * S3 키에서 디지털 상품 ID를 추출합니다.
+	//  * 예: "digital/12345/file.zip" → 12345
+	//  */
+	// private Long extractProductIdFromKey(String key) {
+	// 	try {
+	// 		String[] parts = key.split("/");
+	// 		return Long.parseLong(parts[1]);
+	// 	} catch (Exception e) {
+	// 		throw new PresignedUrlException(ErrorCode.INVALID_S3_REQUEST);
+	// 	}
+	// }
 }
