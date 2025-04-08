@@ -42,7 +42,8 @@ spring:
       credentials:
         access-key: ${CLOUD_AWS_CREDENTIALS_ACCESS_KEY}
         secret-key: ${CLOUD_AWS_CREDENTIALS_SECRET_KEY}
-        region: ${CLOUD_AWS_REGION}
+      region:
+        static: ${CLOUD_AWS_REGION}
 
   security:
     oauth2:
