@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ll.dopdang.domain.project.dto.OfferCreateRequest;
 import com.ll.dopdang.domain.project.dto.OfferDetailResponse;
+import com.ll.dopdang.domain.project.entity.Offer;
 import com.ll.dopdang.domain.project.service.OfferService;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
 
@@ -69,5 +70,15 @@ public class OfferController {
 	) {
 		OfferDetailResponse response = offerService.getOfferById(customUserDetails, projectId, offerId);
 		return ResponseEntity.ok(response);
+	}
+
+	@GetMapping("/{projectId}/offers/expert/{expertId}")
+	public ResponseEntity<OfferDetailResponse> getOfferDetail(
+		@PathVariable Long projectId,
+		@PathVariable Long expertId,
+		@AuthenticationPrincipal CustomUserDetails customUserDetails
+	) {
+		Offer offer = offerService.getOfferByProjectAndExpert(projectId, expertId, customUserDetails);
+		return ResponseEntity.ok(OfferDetailResponse.from(offer));
 	}
 }
