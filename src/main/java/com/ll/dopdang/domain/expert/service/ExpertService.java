@@ -17,9 +17,11 @@ import com.ll.dopdang.domain.expert.dto.response.ExpertResponseDto;
 import com.ll.dopdang.domain.expert.entity.Certificate;
 import com.ll.dopdang.domain.expert.entity.Expert;
 import com.ll.dopdang.domain.expert.entity.ExpertCertificate;
+import com.ll.dopdang.domain.expert.entity.Portfolio;
 import com.ll.dopdang.domain.expert.repository.CertificateRepository;
 import com.ll.dopdang.domain.expert.repository.ExpertCertificateRepository;
 import com.ll.dopdang.domain.expert.repository.ExpertRepository;
+import com.ll.dopdang.domain.expert.repository.PortfolioRepository;
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.repository.MemberRepository;
 
@@ -39,6 +41,8 @@ public class ExpertService {
 	private final CertificateRepository certificateRepository;
 	private final ExpertCategoryRepository expertCategoryRepository;
 	private final ExpertCertificateRepository expertCertificateRepository;
+	private final PortfolioRepository portfolioRepository;
+
 
 	/**
 	 * 전문가를 등록합니다.
@@ -150,6 +154,13 @@ public class ExpertService {
 		return mapToDetailResponseDto(expert);
 	}
 
+	public List<ExpertResponseDto> searchByName(String name) {
+		List<Expert> experts = expertRepository.findByMemberNameContaining(name);
+		return experts.stream()
+			.map(this::mapToResponseDto)
+			.toList();
+	}
+
 	/**
 	 * 전문가 정보 업데이트 서비스 메서드
 	 *
@@ -214,7 +225,27 @@ public class ExpertService {
 				expertCertificateRepository.saveAll(expertCertificates);
 			}
 
-			// 4. 빌더 패턴으로 Expert 객체 업데이트
+			if (updateRequestDto.getPortfolioTitle() != null || updateRequestDto.getPortfolioImage() != null) {
+				// 기존 포트폴리오 확인
+				Portfolio existingPortfolio = portfolioRepository.findByExpertId(expertId).orElse(null);
+
+				// 기존 포트폴리오가 있다면 삭제
+				if (existingPortfolio != null) {
+					portfolioRepository.delete(existingPortfolio);
+				}
+
+				// 새로운 포트폴리오 생성
+				Portfolio newPortfolio = Portfolio.builder()
+					.expert(existingExpert)
+					.title(updateRequestDto.getPortfolioTitle() != null ? updateRequestDto.getPortfolioTitle() : "No Title") // 기본값 설정
+					.imageUrl(updateRequestDto.getPortfolioImage() != null ? updateRequestDto.getPortfolioImage() : "") // 기본값: 빈 URL
+					.build();
+
+				// 새로 생성한 포트폴리오 저장
+				portfolioRepository.save(newPortfolio);
+			}
+
+					// 4. 빌더 패턴으로 Expert 객체 업데이트
 			Expert updatedExpert = Expert.builder()
 				.id(existingExpert.getId()) // 기존 ID 그대로 사용
 				.member(existingExpert.getMember()) // 기존 Member 그대로 사용
@@ -252,8 +283,6 @@ public class ExpertService {
 		// 3. 전문가 삭제
 		expertRepository.delete(expert);
 	}
-
-
 
 	/**
 	 * Expert 엔티티를 ExpertResponseDto로 변환합니다.
