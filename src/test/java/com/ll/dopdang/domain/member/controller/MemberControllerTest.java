@@ -33,7 +33,6 @@ import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.entity.MemberRole;
 import com.ll.dopdang.domain.member.entity.MemberStatus;
 import com.ll.dopdang.domain.member.repository.MemberRepository;
-import com.ll.dopdang.global.config.S3Config;
 import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.global.redis.repository.RedisRepository;
@@ -41,12 +40,15 @@ import com.ll.dopdang.global.sms.service.CoolSmsService;
 import com.ll.dopdang.standard.util.JwtUtil;
 
 import jakarta.servlet.http.Cookie;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
 class MemberControllerTest {
+	@MockBean
+	private CertificateService certificateService;
 	@Autowired
 	private MockMvc mvc;
 	@Autowired
@@ -65,6 +67,8 @@ class MemberControllerTest {
 	private S3Config s3Config;
 	@MockBean
 	private CertificateService certificateService;
+  @MockBean
+	private S3Presigner s3Presigner;
 
 	@BeforeEach
 	void setUp() {
