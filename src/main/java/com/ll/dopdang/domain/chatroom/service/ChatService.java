@@ -21,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ll.dopdang.domain.chatroom.dto.ChatRoomDetailResponse;
+import com.ll.dopdang.domain.chatroom.dto.ChatRoomResponse;
 import com.ll.dopdang.domain.chatroom.dto.NotificationPayload;
 import com.ll.dopdang.domain.chatroom.entity.ChatMessage;
 import com.ll.dopdang.domain.chatroom.entity.ChatRoom;
@@ -239,7 +240,7 @@ public class ChatService {
 	 * @return 사용자가 참여 중인 채팅방 리스트
 	 */
 	@Transactional(readOnly = true)
-	public List<ChatRoom> getChatRoomsForUser(String member) {
+	public List<ChatRoomResponse> getChatRoomsForUser(String member) {
 		String redisKey = String.format(CHAT_ROOMS_KEY_TEMPLATE, member);
 		List<ChatRoom> dbRooms = chatRoomRepository.findByMember(member);
 		Set<String> dbRoomIds = dbRooms.stream()
@@ -283,8 +284,54 @@ public class ChatService {
 		} else {
 			log.debug("Redis에서 채팅방 목록을 가져옵니다. member: {}", member);
 		}
-		return dbRooms;
+
+		List<ChatRoomResponse> dtoList = dbRooms.stream().map(room -> {
+			ChatRoomResponse dto = new ChatRoomResponse();
+			dto.setRoomId(room.getRoomId());
+			dto.setProjectId(room.getProjectId());
+
+			// 현재 사용자인 member와 채팅방의 두 멤버(member1, member2)를 비교하여 상대방 정보 설정
+			if (room.getMember1().equalsIgnoreCase(member)) {
+				dto.setSender(room.getMember1());
+				dto.setReceiver(room.getMember2());
+				Member otherUser = memberRepository.findByEmail(room.getMember2())
+					.orElse(null);
+				if (otherUser != null) {
+					dto.setOtherUserName(otherUser.getName());
+					dto.setOtherUserProfile(otherUser.getProfileImage());
+					dto.setOtherUserId(otherUser.getId());
+				}
+			} else {
+				dto.setSender(room.getMember2());
+				dto.setReceiver(room.getMember1());
+				Member otherUser = memberRepository.findByEmail(room.getMember1())
+					.orElse(null);
+				if (otherUser != null) {
+					dto.setOtherUserName(otherUser.getName());
+					dto.setOtherUserProfile(otherUser.getProfileImage());
+					dto.setOtherUserId(otherUser.getId());
+				}
+			}
+
+			// 마지막 메시지 정보 설정
+			List<ChatMessage> messages = chatMessageRepository.findTopMessagesByRoomIdOrderByTimestampDesc(room.getRoomId(), 1);
+			if (!messages.isEmpty()) {
+				ChatMessage lastMessage = messages.get(0);
+				dto.setLastMessage(lastMessage.getContent());
+				dto.setLastMessageTime(lastMessage.getTimestamp());
+			}
+
+			// 미확인 메시지 수 가져오기: getUnreadCount 메소드 호출 (채팅방 ID와 현재 사용자)
+			long unreadCount = getUnreadCount(room.getRoomId(), member);
+			dto.setUnreadCount((int) unreadCount);
+
+			return dto;
+		}).toList();
+
+		// 마지막에 dtoList를 반환합니다.
+		return dtoList;
 	}
+
 
 	/**
 	 * JSON 문자열에서 roomId 추출
