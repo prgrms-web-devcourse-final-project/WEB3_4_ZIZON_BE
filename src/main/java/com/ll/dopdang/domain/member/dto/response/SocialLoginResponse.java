@@ -1,5 +1,7 @@
 package com.ll.dopdang.domain.member.dto.response;
 
+import com.ll.dopdang.domain.member.entity.Member;
+
 import lombok.Builder;
 import lombok.Getter;
 
@@ -9,24 +11,23 @@ import lombok.Getter;
 @Getter
 @Builder
 public class SocialLoginResponse {
-	/**
-	 * 고유 ID
-	 */
 	private Long id;
-	/**
-	 * 이메일
-	 */
 	private String email;
-	/**
-	 * 이름
-	 */
 	private String name;
-	/**
-	 * 프로필 사진
-	 */
 	private String profileImage;
-	/**
-	 * 유저 상태
-	 */
 	private String status;
+	private Long expertId;
+	private String phone;
+
+	public static SocialLoginResponse of(Member member) {
+		return SocialLoginResponse.builder()
+			.id(member.getId())
+			.email(member.getEmail())
+			.name(member.getName())
+			.profileImage(member.getProfileImage())
+			.status(member.getStatus())
+			.expertId(member.getExpert() != null ? member.getExpert().getId() : null)
+			.phone(member.getPhone() != null ? member.getPhone() : null)
+			.build();
+	}
 }

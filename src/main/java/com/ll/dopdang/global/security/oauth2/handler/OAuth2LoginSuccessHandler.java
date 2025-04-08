@@ -160,13 +160,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 	 * @return {@link SocialLoginResponse}
 	 */
 	private SocialLoginResponse createSocialLoginResponse(Member member) {
-		return SocialLoginResponse.builder()
-			.id(member.getId())
-			.name(member.getName())
-			.email(member.getEmail())
-			.profileImage(member.getProfileImage())
-			.status(member.getStatus())
-			.build();
+		return SocialLoginResponse.of(member);
 	}
 
 	/**
