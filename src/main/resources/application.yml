@@ -119,5 +119,5 @@ site:
 
 springdoc: { swagger-ui: { path: /swagger-ui.html, groups-order: DESC, operationsSorter: method, disable-swagger-default-url: true, display-request-duration: true }, api-docs: { path: /api-docs }, show-actuator: true, default-consumes-media-type: application/json, default-produces-media-type: application/json }
 
-service: # 자격증 API
+service:
   key: ${SERVICE_KEY}
