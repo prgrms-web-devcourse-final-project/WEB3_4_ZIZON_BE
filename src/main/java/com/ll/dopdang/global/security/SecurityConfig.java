@@ -104,7 +104,8 @@ public class SecurityConfig {
 			"/api-docs/**",
 			"/projects/all",
 			"/api/s3/**",
-			"/experts/**"
+			"/experts/**",
+			"/posts/**"
 		));
 		PUBLIC_URLS.put(HttpMethod.POST, Arrays.asList(
 			"/users/login",
