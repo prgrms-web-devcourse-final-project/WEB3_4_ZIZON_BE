@@ -1,6 +1,5 @@
 package com.ll.dopdang.domain.member.controller;
 
-import static org.hibernate.validator.internal.util.Contracts.*;
 import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
 import static org.hibernate.validator.internal.util.Contracts.assertTrue;
 import static org.mockito.Mockito.*;
@@ -27,7 +26,6 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ll.dopdang.domain.expert.service.CertificateService;
 import com.ll.dopdang.domain.member.dto.request.LoginRequest;
 import com.ll.dopdang.domain.member.dto.request.UpdateProfileRequest;
 import com.ll.dopdang.domain.member.entity.Member;
@@ -37,19 +35,15 @@ import com.ll.dopdang.domain.member.repository.MemberRepository;
 import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.global.redis.repository.RedisRepository;
-import com.ll.dopdang.global.sms.service.CoolSmsService;
 import com.ll.dopdang.standard.util.JwtUtil;
 
 import jakarta.servlet.http.Cookie;
-import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
 class MemberControllerTest {
-	@MockBean
-	private CertificateService certificateService;
 	@Autowired
 	private MockMvc mvc;
 	@Autowired
@@ -62,10 +56,6 @@ class MemberControllerTest {
 	private JwtUtil jwtUtil;
 	@MockBean
 	private RedisRepository redisRepository;
-	@MockBean
-	private CoolSmsService coolSmsService;
-	@MockBean
-	private S3Presigner s3Presigner;
 
 	@BeforeEach
 	void setUp() {

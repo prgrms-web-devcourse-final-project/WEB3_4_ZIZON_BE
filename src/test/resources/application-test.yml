@@ -43,6 +43,7 @@ coolsms:
   api_key: test-api-key
   api_secret: test-api-secret
   from_number: 01000000000
+
 service: # 자격증 API
   key: 123123123123
 

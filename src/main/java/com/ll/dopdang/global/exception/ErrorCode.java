@@ -49,6 +49,7 @@ public enum ErrorCode {
 	PHONE_VERIFICATION_FAILED(HttpStatus.BAD_REQUEST, "전화번호 인증에 실패하였습니다."),
 	PASSWORD_SAME_AS_CURRENT(HttpStatus.BAD_REQUEST, "현재 사용중인 비밀번호와 일치합니다."),
 	UNAUTHORIZED_USER(HttpStatus.UNAUTHORIZED, "인증되지 않은 유저입니다."),
+	INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다."),
 
 	// 카테고리 관련 에러
 	CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 카테고리입니다."),
@@ -70,12 +71,19 @@ public enum ErrorCode {
 	OFFER_NOT_FOUND(HttpStatus.NOT_FOUND, "제안서를 찾을 수 없습니다."),
 	INVALID_OFFER_PROJECT(HttpStatus.BAD_REQUEST, "제안서에 대한 프로젝트 정보가 올바르지 않습니다."),
 
+	// 문의글 관련 에러
+	POST_NOT_FOUND(HttpStatus.NOT_FOUND, "문의글을 찾을 수 없습니다."),
+	INVALID_POST_AUTHOR(HttpStatus.UNAUTHORIZED, "문의글 작성자가 아닙니다."),
+	INVALID_COMMENT_AUTHOR(HttpStatus.UNAUTHORIZED, "댓글은 관리자만 작성할 수 있습니다."),
+	COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다."),
+	DISMATCH_COMMENT_AND_POST(HttpStatus.BAD_REQUEST, "댓글과 문의글의 연관관계가 일치하지 않습니다."),
+
 	// 상품 관련 에러
 	PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "상품을 찾을 수 없습니다."),
 	INVALID_PRODUCT_CONTENT(HttpStatus.BAD_REQUEST, "디지털 상품의 내용은 필수입니다."),
 	INVALID_PRODUCT_PRICE(HttpStatus.BAD_REQUEST, "상품의 가격은 0원 이상이어야 합니다."),
 	INVALID_PRODUCT_STOCK(HttpStatus.BAD_REQUEST, "상품의 재고는 -1 이상이어야 합니다."),
-	
+
 	// S3 Presigned URL 생성 관련
 	PRESIGNED_URL_CREATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Presigned URL 생성 중 알 수 없는 오류가 발생했습니다."),
 	INVALID_S3_REQUEST(HttpStatus.BAD_REQUEST, "잘못된 요청으로 인해 S3 Presigned URL 생성에 실패했습니다."),

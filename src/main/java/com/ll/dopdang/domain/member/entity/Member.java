@@ -6,10 +6,12 @@ import java.util.UUID;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.util.ObjectUtils;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ll.dopdang.domain.expert.entity.Expert;
+import com.ll.dopdang.domain.member.dto.request.PasswordUpdateRequest;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -148,6 +150,24 @@ public class Member {
 	 */
 	public void activatePhone(String phone) {
 		this.phone = phone;
+	}
+
+	public static Member updatePassword(Member member, PasswordUpdateRequest request, PasswordEncoder passwordEncoder) {
+		return Member.builder()
+			.id(member.getId())
+			.email(member.getEmail())
+			.password(passwordEncoder.encode(request.getNewPassword()))
+			.name(member.getName())
+			.profileImage(member.getProfileImage())
+			.phone(member.getPhone())
+			.status(member.getStatus())
+			.userRole(member.getUserRole())
+			.memberId(member.getMemberId())
+			.uniqueKey(member.getUniqueKey())
+			.createdAt(member.getCreatedAt())
+			.updatedAt(LocalDateTime.now())
+			.isClient(member.isClient())
+			.build();
 	}
 
 	/**
