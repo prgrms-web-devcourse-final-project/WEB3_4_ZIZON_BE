@@ -26,7 +26,9 @@ public interface ExpertRepository extends JpaRepository<Expert, Long> {
         @Param("maxYears") Integer maxYears);
 
     Optional<Expert> findByMemberId(Long memberId);
-
+  
     @Query("SELECT e FROM Expert e WHERE LOWER(e.member.name) LIKE LOWER(CONCAT('%', :name, '%'))")
     List<Expert> findByMemberNameContaining(@Param("name") String name);
+  
+	  boolean existsByMemberId(Long id);
 }
