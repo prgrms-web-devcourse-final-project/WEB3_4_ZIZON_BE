@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,10 +26,13 @@ import com.ll.dopdang.domain.project.service.ContractService;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+@Tag(name = "Contract", description = "계약 관련 API")
 @RestController
 @RequestMapping("/contracts")
 @RequiredArgsConstructor
@@ -123,5 +127,18 @@ public class ContractController {
 		Member member = userDetails.getMember();
 		ContractDetailResponse response = contractService.getContractDetail(projectId, member);
 		return ResponseEntity.ok(response);
+	}
+
+	@Operation(summary = "계약 완료 처리", description = "클라이언트가 자신의 프로젝트에 해당하는 계약을 완료 상태로 변경합니다.")
+	@ApiResponse(responseCode = "204", description = "계약 완료 처리 성공")
+	@ApiResponse(responseCode = "404", description = "계약을 찾을 수 없음")
+	@ApiResponse(responseCode = "401", description = "접근 권한이 없음")
+	@PatchMapping("/{contractId}/complete")
+	public ResponseEntity<Void> completeContract(
+		@Parameter(description = "계약 ID", required = true) @PathVariable Long contractId,
+		@Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails
+	) {
+		contractService.updateContractStatusToAsCompleted(contractId, userDetails.getId());
+		return ResponseEntity.noContent().build();
 	}
 }

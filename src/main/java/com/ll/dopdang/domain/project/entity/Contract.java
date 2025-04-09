@@ -92,6 +92,10 @@ public class Contract {
 		createdAt = LocalDateTime.now();
 	}
 
+	public void updateStatus(ContractStatus contractStatus) {
+		this.status = contractStatus;
+	}
+
 	// ContractStatus enum for status field
 	public enum ContractStatus {
 		PENDING,
