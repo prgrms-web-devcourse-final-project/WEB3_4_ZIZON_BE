@@ -23,4 +23,6 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
 	@EntityGraph(attributePaths = {"client"})
 	Optional<Project> findWithClientById(Long id);
+
+	Page<Project> findByStatusNot(ProjectStatus status, Pageable pageable);
 }

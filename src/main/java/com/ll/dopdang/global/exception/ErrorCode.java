@@ -66,6 +66,8 @@ public enum ErrorCode {
 	UNAUTHORIZED_CONTRACT_CREATION(HttpStatus.FORBIDDEN, "해당 프로젝트의 클라이언트만 계약을 생성할 수 있습니다."),
 	CONTRACT_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 계약을 찾을 수 없습니다."),
 	CONTRACT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 계약에 접근할 수 없습니다."),
+	UNAUTHORIZED_CONTRACT_ACCESS(HttpStatus.FORBIDDEN, "이 계약에 대한 수정 권한이 없습니다."),
+	CONTRACT_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST, "이미 완료된 계약입니다."),
 
 	// 제안서 관련 에러
 	OFFER_NOT_FOUND(HttpStatus.NOT_FOUND, "제안서를 찾을 수 없습니다."),
@@ -90,8 +92,11 @@ public enum ErrorCode {
 	S3_ACCESS_DENIED(HttpStatus.FORBIDDEN, "S3 접근 권한이 없습니다."),
 	S3_BUCKET_NOT_FOUND(HttpStatus.NOT_FOUND, "지정된 S3 버킷을 찾을 수 없습니다."),
 	S3_FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "지정된 S3 버킷을 찾을 수 없습니다."),
-	AWS_CLIENT_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "AWS 클라이언트 설정 오류 또는 자격 증명 오류가 발생했습니다.");
-
+	AWS_CLIENT_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "AWS 클라이언트 설정 오류 또는 자격 증명 오류가 발생했습니다."),
+	// 리뷰 관련 에러
+	CONTRACT_NOT_COMPLETED(HttpStatus.BAD_REQUEST, "계약이 완료되지 않아 리뷰를 작성할 수 없습니다."),
+	REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, "리뷰를 찾을 수 없습니다."),
+	REVIEW_ALREADY_EXISTS(HttpStatus.CONFLICT, "해당 계약에 대한 리뷰는 이미 작성되었습니다.");
 	private final HttpStatus status;
 	private final String message;
 }
