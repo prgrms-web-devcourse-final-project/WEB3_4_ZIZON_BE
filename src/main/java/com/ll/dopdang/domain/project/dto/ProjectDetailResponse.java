@@ -32,6 +32,8 @@ public class ProjectDetailResponse {
 
 	private List<String> imageUrls;
 
+	private String emails;
+
 	// 이 방법!!
 	public static ProjectDetailResponse of(Project project, List<String> imageUrls) {
 		Member client = project.getClient();
@@ -48,6 +50,7 @@ public class ProjectDetailResponse {
 			.clientName(client.getName())
 			.clientProfileImageUrl(client.getProfileImage())
 			.imageUrls(imageUrls)
+			.emails(project.getClient().getEmail())
 			.build();
 	}
 }

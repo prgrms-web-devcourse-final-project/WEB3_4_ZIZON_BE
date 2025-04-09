@@ -25,7 +25,7 @@ public class CertificateService {
 	private static final Logger log = LoggerFactory.getLogger(CertificateService.class);
 	private static final String API_URL = "http://openapi.q-net.or.kr/api/service/rest/InquiryQualInfo/getList";
 	private final CertificateRepository certificateRepository; // DB 접근 레포지토리
-	@Value("${service-key}") // 환경변수로부터 서비스 키 값 주입
+	@Value("${service.key}") // 환경변수로부터 서비스 키 값 주입
 	private String serviceKey;
 
 	public List<CertificateResponseDto> getAllCertificates() {

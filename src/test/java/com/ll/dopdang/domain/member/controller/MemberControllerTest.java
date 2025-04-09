@@ -1,6 +1,5 @@
 package com.ll.dopdang.domain.member.controller;
 
-import static org.hibernate.validator.internal.util.Contracts.*;
 import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
 import static org.hibernate.validator.internal.util.Contracts.assertTrue;
 import static org.mockito.Mockito.*;
@@ -33,11 +32,9 @@ import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.entity.MemberRole;
 import com.ll.dopdang.domain.member.entity.MemberStatus;
 import com.ll.dopdang.domain.member.repository.MemberRepository;
-import com.ll.dopdang.global.config.S3Config;
 import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.global.redis.repository.RedisRepository;
-import com.ll.dopdang.global.sms.service.CoolSmsService;
 import com.ll.dopdang.standard.util.JwtUtil;
 
 import jakarta.servlet.http.Cookie;
@@ -59,10 +56,6 @@ class MemberControllerTest {
 	private JwtUtil jwtUtil;
 	@MockBean
 	private RedisRepository redisRepository;
-	@MockBean
-	private CoolSmsService coolSmsService;
-	@MockBean
-	private S3Config s3Config;
 
 	@BeforeEach
 	void setUp() {

@@ -1,6 +1,7 @@
 package com.ll.dopdang.domain.project.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -18,4 +19,7 @@ public interface OfferRepository extends JpaRepository<Offer, Long> {
 	 * @return 해당 프로젝트의 특정 오퍼를 제외한 모든 오퍼 목록
 	 */
 	List<Offer> findByProjectIdAndIdNot(Long projectId, Long offerId);
+
+	// 프로젝트 + 전문가로 오퍼 단건 조회
+	Optional<Offer> findByProjectIdAndExpertId(Long projectId, Long expertId);
 }

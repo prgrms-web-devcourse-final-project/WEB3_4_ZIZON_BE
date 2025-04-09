@@ -206,7 +206,7 @@ public class ExpertService {
 					.build();
 				expertCategoryRepository.save(expertCategory);
 			});
-			List<ExpertCertificate>expertCertificates = new ArrayList<>();
+			List<ExpertCertificate> expertCertificates = new ArrayList<>();
 			// 4. 자격증 처리
 			if (updateRequestDto.getCertificateNames() != null && !updateRequestDto.getCertificateNames().isEmpty()) {
 				// 기존 자격증 삭제
