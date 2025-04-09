@@ -88,6 +88,7 @@ public enum ErrorCode {
 	AWS_CLIENT_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "AWS 클라이언트 설정 오류 또는 자격 증명 오류가 발생했습니다."),
 	// 리뷰 관련 에러
 	CONTRACT_NOT_COMPLETED(HttpStatus.BAD_REQUEST, "계약이 완료되지 않아 리뷰를 작성할 수 없습니다."),
+	REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, "리뷰를 찾을 수 없습니다."),
 	REVIEW_ALREADY_EXISTS(HttpStatus.CONFLICT, "해당 계약에 대한 리뷰는 이미 작성되었습니다.");
 	private final HttpStatus status;
 	private final String message;

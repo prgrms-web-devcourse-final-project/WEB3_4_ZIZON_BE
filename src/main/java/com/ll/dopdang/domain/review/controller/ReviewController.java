@@ -3,6 +3,8 @@ package com.ll.dopdang.domain.review.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ll.dopdang.domain.review.dto.ReviewCreateRequest;
 import com.ll.dopdang.domain.review.dto.ReviewCreateResponse;
+import com.ll.dopdang.domain.review.dto.ReviewDetailResponse;
 import com.ll.dopdang.domain.review.sevice.ReviewService;
 import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
@@ -57,5 +60,19 @@ public class ReviewController {
 		Long reviewerId = userDetails.getId();
 		ReviewCreateResponse response = reviewService.createReview(request.getProjectId(), reviewerId, request);
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
+	}
+
+	@Operation(
+		summary = "프로젝트 기반 리뷰 단건 조회",
+		description = "프로젝트 ID를 통해 리뷰 상세 정보를 조회합니다."
+	)
+	@ApiResponse(responseCode = "200", description = "리뷰 조회 성공")
+	@ApiResponse(responseCode = "404", description = "리뷰 또는 계약을 찾을 수 없음")
+	@GetMapping("/project/{projectId}")
+	public ResponseEntity<ReviewDetailResponse> getReviewByProjectId(
+		@PathVariable Long projectId
+	) {
+		ReviewDetailResponse response = reviewService.getReviewByProjectId(projectId);
+		return ResponseEntity.ok(response);
 	}
 }

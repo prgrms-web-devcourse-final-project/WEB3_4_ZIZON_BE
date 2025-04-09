@@ -9,6 +9,7 @@ import com.ll.dopdang.domain.project.entity.Contract;
 import com.ll.dopdang.domain.project.repository.ContractRepository;
 import com.ll.dopdang.domain.review.dto.ReviewCreateRequest;
 import com.ll.dopdang.domain.review.dto.ReviewCreateResponse;
+import com.ll.dopdang.domain.review.dto.ReviewDetailResponse;
 import com.ll.dopdang.domain.review.entity.Review;
 import com.ll.dopdang.domain.review.repository.ReviewRepository;
 import com.ll.dopdang.global.exception.ErrorCode;
@@ -65,5 +66,23 @@ public class ReviewService {
 
 		// 5. 응답 생성
 		return ReviewCreateResponse.from(saved);
+	}
+
+	/**
+	 * 프로젝트 ID를 기반으로 리뷰 상세 정보를 조회합니다.
+	 *
+	 * @param projectId 프로젝트 ID
+	 * @return 리뷰 상세 응답 DTO
+	 * @throws ServiceException 리뷰 또는 계약이 존재하지 않을 경우 예외 발생
+	 */
+	@Transactional(readOnly = true)
+	public ReviewDetailResponse getReviewByProjectId(Long projectId) {
+		Contract contract = contractRepository.findByProjectId(projectId)
+			.orElseThrow(() -> new ServiceException(ErrorCode.CONTRACT_NOT_FOUND));
+
+		Review review = reviewRepository.findByContract(contract)
+			.orElseThrow(() -> new ServiceException(ErrorCode.REVIEW_NOT_FOUND));
+
+		return ReviewDetailResponse.from(review);
 	}
 }
