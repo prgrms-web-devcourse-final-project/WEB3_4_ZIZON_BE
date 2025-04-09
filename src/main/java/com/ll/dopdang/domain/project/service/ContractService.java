@@ -13,6 +13,8 @@ import com.ll.dopdang.domain.project.dto.ContractDetailResponse;
 import com.ll.dopdang.domain.project.dto.ContractSummaryResponse;
 import com.ll.dopdang.domain.project.entity.Contract;
 import com.ll.dopdang.domain.project.entity.Offer;
+import com.ll.dopdang.domain.project.entity.Project;
+import com.ll.dopdang.domain.project.entity.ProjectStatus;
 import com.ll.dopdang.domain.project.repository.ContractRepository;
 import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
@@ -77,7 +79,11 @@ public class ContractService {
 		Long projectId = offer.getProject().getId();
 		offerService.rejectOtherOffers(projectId, offerId);
 
-		// 7. 생성된 계약 ID 반환
+		// 7. 프로젝트 상태 변경
+		Project project = offer.getProject();
+		project.updateStatus(ProjectStatus.COMPLETED);
+
+		// 8. 생성된 계약 ID 반환
 		return savedContract.getId();
 	}
 

@@ -66,4 +66,10 @@ public class Project extends BaseEntity {
 	@JoinColumn(name = "expert_id")
 	private Expert expert;
 
+	public void updateStatus(ProjectStatus newStatus) {
+		if (this.status != newStatus) {
+			this.status = newStatus;
+		}
+	}
+
 }

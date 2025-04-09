@@ -69,7 +69,7 @@ public class ContractController {
 
 		Map<String, Object> response = new HashMap<>();
 		response.put("contractId", contractId);
-
+		
 		return ResponseEntity.ok(response);
 	}
 
