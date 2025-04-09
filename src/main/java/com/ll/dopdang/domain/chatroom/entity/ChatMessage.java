@@ -2,6 +2,7 @@ package com.ll.dopdang.domain.chatroom.entity;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -27,5 +28,6 @@ public class ChatMessage {
 	private String content;
 	private LocalDateTime timestamp;
 
-	private String s3Key;
+	@Column(columnDefinition = "TEXT")
+	private String fileUrl;
 }
