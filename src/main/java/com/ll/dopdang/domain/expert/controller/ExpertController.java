@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ll.dopdang.domain.expert.dto.request.ExpertRequestDto;
 import com.ll.dopdang.domain.expert.dto.request.ExpertUpdateRequestDto;
+import com.ll.dopdang.domain.expert.dto.response.ExpertCreateResponseDto;
 import com.ll.dopdang.domain.expert.dto.response.ExpertDetailResponseDto;
 import com.ll.dopdang.domain.expert.dto.response.ExpertResponseDto;
 import com.ll.dopdang.domain.expert.service.ExpertService;
@@ -44,14 +45,13 @@ public class ExpertController {
 	@ApiResponse(responseCode = "400", description = "잘못된 요청")
 	@PostMapping
 
-	public ResponseEntity<Map<Long, String>> createExpert(
+	public ResponseEntity<ExpertCreateResponseDto> createExpert(
 		@AuthenticationPrincipal CustomUserDetails customUserDetails,
 		@RequestBody ExpertRequestDto requestDto) throws Exception {
 		Long memberId = customUserDetails.getId();
 		Long expertId = expertService.createExpert(requestDto, memberId);
 
-		Map<Long, String> response = new HashMap<>();
-		response.put(expertId, "전문가 프로필을 등록하였습니다");
+		ExpertCreateResponseDto response = new ExpertCreateResponseDto(expertId,"전문가 프로필을 등록하였습니다.");
 		return ResponseEntity.ok(response);
 	}
 
