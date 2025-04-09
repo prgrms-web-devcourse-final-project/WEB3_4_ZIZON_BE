@@ -41,11 +41,19 @@ public class CertificateService {
 			.toList();
 	}
 
+	public List<CertificateResponseDto> getCertificatesByName(String name) {
+		List<Certificate> certificates = certificateRepository.findByNameContaining(name);
+
+		return certificates.stream()
+			.map(certificate -> new CertificateResponseDto(certificate.getId(), certificate.getName()))
+			.toList();
+	}
+
 	public void fetchAndSaveCertificates() {
 		try {
 			// 1. URL 생성 및 API 호출
 			String url = API_URL + "?serviceKey=" + serviceKey;
-			url += "&seriesCd=01"; // 카테고리 필터 01 기술사, 02 기능장, 03 기사, 04 기능사
+			url += "&seriesCd=03"; // 카테고리 필터 01 기술사, 02 기능장, 03 기사, 04 기능사
 			RestTemplate restTemplate = new RestTemplate();
 			restTemplate.getMessageConverters().add(0, new StringHttpMessageConverter(StandardCharsets.UTF_8));
 			String xmlResponse = restTemplate.getForObject(url, String.class);

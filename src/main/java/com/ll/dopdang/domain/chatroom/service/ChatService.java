@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -21,12 +22,17 @@ import org.springframework.web.server.ResponseStatusException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ll.dopdang.domain.chatroom.dto.ChatRoomDetailResponse;
+import com.ll.dopdang.domain.chatroom.dto.ChatRoomResponse;
+import com.ll.dopdang.domain.chatroom.dto.NotificationPayload;
 import com.ll.dopdang.domain.chatroom.entity.ChatMessage;
 import com.ll.dopdang.domain.chatroom.entity.ChatRoom;
 import com.ll.dopdang.domain.chatroom.repository.ChatMessageRepository;
 import com.ll.dopdang.domain.chatroom.repository.ChatRoomRepository;
+import com.ll.dopdang.domain.expert.repository.ExpertRepository;
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.repository.MemberRepository;
+import com.ll.dopdang.domain.project.dto.ProjectDetailResponse;
+import com.ll.dopdang.domain.project.service.ProjectService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +47,9 @@ public class ChatService {
 	private final SimpMessagingTemplate messagingTemplate;
 	private final MemberRepository memberRepository;
 	private final RedisTemplate<String, Object> redisTemplate;
+	private final ProjectService projectService;
 	private final ObjectMapper objectMapper;
+	private final ExpertRepository expertRepository;
 
 	private static final int RECENT_MESSAGE_LIMIT = 100;
 	private static final String UNREAD_COUNT_KEY_TEMPLATE = "chat:%s:unread:%s";
@@ -106,18 +114,33 @@ public class ChatService {
 		// 실시간 브로드캐스트 (WebSocket 이용)
 		messagingTemplate.convertAndSend("/topic/chat/" + chatRoom.getRoomId(), chatMessage);
 
-		// 상대방의 읽지 않은 메시지 수 증가
-		String unreadKey = String.format(UNREAD_COUNT_KEY_TEMPLATE, roomId, chatMessage.getReceiver());
-		Object value = redisTemplate.opsForValue().get(unreadKey);
-		long currentUnread = 0;
-		if (value != null) {
-			try {
-				currentUnread = Long.parseLong(value.toString());
-			} catch (NumberFormatException e) {
-				log.error("Failed to parse unread count: {}", e.getMessage());
+		// --- 알림 및 미읽은 메시지 처리 ---
+		// 수신자가 현재 활성 채팅방에 있는지 확인
+		String activeRoomKey = "active_chat_room:" + chatMessage.getReceiver();
+		Object activeRoomObj = redisTemplate.opsForValue().get(activeRoomKey);
+		if (activeRoomObj == null || !activeRoomObj.toString().equals(chatRoom.getRoomId())) {
+			// 수신자가 해당 채팅방에 있지 않으면 미읽은 메시지 처리 및 알림 전송
+			String unreadKey = String.format(UNREAD_COUNT_KEY_TEMPLATE, roomId, chatMessage.getReceiver());
+			Object value = redisTemplate.opsForValue().get(unreadKey);
+			long currentUnread = 0;
+			if (value != null) {
+				try {
+					currentUnread = Long.parseLong(value.toString());
+				} catch (NumberFormatException e) {
+					log.error("Failed to parse unread count: {}", e.getMessage());
+				}
 			}
+			long updatedUnread = currentUnread + 1;
+			redisTemplate.opsForValue().set(unreadKey, updatedUnread);
+
+			NotificationPayload notification = new NotificationPayload(
+				chatRoom.getRoomId(),         // 채팅방 ID
+				chatMessage.getSender(),        // 발신자
+				chatMessage.getContent(),       // 메시지 내용(요약)
+				(int) updatedUnread            // 업데이트된 읽지 않은 메시지 수
+			);
+			messagingTemplate.convertAndSend("/topic/notice/" + chatMessage.getReceiver(), notification);
 		}
-		redisTemplate.opsForValue().set(unreadKey, currentUnread + 1);
 	}
 
 	/**
@@ -155,7 +178,7 @@ public class ChatService {
 			if (latestDbMessageTime == null || (latestRedisMessageTime != null && latestRedisMessageTime.isAfter(latestDbMessageTime))) {
 				return redisMessages;
 			}
-			if (latestDbMessageTime != null && latestRedisMessageTime != null && !latestDbMessageTime.isEqual(latestRedisMessageTime)) {
+			if (latestRedisMessageTime != null && !latestDbMessageTime.isEqual(latestRedisMessageTime)) {
 				log.debug("Redis 캐시와 DB 데이터가 다릅니다. DB에서 최신 데이터를 가져옵니다.");
 				List<ChatMessage> messages = chatMessageRepository.findByRoomIdOrderByTimestampAsc(roomId);
 				redisTemplate.delete(redisKey);
@@ -209,7 +232,8 @@ public class ChatService {
 				msg.getTimestamp(),
 				senderName,
 				senderProfileImage,
-				true
+				true,
+				msg.getFileUrl()
 			));
 		}
 		return responseList;
@@ -223,7 +247,7 @@ public class ChatService {
 	 * @return 사용자가 참여 중인 채팅방 리스트
 	 */
 	@Transactional(readOnly = true)
-	public List<ChatRoom> getChatRoomsForUser(String member) {
+	public List<ChatRoomResponse> getChatRoomsForUser(String member, Long currentUserId) {
 		String redisKey = String.format(CHAT_ROOMS_KEY_TEMPLATE, member);
 		List<ChatRoom> dbRooms = chatRoomRepository.findByMember(member);
 		Set<String> dbRoomIds = dbRooms.stream()
@@ -267,8 +291,70 @@ public class ChatService {
 		} else {
 			log.debug("Redis에서 채팅방 목록을 가져옵니다. member: {}", member);
 		}
-		return dbRooms;
+
+		List<ChatRoomResponse> dtoList = dbRooms.stream().map(room -> {
+			ChatRoomResponse dto = new ChatRoomResponse();
+			dto.setRoomId(room.getRoomId());
+			dto.setProjectId(room.getProjectId());
+
+			// 현재 사용자인 member와 채팅방의 두 멤버(member1, member2)를 비교하여 상대방 정보 설정
+			if (room.getMember1().equalsIgnoreCase(member)) {
+				dto.setSender(room.getMember1());
+				dto.setReceiver(room.getMember2());
+				Member otherUser = memberRepository.findByEmail(room.getMember2())
+					.orElse(null);
+				if (otherUser != null) {
+					Long others = otherUser.getId();
+					dto.setOtherUserName(otherUser.getName());
+					dto.setOtherUserProfile(otherUser.getProfileImage());
+					dto.setOtherUserId(others);
+					//사용자 : 사용자가 대화 할 일이 없기 때문에
+					//대화상대가 expert가 아니라면 내가 expert
+					if (expertRepository.existsByMemberId(others)) {
+						dto.setExpertId(others);
+					}else {
+						dto.setExpertId(currentUserId);
+					}
+				}
+			} else {
+				dto.setSender(room.getMember2());
+				dto.setReceiver(room.getMember1());
+				Member otherUser = memberRepository.findByEmail(room.getMember1())
+					.orElse(null);
+				if (otherUser != null) {
+					Long others = otherUser.getId();
+					dto.setOtherUserName(otherUser.getName());
+					dto.setOtherUserProfile(otherUser.getProfileImage());
+					dto.setOtherUserId(others);
+					//사용자 : 사용자가 대화 할 일이 없기 때문에
+					//대화상대가 expert가 아니라면 내가 expert
+					if (expertRepository.existsByMemberId(others)) {
+						dto.setExpertId(others);
+					}else {
+						dto.setExpertId(currentUserId);
+					}
+				}
+			}
+
+			// 마지막 메시지 정보 설정
+			List<ChatMessage> messages = chatMessageRepository.findTopMessagesByRoomIdOrderByTimestampDesc(room.getRoomId(), 1);
+			if (!messages.isEmpty()) {
+				ChatMessage lastMessage = messages.get(0);
+				dto.setLastMessage(lastMessage.getContent());
+				dto.setLastMessageTime(lastMessage.getTimestamp());
+			}
+
+			// 미확인 메시지 수 가져오기: getUnreadCount 메소드 호출 (채팅방 ID와 현재 사용자)
+			long unreadCount = getUnreadCount(room.getRoomId(), member);
+			dto.setUnreadCount((int) unreadCount);
+
+			return dto;
+		}).toList();
+
+		// 마지막에 dtoList를 반환합니다.
+		return dtoList;
 	}
+
 
 	/**
 	 * JSON 문자열에서 roomId 추출
@@ -434,4 +520,36 @@ public class ChatService {
 			}
 		}
 	}
+
+	/**
+	 * 채팅방 생성 로직
+	 *
+	 * @param email   현재 로그인한 사용자의 이메일
+	 * @param projectId project 작성자 정보를 찾기 위한 id
+	 */
+	@Transactional
+	public void createChatroom(String email, Long projectId) {
+		ProjectDetailResponse projectDetail = projectService.getProjectById(projectId);
+
+		// 2. 프로젝트 작성자(채팅 상대)의 이메일을 추출 (문의를 위한 정보)
+		String receiverEmail = projectDetail.getEmails().trim().toLowerCase();
+		email = email.trim().toLowerCase();
+
+		String roomId = getRoomId(email, receiverEmail);
+
+		// 4. 채팅방이 이미 존재하는지 확인
+		Optional<ChatRoom> existingChatRoom = chatRoomRepository.findByRoomId(roomId);
+		ChatRoom chatRoom;
+		if (existingChatRoom.isPresent()) {
+			chatRoom = existingChatRoom.get();
+		} else {
+			chatRoom = new ChatRoom();
+			chatRoom.setRoomId(roomId);
+			chatRoom.setMember1(email);
+			chatRoom.setMember2(receiverEmail);
+			chatRoom.setProjectId(projectId);
+			chatRoom = chatRoomRepository.save(chatRoom);
+		}
+	}
+
 }
