@@ -107,4 +107,21 @@ public class OfferService {
 		return offerRepository.findById(offerId)
 			.orElseThrow(() -> new ServiceException(ErrorCode.OFFER_NOT_FOUND));
 	}
+
+	public Offer getOfferByProjectAndExpert(Long projectId, Long expertId, CustomUserDetails userDetails) {
+		log.info("userDetails.getId(): {}", userDetails.getId());
+		if (userDetails == null) {
+			throw new ServiceException(ErrorCode.UNAUTHORIZED_USER);
+		}
+		Offer offer = offerRepository.findByProjectIdAndExpertId(projectId, expertId)
+			.orElseThrow(() -> new ServiceException(ErrorCode.OFFER_NOT_FOUND));
+
+		Long loggedInUserId = userDetails.getId();
+		Long clientId = offer.getProject().getClient().getId();
+		if (!clientId.equals(loggedInUserId)) {
+			throw new ServiceException(ErrorCode.UNAUTHORIZED_USER);
+		}
+
+		return offer;
+	}
 }

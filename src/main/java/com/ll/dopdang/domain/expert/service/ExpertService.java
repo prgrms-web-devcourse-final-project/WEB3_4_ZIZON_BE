@@ -17,9 +17,11 @@ import com.ll.dopdang.domain.expert.dto.response.ExpertResponseDto;
 import com.ll.dopdang.domain.expert.entity.Certificate;
 import com.ll.dopdang.domain.expert.entity.Expert;
 import com.ll.dopdang.domain.expert.entity.ExpertCertificate;
+import com.ll.dopdang.domain.expert.entity.Portfolio;
 import com.ll.dopdang.domain.expert.repository.CertificateRepository;
 import com.ll.dopdang.domain.expert.repository.ExpertCertificateRepository;
 import com.ll.dopdang.domain.expert.repository.ExpertRepository;
+import com.ll.dopdang.domain.expert.repository.PortfolioRepository;
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.repository.MemberRepository;
 
@@ -39,6 +41,7 @@ public class ExpertService {
 	private final CertificateRepository certificateRepository;
 	private final ExpertCategoryRepository expertCategoryRepository;
 	private final ExpertCertificateRepository expertCertificateRepository;
+	private final PortfolioRepository portfolioRepository;
 
 	/**
 	 * 전문가를 등록합니다.
@@ -76,7 +79,6 @@ public class ExpertService {
 			.bankName(expertRequestDto.getBankName())
 			.gender(expertRequestDto.getGender())
 			.accountNumber(expertRequestDto.getAccountNumber())
-			.sellerInfo(expertRequestDto.getSellerInfo())
 			.build();
 		expertRepository.save(expert);
 
@@ -96,6 +98,14 @@ public class ExpertService {
 				.build();
 			expertCertificateRepository.save(expertCertificate);
 		});
+			// 새로운 포트폴리오 생성
+			Portfolio portfolio = Portfolio.builder()
+				.expert(expert)
+				.title(expertRequestDto.getPortfolioTitle() != null ? expertRequestDto.getPortfolioTitle() : "No Title") // 기본값 설정
+				.imageUrl(expertRequestDto.getPortfolioImage() != null ? expertRequestDto.getPortfolioImage() : "") // 기본값: 빈 URL
+				.build();
+			// 새로 생성한 포트폴리오 저장
+			portfolioRepository.save(portfolio);
 		return expert.getId();
 	}
 
@@ -130,10 +140,8 @@ public class ExpertService {
 					throw new IllegalArgumentException("Invalid careerLevel: " + careerLevel);
 			}
 		}
-
 		// 데이터베이스 조회를 통한 필터링 결과
-
-		List<Expert> experts = expertRepository.findByFilters(categoryNames, minYears, maxYears);
+	List<Expert> experts = expertRepository.findByFilters(categoryNames, minYears, maxYears);
 
 		// Expert 데이터를 DTO로 변환하여 반환
 		return experts.stream()
@@ -145,9 +153,16 @@ public class ExpertService {
 		// 1. 전문가 조회
 		Expert expert = expertRepository.findById(expertId)
 			.orElseThrow(() -> new IllegalArgumentException("Expert not found with ID: " + expertId));
-
+		Portfolio portfolio = expert.getPortfolio();
 		// 2. Expert -> ExpertDetailResponseDto로 변환
-		return mapToDetailResponseDto(expert);
+		return mapToDetailResponseDto(expert,portfolio);
+	}
+
+	public List<ExpertResponseDto> searchByName(String name) {
+		List<Expert> experts = expertRepository.findByMemberNameContaining(name);
+		return experts.stream()
+			.map(this::mapToResponseDto)
+			.toList();
 	}
 
 	/**
@@ -158,7 +173,7 @@ public class ExpertService {
 	 * @throws IllegalArgumentException 전문가 또는 카테고리를 찾을 수 없는 경우 예외 발생
 	 */
 	@Transactional
-	public void updateExpert(Long expertId, ExpertUpdateRequestDto updateRequestDto) {
+	public ExpertDetailResponseDto updateExpert(Long expertId, ExpertUpdateRequestDto updateRequestDto) {
 		// 1. 전문가 조회
 		Expert existingExpert = expertRepository.findById(expertId)
 			.orElseThrow(() -> new IllegalArgumentException("Expert not found with ID: " + expertId));
@@ -170,6 +185,7 @@ public class ExpertService {
 				.orElseThrow(() -> new IllegalArgumentException(
 					"Main category not found: " + updateRequestDto.getCategoryName()));
 		}
+		existingExpert.setCategory(category);
 
 		// 3. 소분류 카테고리 변경 처리
 		if (updateRequestDto.getSubCategoryNames() != null && !updateRequestDto.getSubCategoryNames().isEmpty()) {
@@ -190,7 +206,7 @@ public class ExpertService {
 					.build();
 				expertCategoryRepository.save(expertCategory);
 			});
-			List<ExpertCertificate>expertCertificates = new ArrayList<>();
+			List<ExpertCertificate> expertCertificates = new ArrayList<>();
 			// 4. 자격증 처리
 			if (updateRequestDto.getCertificateNames() != null && !updateRequestDto.getCertificateNames().isEmpty()) {
 				// 기존 자격증 삭제
@@ -214,46 +230,38 @@ public class ExpertService {
 				expertCertificateRepository.saveAll(expertCertificates);
 			}
 
-			// 4. 빌더 패턴으로 Expert 객체 업데이트
-			Expert updatedExpert = Expert.builder()
-				.id(existingExpert.getId()) // 기존 ID 그대로 사용
-				.member(existingExpert.getMember()) // 기존 Member 그대로 사용
-				.category(category) // 변경된 대분류
-				.subCategories(existingExpert.getSubCategories()) // 소분류는 별도 처리됨
-				.careerYears(updateRequestDto.getCareerYears())
-				.introduction(updateRequestDto.getIntroduction())
-				.bankName(updateRequestDto.getBankName())
-				.accountNumber(updateRequestDto.getAccountNumber())
-				.sellerInfo(updateRequestDto.getSellerInfo())
-				.gender(existingExpert.getGender()) // 성별은 그대로 유지
-				.expertCertificates(expertCertificates)
-				.build();
+			// 5. 기존 포트폴리오 삭제 및 새로 생성
+			if (updateRequestDto.getPortfolioTitle() != null || updateRequestDto.getPortfolioImage() != null) {
+				Portfolio existingPortfolio = portfolioRepository.findByExpertId(expertId).orElse(null);
 
-			// 5. 저장
-			expertRepository.save(updatedExpert);
+				if (existingPortfolio != null) {
+					portfolioRepository.delete(existingPortfolio); // 기존 포트폴리오 삭제
+					portfolioRepository.flush();
+				}
+
+				Portfolio newPortfolio = Portfolio.builder()
+					.expert(existingExpert) // Expert와 연결
+					.title(updateRequestDto.getPortfolioTitle() != null ? updateRequestDto.getPortfolioTitle() : "Default Title")
+					.imageUrl(updateRequestDto.getPortfolioImage() != null ? updateRequestDto.getPortfolioImage() : "")
+					.build();
+
+				portfolioRepository.save(newPortfolio);
+				existingExpert.setPortfolio(newPortfolio);
+			}
+
+			// 6. 기타 데이터 업데이트
+			existingExpert.setCareerYears(updateRequestDto.getCareerYears());
+			existingExpert.setIntroduction(updateRequestDto.getIntroduction());
+			existingExpert.setBankName(updateRequestDto.getBankName());
+			existingExpert.setAccountNumber(updateRequestDto.getAccountNumber());
+
+			// 7. 저장 후 반환
+			return mapToDetailResponseDto(existingExpert, existingExpert.getPortfolio());
 		}
-	}
-
-	/**
-	 * 전문가 삭제
-	 *
-	 * @param expertId 삭제하려는 전문가 ID
-	 * @throws IllegalArgumentException 존재하지 않는 전문가 ID일 경우 예외 발생
-	 */
-	@Transactional
-	public void deleteExpert(Long expertId) {
-		// 1. 전문가 조회
 		Expert expert = expertRepository.findById(expertId)
 			.orElseThrow(() -> new IllegalArgumentException("Expert not found with ID: " + expertId));
-
-		// 2. 연관된 소분류(ExpertCategory) 삭제
-		expertCategoryRepository.deleteAllByExpertId(expertId);
-
-		// 3. 전문가 삭제
-		expertRepository.delete(expert);
+		return mapToDetailResponseDto(expert,expert.getPortfolio());
 	}
-
-
 
 	/**
 	 * Expert 엔티티를 ExpertResponseDto로 변환합니다.
@@ -273,7 +281,7 @@ public class ExpertService {
 	/**
 	 * Expert 엔티티 -> ExpertDetailResponseDto로 변환합니다.
 	 */
-	private ExpertDetailResponseDto mapToDetailResponseDto(Expert expert) {
+	private ExpertDetailResponseDto mapToDetailResponseDto(Expert expert, Portfolio portfolio) {
 		return ExpertDetailResponseDto.builder()
 			.id(expert.getId())
 			.mainCategoryId(expert.getCategory().getId())
@@ -287,8 +295,12 @@ public class ExpertService {
 				.toList())
 			.introduction(expert.getIntroduction())
 			.careerYears(expert.getCareerYears())
+			.accountNumber(expert.getAccountNumber())
+			.bankName(expert.getBankName())
 			.profileImage(expert.getMember().getProfileImage())
 			.gender(expert.getGender())
+			.portfolioTitle(portfolio.getTitle())
+			.portfolioImage(portfolio.getImageUrl())
 			.certificateNames(expert.getExpertCertificates().stream() // 자격증 추가
 				.map(expertCertificate -> expertCertificate.getCertificate().getName())
 				.toList())

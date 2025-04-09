@@ -6,9 +6,12 @@ import java.util.UUID;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.util.ObjectUtils;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ll.dopdang.domain.expert.entity.Expert;
+import com.ll.dopdang.domain.member.dto.request.PasswordUpdateRequest;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -119,6 +122,7 @@ public class Member {
 	@Column(name = "is_client", nullable = false)
 	private boolean isClient;
 
+	@JsonIgnore
 	@OneToOne(mappedBy = "member", cascade = CascadeType.ALL)
 	private Expert expert;
 
@@ -148,4 +152,30 @@ public class Member {
 		this.phone = phone;
 	}
 
+	public static Member updatePassword(Member member, PasswordUpdateRequest request, PasswordEncoder passwordEncoder) {
+		return Member.builder()
+			.id(member.getId())
+			.email(member.getEmail())
+			.password(passwordEncoder.encode(request.getNewPassword()))
+			.name(member.getName())
+			.profileImage(member.getProfileImage())
+			.phone(member.getPhone())
+			.status(member.getStatus())
+			.userRole(member.getUserRole())
+			.memberId(member.getMemberId())
+			.uniqueKey(member.getUniqueKey())
+			.createdAt(member.getCreatedAt())
+			.updatedAt(LocalDateTime.now())
+			.isClient(member.isClient())
+			.build();
+	}
+
+	/**
+	 * 전문가와의 양방향 관계를 설정하는 메서드
+	 * @param expert 연결할 전문가 객체
+	 */
+	public void connectExpert(Expert expert) {
+		this.expert = expert;
+		this.isClient = false;
+	}
 }

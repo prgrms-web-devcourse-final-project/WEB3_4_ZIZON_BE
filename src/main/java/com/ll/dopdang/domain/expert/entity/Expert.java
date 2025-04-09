@@ -21,9 +21,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -61,12 +63,37 @@ public class Expert {
     private String accountNumber; // 계좌번호
 
     @Column
-    private boolean Availability = false; // 활동 가능 여부
+    private boolean availability = true; // 활동 가능 여부
 
     @Column(length = 300)
     private String sellerInfo; // 판매자 관련 정보 (Optional
 
+    @OneToOne(mappedBy = "expert", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Portfolio portfolio;
+
     @OneToMany(mappedBy = "expert", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<ExpertCertificate> expertCertificates = new ArrayList<>();
+
+	/**
+	 * 전문가를 생성하고 회원과의 양방향 관계를 설정하는 정적 메서드
+	 */
+	public static Expert createExpert(Member member, Category category, String introduction,
+		int careerYears, Boolean gender, String bankName, String accountNumber, boolean availability) {
+		Expert expert = Expert.builder()
+			.member(member)
+			.category(category)
+			.introduction(introduction)
+			.careerYears(careerYears)
+			.gender(gender)
+			.bankName(bankName)
+			.accountNumber(accountNumber)
+			.availability(availability)
+			.build();
+
+		// 양방향 관계 설정
+		member.connectExpert(expert);
+
+		return expert;
+	}
 }

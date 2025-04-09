@@ -1,23 +1,23 @@
 package com.ll.dopdang.domain.member.service;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.ll.dopdang.domain.member.dto.request.MemberSignupRequest;
+import com.ll.dopdang.domain.member.dto.request.PasswordUpdateRequest;
 import com.ll.dopdang.domain.member.dto.request.UpdateProfileRequest;
 import com.ll.dopdang.domain.member.dto.request.VerifyCodeRequest;
+import com.ll.dopdang.domain.member.dto.response.UpdateProfileResponse;
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.entity.MemberRole;
 import com.ll.dopdang.domain.member.entity.MemberStatus;
 import com.ll.dopdang.domain.member.repository.MemberRepository;
 import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
-import com.ll.dopdang.global.redis.repository.RedisRepository;
 import com.ll.dopdang.global.redis.repository.RedisRepository;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
 
@@ -121,7 +121,7 @@ public class MemberService {
 	 * @param customUserDetails 인증된 사용자 정보
 	 */
 	@Transactional
-	public void updateMember(Long id, UpdateProfileRequest req, CustomUserDetails customUserDetails) {
+	public UpdateProfileResponse updateMember(Long id, UpdateProfileRequest req, CustomUserDetails customUserDetails) {
 		memberUtilService.isValidMember(id, customUserDetails);
 		Member member = memberUtilService.findMember(id);
 
@@ -140,8 +140,14 @@ public class MemberService {
 			.updatedAt(LocalDateTime.now())
 			.build();
 		memberRepository.save(updateMember);
+		return UpdateProfileResponse.of(updateMember);
 	}
 
+	/**
+	 * Member 삭제하기
+	 * @param id 유저 고유 ID
+	 * @param customUserDetails 인증된 사용자 정보
+	 */
 	@Transactional
 	public void deleteMember(Long id, CustomUserDetails customUserDetails) {
 		memberUtilService.isValidMember(id, customUserDetails);
@@ -155,11 +161,28 @@ public class MemberService {
 			.profileImage(member.getProfileImage())
 			.phone(member.getPhone())
 			.status(MemberStatus.DEACTIVATED.toString())
+			.userRole(member.getUserRole())
 			.memberId(member.getMemberId())
 			.uniqueKey(member.getUniqueKey())
 			.createdAt(member.getCreatedAt())
 			.updatedAt(LocalDateTime.now())
 			.build();
 		memberRepository.save(deleteMember);
+	}
+
+	@Transactional
+	public void updatePassword(CustomUserDetails userDetails, Long userId, PasswordUpdateRequest request) {
+		memberUtilService.isValidMember(userId, userDetails);
+		Member member = memberUtilService.findMember(userId);
+
+		if (!passwordEncoder.matches(request.getCurrentPassword(), member.getPassword())) {
+			throw new ServiceException(ErrorCode.INVALID_PASSWORD);
+		}
+
+		if (Objects.equals(request.getCurrentPassword(), request.getNewPassword())) {
+			throw new ServiceException(ErrorCode.PASSWORD_SAME_AS_CURRENT);
+		}
+		Member updateMember = Member.updatePassword(member, request, passwordEncoder);
+		memberRepository.save(updateMember);
 	}
 }

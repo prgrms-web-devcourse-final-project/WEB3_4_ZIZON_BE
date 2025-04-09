@@ -1,5 +1,7 @@
 package com.ll.dopdang.domain.member.controller;
 
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -13,10 +15,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ll.dopdang.domain.member.dto.request.MemberSignupRequest;
+import com.ll.dopdang.domain.member.dto.request.PasswordUpdateRequest;
 import com.ll.dopdang.domain.member.dto.request.UpdateProfileRequest;
 import com.ll.dopdang.domain.member.dto.request.VerifyCodeRequest;
 import com.ll.dopdang.domain.member.dto.response.MemberInfoResponse;
 import com.ll.dopdang.domain.member.dto.response.ProfileResponse;
+import com.ll.dopdang.domain.member.dto.response.UpdateProfileResponse;
 import com.ll.dopdang.domain.member.service.MemberService;
 import com.ll.dopdang.domain.member.service.MemberUtilService;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
@@ -143,8 +147,8 @@ public class MemberController {
 
 		@AuthenticationPrincipal CustomUserDetails customUserDetails
 	) {
-		memberService.updateMember(userId, req, customUserDetails);
-		return ResponseEntity.ok("수정을 완료하였습니다.");
+		UpdateProfileResponse resp = memberService.updateMember(userId, req, customUserDetails);
+		return ResponseEntity.ok(resp);
 	}
 
 	@Operation(
@@ -183,5 +187,14 @@ public class MemberController {
 			customUserDetails.getMember().getName()
 		);
 		return ResponseEntity.ok(response);
+	}
+
+	@PatchMapping("/password/{user_id}")
+	public ResponseEntity<?> updatePassword(
+		@AuthenticationPrincipal CustomUserDetails userDetails,
+		@PathVariable("user_id") Long userId,
+		@Valid @RequestBody PasswordUpdateRequest request) {
+		memberService.updatePassword(userDetails, userId, request);
+		return ResponseEntity.ok().body(Map.of("message", "비밀번호가 성공적으로 변경되었습니다."));
 	}
 }

@@ -28,6 +28,7 @@ import com.ll.dopdang.domain.chatroom.entity.ChatMessage;
 import com.ll.dopdang.domain.chatroom.entity.ChatRoom;
 import com.ll.dopdang.domain.chatroom.repository.ChatMessageRepository;
 import com.ll.dopdang.domain.chatroom.repository.ChatRoomRepository;
+import com.ll.dopdang.domain.expert.repository.ExpertRepository;
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.repository.MemberRepository;
 import com.ll.dopdang.domain.project.dto.ProjectDetailResponse;
@@ -48,6 +49,7 @@ public class ChatService {
 	private final RedisTemplate<String, Object> redisTemplate;
 	private final ProjectService projectService;
 	private final ObjectMapper objectMapper;
+	private final ExpertRepository expertRepository;
 
 	private static final int RECENT_MESSAGE_LIMIT = 100;
 	private static final String UNREAD_COUNT_KEY_TEMPLATE = "chat:%s:unread:%s";
@@ -176,7 +178,7 @@ public class ChatService {
 			if (latestDbMessageTime == null || (latestRedisMessageTime != null && latestRedisMessageTime.isAfter(latestDbMessageTime))) {
 				return redisMessages;
 			}
-			if (latestDbMessageTime != null && latestRedisMessageTime != null && !latestDbMessageTime.isEqual(latestRedisMessageTime)) {
+			if (latestRedisMessageTime != null && !latestDbMessageTime.isEqual(latestRedisMessageTime)) {
 				log.debug("Redis 캐시와 DB 데이터가 다릅니다. DB에서 최신 데이터를 가져옵니다.");
 				List<ChatMessage> messages = chatMessageRepository.findByRoomIdOrderByTimestampAsc(roomId);
 				redisTemplate.delete(redisKey);
@@ -230,7 +232,8 @@ public class ChatService {
 				msg.getTimestamp(),
 				senderName,
 				senderProfileImage,
-				true
+				true,
+				msg.getFileUrl()
 			));
 		}
 		return responseList;
@@ -244,7 +247,7 @@ public class ChatService {
 	 * @return 사용자가 참여 중인 채팅방 리스트
 	 */
 	@Transactional(readOnly = true)
-	public List<ChatRoomResponse> getChatRoomsForUser(String member) {
+	public List<ChatRoomResponse> getChatRoomsForUser(String member, Long currentUserId) {
 		String redisKey = String.format(CHAT_ROOMS_KEY_TEMPLATE, member);
 		List<ChatRoom> dbRooms = chatRoomRepository.findByMember(member);
 		Set<String> dbRoomIds = dbRooms.stream()
@@ -301,9 +304,17 @@ public class ChatService {
 				Member otherUser = memberRepository.findByEmail(room.getMember2())
 					.orElse(null);
 				if (otherUser != null) {
+					Long others = otherUser.getId();
 					dto.setOtherUserName(otherUser.getName());
 					dto.setOtherUserProfile(otherUser.getProfileImage());
-					dto.setOtherUserId(otherUser.getId());
+					dto.setOtherUserId(others);
+					//사용자 : 사용자가 대화 할 일이 없기 때문에
+					//대화상대가 expert가 아니라면 내가 expert
+					if (expertRepository.existsByMemberId(others)) {
+						dto.setExpertId(others);
+					}else {
+						dto.setExpertId(currentUserId);
+					}
 				}
 			} else {
 				dto.setSender(room.getMember2());
@@ -311,9 +322,17 @@ public class ChatService {
 				Member otherUser = memberRepository.findByEmail(room.getMember1())
 					.orElse(null);
 				if (otherUser != null) {
+					Long others = otherUser.getId();
 					dto.setOtherUserName(otherUser.getName());
 					dto.setOtherUserProfile(otherUser.getProfileImage());
-					dto.setOtherUserId(otherUser.getId());
+					dto.setOtherUserId(others);
+					//사용자 : 사용자가 대화 할 일이 없기 때문에
+					//대화상대가 expert가 아니라면 내가 expert
+					if (expertRepository.existsByMemberId(others)) {
+						dto.setExpertId(others);
+					}else {
+						dto.setExpertId(currentUserId);
+					}
 				}
 			}
 
@@ -507,7 +526,6 @@ public class ChatService {
 	 *
 	 * @param email   현재 로그인한 사용자의 이메일
 	 * @param projectId project 작성자 정보를 찾기 위한 id
-	 * @return void
 	 */
 	@Transactional
 	public void createChatroom(String email, Long projectId) {
