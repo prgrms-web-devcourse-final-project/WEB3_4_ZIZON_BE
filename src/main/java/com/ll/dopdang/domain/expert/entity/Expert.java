@@ -21,9 +21,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -42,6 +44,7 @@ public class Expert {
     private Category category; // 전문가의 대분류 카테고리
 
     @OneToMany(mappedBy = "expert", cascade = CascadeType.ALL, orphanRemoval = true)
+    // @OneToMany(mappedBy = "expert")
     @Builder.Default
     private List<ExpertCategory> subCategories = new ArrayList<>(); // ExpertCategory와의 1:N 관계
 
@@ -61,12 +64,16 @@ public class Expert {
     private String accountNumber; // 계좌번호
 
     @Column
-    private boolean Availability = false; // 활동 가능 여부
+    private boolean availability = true; // 활동 가능 여부
 
     @Column(length = 300)
     private String sellerInfo; // 판매자 관련 정보 (Optional
 
+    @OneToOne(mappedBy = "expert", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Portfolio portfolio;
+
     @OneToMany(mappedBy = "expert", cascade = CascadeType.ALL, orphanRemoval = true)
+    // @OneToMany(mappedBy = "expert")
     @Builder.Default
     private List<ExpertCertificate> expertCertificates = new ArrayList<>();
 }
