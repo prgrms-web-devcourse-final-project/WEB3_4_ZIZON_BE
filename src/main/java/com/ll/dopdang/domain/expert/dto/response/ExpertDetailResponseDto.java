@@ -23,4 +23,9 @@ public class ExpertDetailResponseDto {
 	private Long mainCategoryId;
 	private List<Long> subCategoryIds;
 	private List<String> certificateNames;
+	private String bankName; // 은행명
+	private String accountNumber; // 계좌번호
+
+	private String portfolioTitle;
+	private String portfolioImage;
 }
