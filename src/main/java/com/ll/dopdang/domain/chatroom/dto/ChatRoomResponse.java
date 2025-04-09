@@ -22,4 +22,5 @@ public class ChatRoomResponse {
 	private String otherUserName;
 	private String otherUserProfile;
 	private Long otherUserId;
+	private Long expertId;
 }

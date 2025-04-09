@@ -62,8 +62,10 @@ public class ChatController {
 		description = "사용자가 참여 중인 채팅방 목록을 조회합니다."
 	)
 	@GetMapping("/rooms")
-	public ResponseEntity<List<ChatRoomResponse>> getChatRooms(@RequestParam String member) {
-		List<ChatRoomResponse> rooms = chatService.getChatRoomsForUser(member);
+	public ResponseEntity<List<ChatRoomResponse>> getChatRooms(@RequestParam String member,
+			@AuthenticationPrincipal CustomUserDetails customUserDetails) {
+		Long currentUserId = customUserDetails.getId();
+		List<ChatRoomResponse> rooms = chatService.getChatRoomsForUser(member, currentUserId);
 		return ResponseEntity.ok(rooms);
 	}
 
