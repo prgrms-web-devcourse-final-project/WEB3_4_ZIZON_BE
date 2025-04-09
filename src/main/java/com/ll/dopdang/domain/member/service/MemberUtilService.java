@@ -6,8 +6,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 
+import com.ll.dopdang.domain.expert.entity.Expert;
 import com.ll.dopdang.domain.member.entity.Member;
+import com.ll.dopdang.domain.member.entity.MemberRole;
 import com.ll.dopdang.domain.member.repository.MemberRepository;
+import com.ll.dopdang.domain.store.entity.Product;
 import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
@@ -67,4 +70,29 @@ public class MemberUtilService {
 		return memberRepository.findById(id).orElseThrow(
 			() -> new ServiceException(ErrorCode.MEMBER_NOT_FOUND));
 	}
+
+	/**
+	 * 유저가 Expert인지 검증하는 메서드
+	 * @param member 회원
+	 * @return {@link Expert} 전문가 정보
+	 * @throws ServiceException 전문가가 아닌 경우 예외 발생
+	 */
+	@Transactional
+	public Expert validateExpert(Member member) {
+		if (!Objects.equals(member.getUserRole(), MemberRole.EXPERT.toString())) {
+			throw new ServiceException(ErrorCode.NOT_A_EXPERT_USER);
+		}
+
+		return member.getExpert();
+	}
+
+	@Transactional
+	public Expert checkExpertAuthorization(Member member, Product product) {
+		if (!Objects.equals(member.getExpert(), product.getExpert())) {
+			throw new ServiceException(ErrorCode.UNAUTHORIZED_USER);
+		}
+
+		return member.getExpert();
+	}
+
 }
