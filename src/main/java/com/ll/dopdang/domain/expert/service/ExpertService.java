@@ -79,8 +79,8 @@ public class ExpertService {
 			.introduction(expertRequestDto.getIntroduction())
 			.bankName(expertRequestDto.getBankName())
 			.gender(expertRequestDto.getGender())
+			.availability(true)
 			.accountNumber(expertRequestDto.getAccountNumber())
-			.sellerInfo(expertRequestDto.getSellerInfo())
 			.build();
 		expertRepository.save(expert);
 
@@ -137,7 +137,7 @@ public class ExpertService {
 
 		// 데이터베이스 조회를 통한 필터링 결과
 
-		List<Expert> experts = expertRepository.findByFilters(categoryNames, minYears, maxYears);
+	List<Expert> experts = expertRepository.findAvailableByFilters(categoryNames, minYears, maxYears);
 
 		// Expert 데이터를 DTO로 변환하여 반환
 		return experts.stream()
@@ -147,7 +147,7 @@ public class ExpertService {
 
 	public ExpertDetailResponseDto getExpertById(Long expertId) {
 		// 1. 전문가 조회
-		Expert expert = expertRepository.findById(expertId)
+		Expert expert = expertRepository.findAvailableById(expertId)
 			.orElseThrow(() -> new IllegalArgumentException("Expert not found with ID: " + expertId));
 
 		// 2. Expert -> ExpertDetailResponseDto로 변환
@@ -155,7 +155,7 @@ public class ExpertService {
 	}
 
 	public List<ExpertResponseDto> searchByName(String name) {
-		List<Expert> experts = expertRepository.findByMemberNameContaining(name);
+		List<Expert> experts = expertRepository.findAvailableByMemberNameContaining(name);
 		return experts.stream()
 			.map(this::mapToResponseDto)
 			.toList();
@@ -171,7 +171,7 @@ public class ExpertService {
 	@Transactional
 	public void updateExpert(Long expertId, ExpertUpdateRequestDto updateRequestDto) {
 		// 1. 전문가 조회
-		Expert existingExpert = expertRepository.findById(expertId)
+		Expert existingExpert = expertRepository.findAvailableById(expertId)
 			.orElseThrow(() -> new IllegalArgumentException("Expert not found with ID: " + expertId));
 
 		// 2. 대분류 카테고리 변경 처리
@@ -255,7 +255,6 @@ public class ExpertService {
 				.introduction(updateRequestDto.getIntroduction())
 				.bankName(updateRequestDto.getBankName())
 				.accountNumber(updateRequestDto.getAccountNumber())
-				.sellerInfo(updateRequestDto.getSellerInfo())
 				.gender(existingExpert.getGender()) // 성별은 그대로 유지
 				.expertCertificates(expertCertificates)
 				.build();
@@ -273,15 +272,7 @@ public class ExpertService {
 	 */
 	@Transactional
 	public void deleteExpert(Long expertId) {
-		// 1. 전문가 조회
-		Expert expert = expertRepository.findById(expertId)
-			.orElseThrow(() -> new IllegalArgumentException("Expert not found with ID: " + expertId));
-
-		// 2. 연관된 소분류(ExpertCategory) 삭제
-		expertCategoryRepository.deleteAllByExpertId(expertId);
-
-		// 3. 전문가 삭제
-		expertRepository.delete(expert);
+		expertRepository.softDelete(expertId);
 	}
 
 	/**
