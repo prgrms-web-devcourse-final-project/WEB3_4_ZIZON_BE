@@ -16,4 +16,5 @@ public class ChatRoomDetailResponse {
 	private String user_name;
 	private String user_profile_image;
 	private boolean read;
+	private String fileUrl;
 }

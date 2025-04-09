@@ -7,7 +7,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <style>
-        /* 네비게이션 바 스타일 */
+        /* 네비게이션 바 (알림 등) */
         .navbar {
             display: flex;
             justify-content: flex-end;
@@ -37,7 +37,7 @@
             border-radius: 50%;
             display: none;
         }
-        /* 알림 패널 스타일 */
+        /* 알림 패널 */
         #notificationPanel {
             position: absolute;
             top: 55px;
@@ -59,7 +59,7 @@
         .notification-item:hover {
             background-color: #f7f7f7;
         }
-        /* 채팅 컨테이너 스타일 */
+        /* 채팅 영역 컨테이너 */
         .chat-container {
             display: flex;
             flex-direction: row;
@@ -67,7 +67,7 @@
             border: 1px solid #ccc;
             margin: 20px;
         }
-        /* 채팅방 목록 스타일 */
+        /* 채팅방 목록 영역 */
         .chat-room-list {
             width: 30%;
             border-right: 1px solid #ccc;
@@ -112,7 +112,7 @@
             font-size: 12px;
             display: none;
         }
-        /* 채팅 내용 스타일 */
+        /* 채팅 메시지 영역 */
         .chat-content {
             flex: 1;
             display: flex;
@@ -132,6 +132,16 @@
         .chat-input {
             border-top: 1px solid #ccc;
             padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .chat-input input[type="text"] {
+            flex: 1;
+            padding: 8px;
+        }
+        .chat-input input[type="file"] {
+            /* 파일 입력은 작게 처리 */
         }
         /* 메시지 버블 스타일 */
         .message-bubble {
@@ -180,11 +190,7 @@
         .read-status {
             margin-left: 5px;
         }
-        /* 현재 사용자 정보 스타일 */
-        #currentUserInfo {
-            margin: 10px;
-        }
-        /* [추가] 오른쪽 프로젝트 정보 영역 스타일 */
+        /* 프로젝트 상세 정보 영역 ([첨부파일] 포함) */
         .project-info {
             width: 30%;
             border-left: 1px solid #ccc;
@@ -194,17 +200,17 @@
     </style>
 </head>
 <body>
-<!-- 네비게이션 바 -->
+<!-- 네비게이션 바 (알림 등) -->
 <div class="navbar">
     <div class="notification-icon" onclick="openNotificationPanel(event)">
-        <img src="https://cdn-icons-png.flaticon.com/512/3602/3602145.png" alt="알림" />
+        <img alt="알림 아이콘" src="https://cdn-icons-png.flaticon.com/512/3602/3602145.png" />
         <span class="badge" id="notificationBadge">0</span>
     </div>
     <div id="notificationPanel"></div>
 </div>
 
 <h1>채팅 UI</h1>
-<!-- 현재 사용자 정보 -->
+<!-- 현재 사용자 정보 표시 -->
 <div id="currentUserInfo">현재 사용자 정보</div>
 
 <div class="chat-container">
@@ -214,29 +220,31 @@
             <h3>채팅방 목록</h3>
         </div>
         <div class="chat-room-list-content" id="chatRoomsList">
-            <!-- 채팅방 목록 데이터가 여기에 렌더링됩니다. -->
+            <!-- 채팅방 목록이 여기에 렌더링됩니다. -->
         </div>
     </div>
 
-    <!-- 채팅 내용 영역 -->
+    <!-- 채팅 메시지 영역 -->
     <div class="chat-content">
         <div class="chat-content-header">
-            <span id="chatRoomHeader">채팅방을 선택하세요.</span>
+            <span id="chatRoomHeader">채팅방을 선택하세요</span>
         </div>
         <div class="chat-messages" id="chatLog">
-            <p style="text-align:center;color:#888;">채팅방을 선택하세요.</p>
+            <p style="text-align:center;color:#888;">채팅 메시지가 없습니다.</p>
         </div>
         <div class="chat-input">
-            <input type="text" id="messageInput" placeholder="메시지를 입력하세요." style="width:80%;" />
-            <button onclick="sendMessage()">전송</button>
+            <input id="messageInput" placeholder="메시지를 입력하세요" type="text" />
+            <!-- 이미지 파일 입력 추가 (이미지 업로드를 위한) -->
+            <input accept="image/*" id="imageInput" onchange="uploadImage(this)" type="file" />
+            <button onclick="sendMessage()">메시지 전송</button>
         </div>
     </div>
 
-    <!-- [추가] 오른쪽 프로젝트 정보 영역 -->
+    <!-- 프로젝트 정보 영역 (채팅과 연동해서 보여줄 경우) -->
     <div class="project-info">
         <h3>프로젝트 정보</h3>
         <div id="projectDetails">
-            <!-- 선택한 채팅방의 projectId를 이용해 프로젝트 정보를 렌더링 -->
+            <!-- 프로젝트 정보가 여기에 렌더링됩니다. -->
             <p>프로젝트 정보가 없습니다.</p>
         </div>
     </div>
@@ -248,23 +256,22 @@
     let notifications = {};   // { roomId: { otherUserName, message, count } }
     let unreadCount = 0;
     let currentRoomId = null;
-    // 채팅방 구독 관리를 위한 전역 변수
     let chatSubscription = null;   // 채팅 메시지 구독
     let readSubscription = null;     // 읽음 상태 구독
 
-    // 페이지 unload 시 현재 채팅방 읽음 처리
+    // 채팅창을 떠나기 전 읽음 처리
     window.addEventListener("beforeunload", function() {
         if (currentRoomId) {
             markRoomAsRead(currentRoomId);
         }
     });
 
-    // 1. 현재 사용자 정보 불러오기
+    // 1. 현재 사용자 정보를 가져옵니다.
     function fetchCurrentUser() {
-        fetch('http://3.35.98.202:8080/users/me', {credentials: 'include'})
+        fetch('http://localhost:8080/users/me', { credentials: 'include' })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error("현재 사용자 정보를 불러올 수 없습니다.");
+                    throw new Error("현재 사용자 정보를 가져오지 못했습니다.");
                 }
                 return response.json();
             })
@@ -273,7 +280,7 @@
                 currentUser.email = currentUser.email.trim().toLowerCase();
                 document.getElementById("currentUserInfo").innerText =
                     "현재 사용자: " + currentUser.name + " (" + currentUser.email + ")";
-                // 웹소켓 연결은 페이지 로드 후 단 한 번만
+                // WebSocket 연결
                 connectWebSocket();
                 // 채팅방 목록 불러오기
                 fetchChatRoomsDetail();
@@ -283,13 +290,12 @@
             });
     }
 
-    // 2. WebSocket 연결 및 알림 수신 (연결은 한 번만)
+    // 2. WebSocket 연결 (STOMP 사용)
     function connectWebSocket() {
-        const socket = new SockJS('http://3.35.98.202:8080/ws-chat');
+        const socket = new SockJS('http://localhost:8080/ws-chat');
         stompClient = Stomp.over(socket);
         stompClient.connect({}, function(frame) {
-            console.log('Connected: ' + frame);
-            // 알림 구독 (송신자, 수신자 모두 해당)
+            // 채팅방 알림 구독
             stompClient.subscribe('/topic/notice/' + currentUser.email, function(messageOutput) {
                 let payload = JSON.parse(messageOutput.body);
                 let roomId = payload.roomId;
@@ -304,19 +310,19 @@
                 fetchChatRoomsDetail();
             });
         }, function(error) {
-            console.error('STOMP 연결 오류: ' + error);
+            console.error('STOMP 연결 실패: ' + error);
         });
     }
 
-    // 3. 채팅방 목록 데이터 불러오기
+    // 3. 채팅방 목록을 불러옵니다.
     function fetchChatRoomsDetail() {
         if (!currentUser) return;
-        fetch(`http://3.35.98.202:8080/chatrooms/rooms?member=${encodeURIComponent(currentUser.email)}`, {
+        fetch(`http://localhost:8080/chatrooms/rooms?member=${encodeURIComponent(currentUser.email)}`, {
             credentials: 'include'
         })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error("채팅방 목록을 불러올 수 없습니다.");
+                    throw new Error("채팅방 목록을 불러오지 못했습니다.");
                 }
                 return response.json();
             })
@@ -324,17 +330,17 @@
                 const detailPromises = rooms.map(room => {
                     const otherUser = (room.member1 === currentUser.email) ? room.member2 : room.member1;
                     const unreadPromise = fetch(
-                        `http://3.35.98.202:8080/chatrooms/${room.roomId}/unreadCount?username=${encodeURIComponent(currentUser.email)}`,
-                        {credentials: 'include'}
+                        `http://localhost:8080/chatrooms/${room.roomId}/unreadCount?username=${encodeURIComponent(currentUser.email)}`,
+                        { credentials: 'include' }
                     ).then(res => {
-                        if (!res.ok) throw new Error("미읽은 개수를 불러올 수 없습니다.");
+                        if (!res.ok) throw new Error("읽음 수를 가져오지 못했습니다.");
                         return res.json();
                     });
                     const historyPromise = fetch(
-                        `http://3.35.98.202:8080/chatrooms?sender=${encodeURIComponent(currentUser.email)}&receiver=${encodeURIComponent(otherUser)}`,
-                        {credentials: 'include'}
+                        `http://localhost:8080/chatrooms?sender=${encodeURIComponent(currentUser.email)}&receiver=${encodeURIComponent(otherUser)}`,
+                        { credentials: 'include' }
                     ).then(res => {
-                        if (!res.ok) throw new Error("채팅 내역을 불러올 수 없습니다.");
+                        if (!res.ok) throw new Error("채팅 기록을 불러오지 못했습니다.");
                         return res.json();
                     });
                     return Promise.all([unreadPromise, historyPromise]).then(([unreadCount, messages]) => {
@@ -352,7 +358,7 @@
                             lastMessage: lastMessage,
                             lastMessageTime: lastMessageTime,
                             unreadCount: unreadCount,
-                            projectId: room.projectId // [추가] 채팅방 요약에 projectId 포함
+                            projectId: room.projectId // 프로젝트 정보 연동 (옵션)
                         };
                     });
                 });
@@ -366,7 +372,7 @@
             });
     }
 
-    // 4. 채팅방 목록 렌더링 (projectId 포함)
+    // 4. 채팅방 목록을 렌더링합니다.
     function renderChatRooms(rooms) {
         const chatRoomsList = document.getElementById("chatRoomsList");
         chatRoomsList.innerHTML = "";
@@ -399,14 +405,14 @@
             }
             roomDiv.appendChild(badge);
             roomDiv.onclick = function() {
-                // 채팅방 선택 시 projectId도 함께 넘김
+                // 채팅방 선택 (projectId 연동)
                 selectChatRoom(room.roomId, room.otherUserName, room.projectId);
             };
             chatRoomsList.appendChild(roomDiv);
         });
     }
 
-    // 5. 채팅방 선택 시 동작 (projectId 추가)
+    // 5. 특정 채팅방을 선택합니다.
     function selectChatRoom(roomId, otherUserName, projectId) {
         if (chatSubscription) {
             chatSubscription.unsubscribe();
@@ -421,35 +427,32 @@
         }
         currentRoomId = roomId;
         document.getElementById("chatRoomHeader").innerText =
-            "채팅방: " + roomId + " (상대: " + otherUserName + ")";
+            "채팅방 " + roomId + " (" + otherUserName + ")";
         document.getElementById("chatLog").innerHTML = "";
         markRoomAsRead(roomId).then(() => {
             fetchChatRoomsDetail();
         });
         clearNotification(roomId);
         fetchChatHistory(roomId);
-        // [추가] projectId를 이용해 프로젝트 정보를 불러와 오른쪽 영역에 렌더링
+        // 프로젝트 정보 연동 (projectId가 있는 경우)
         fetchProjectDetails(projectId);
         chatSubscription = stompClient.subscribe('/topic/chat/' + roomId, function(messageOutput) {
             showMessage(JSON.parse(messageOutput.body));
         });
         readSubscription = stompClient.subscribe('/topic/read/' + roomId, function(messageOutput) {
-            console.log("읽음 상태 업데이트:", messageOutput.body);
-            updateReadStatusForRoom();
+            // updateReadStatusForRoom();
         });
     }
 
-    // 6. 채팅 내역 불러오기
+    // 6. 채팅 기록을 불러옵니다.
     function fetchChatHistory(roomId) {
         const sender = currentUser.email;
         const parts = roomId.split(":");
         let receiver = (parts[0] === sender) ? parts[1] : parts[0];
-        fetch(`http://3.35.98.202:8080/chatrooms?sender=${encodeURIComponent(sender)}&receiver=${encodeURIComponent(receiver)}`,
-            {credentials: 'include'}
-        )
+        fetch(`http://localhost:8080/chatrooms?sender=${encodeURIComponent(sender)}&receiver=${encodeURIComponent(receiver)}`, { credentials: 'include' })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error("채팅 내역을 불러올 수 없습니다.");
+                    throw new Error("채팅 기록을 불러오지 못했습니다.");
                 }
                 return response.json();
             })
@@ -465,34 +468,12 @@
             });
     }
 
-    // 7. 메시지 전송
-    function sendMessage() {
-        if (!currentRoomId) {
-            alert("채팅방을 선택하세요.");
-            return;
-        }
-        const content = document.getElementById("messageInput").value.trim();
-        if (!content) {
-            alert("메시지를 입력하세요.");
-            return;
-        }
-        const parts = currentRoomId.split(":");
-        let receiver = (parts[0] === currentUser.email) ? parts[1] : parts[0];
-        const chatMessage = {
-            sender: currentUser.email,
-            receiver: receiver,
-            content: content,
-            fileUrl: ""
-        };
-        stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
-        document.getElementById("messageInput").value = "";
-    }
-
-    // 8. 메시지 렌더링
+    // 7. 채팅 메시지를 화면에 출력합니다.
     function showMessage(message) {
         const chatLog = document.getElementById("chatLog");
         const messageContainer = document.createElement("div");
         messageContainer.classList.add("message-bubble");
+
         if (message.sender === currentUser.email) {
             messageContainer.classList.add("my-message");
         } else {
@@ -502,24 +483,45 @@
             profileImg.src = message.user_profile_image || "https://via.placeholder.com/40";
             messageContainer.appendChild(profileImg);
         }
+
         const messageInfo = document.createElement("div");
         messageInfo.classList.add("message-info");
+
         const senderName = document.createElement("div");
         senderName.classList.add("sender-name");
         senderName.innerText = message.user_name || message.sender;
+
         const messageText = document.createElement("div");
         messageText.classList.add("message-text");
+
+        // 텍스트 메시지를 추가
         messageText.innerText = message.content;
+
+        // fileUrl 이 있다면 이미지 미리보기 추가
+        if (message.fileUrl && message.fileUrl.trim() !== "") {
+            const imgPreview = document.createElement("img");
+            imgPreview.src = message.fileUrl;
+            imgPreview.style.maxWidth = "200px";
+            imgPreview.style.display = "block";
+            imgPreview.style.marginTop = "5px";
+            // 줄바꿈을 추가한 후 이미지 요소 추가
+            messageText.appendChild(document.createElement("br"));
+            messageText.appendChild(imgPreview);
+        }
+
         const messageFooter = document.createElement("div");
         messageFooter.classList.add("message-footer");
+
         const messageTime = document.createElement("span");
         messageTime.classList.add("message-time");
         messageTime.innerText = message.timestamp ? formatDate(message.timestamp) : "";
         messageFooter.appendChild(messageTime);
+
         const readStatus = document.createElement("span");
         readStatus.classList.add("read-status");
         readStatus.innerText = message.read ? "읽음" : "미읽음";
         messageFooter.appendChild(readStatus);
+
         messageInfo.appendChild(senderName);
         messageInfo.appendChild(messageText);
         messageInfo.appendChild(messageFooter);
@@ -528,76 +530,11 @@
         chatLog.scrollTop = chatLog.scrollHeight;
     }
 
-    // 9. 채팅 메시지 읽음 상태 업데이트
-    function updateReadStatusForRoom() {
-        const readElems = document.querySelectorAll("#chatLog .read-status");
-        readElems.forEach(elem => {
-            elem.innerText = "읽음";
-        });
-    }
 
-    // 10. 알림 배지 업데이트
-    function updateNotificationBadge() {
-        const badge = document.getElementById("notificationBadge");
-        unreadCount = Object.values(notifications).reduce((acc, obj) => acc + obj.count, 0);
-        if (unreadCount > 0) {
-            badge.innerText = unreadCount;
-            badge.style.display = "inline";
-        } else {
-            badge.style.display = 'none';
-        }
-    }
-
-    // 11. 알림 패널 열기
-    function openNotificationPanel(event) {
-        event.stopPropagation();
-        const panel = document.getElementById("notificationPanel");
-        panel.innerHTML = "";
-        for (const roomId in notifications) {
-            const item = document.createElement("div");
-            item.classList.add("notification-item");
-            const infoText = `${notifications[roomId].otherUserName} - ${notifications[roomId].message} (${notifications[roomId].count})`;
-            item.innerText = infoText;
-            item.onclick = function() {
-                delete notifications[roomId];
-                updateNotificationBadge();
-                selectChatRoom(roomId, notifications[roomId]?.otherUserName || "알 수 없음");
-                panel.style.display = "none";
-            };
-            panel.appendChild(item);
-        }
-        panel.style.display = "block";
-    }
-
-    // 12. 알림 패널 닫기
-    window.addEventListener("click", function() {
-        const panel = document.getElementById("notificationPanel");
-        panel.style.display = "none";
-    });
-
-    // 13. 선택한 채팅방의 알림 삭제
-    function clearNotification(roomId) {
-        if (notifications[roomId]) {
-            delete notifications[roomId];
-        }
-        updateNotificationBadge();
-    }
-
-    // 14. 날짜 포맷 함수
-    function formatDate(dateStr) {
-        const date = new Date(dateStr);
-        const year = date.getFullYear();
-        const month = ('0' + (date.getMonth() + 1)).slice(-2);
-        const day = ('0' + date.getDate()).slice(-2);
-        const hours = ('0' + date.getHours()).slice(-2);
-        const minutes = ('0' + date.getMinutes()).slice(-2);
-        return `${year}-${month}-${day} ${hours}:${minutes}`;
-    }
-
-    // 15. 채팅방 읽음 처리 API 호출
+    // 8. 읽음 처리 API 호출
     function markRoomAsRead(roomId) {
         if (!roomId || !currentUser) return Promise.resolve();
-        return fetch(`http://3.35.98.202:8080/chatrooms/${roomId}/read?username=${encodeURIComponent(currentUser.email)}`, {
+        return fetch(`http://localhost:8080/chatrooms/${roomId}/read?username=${encodeURIComponent(currentUser.email)}`, {
             method: 'POST',
             credentials: 'include'
         })
@@ -610,16 +547,67 @@
             });
     }
 
-    // [추가] 프로젝트 정보 불러오기 (projectId 이용)
+    // 9. 알림 배지 업데이트
+    function updateNotificationBadge() {
+        const badge = document.getElementById("notificationBadge");
+        unreadCount = Object.values(notifications).reduce((acc, obj) => acc + obj.count, 0);
+        if (unreadCount > 0) {
+            badge.innerText = unreadCount;
+            badge.style.display = "inline";
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    // 10. 알림 패널 열기
+    function openNotificationPanel(event) {
+        event.stopPropagation();
+        const panel = document.getElementById("notificationPanel");
+        panel.innerHTML = "";
+        for (const roomId in notifications) {
+            const item = document.createElement("div");
+            item.classList.add("notification-item");
+            const infoText = `${notifications[roomId].otherUserName} - ${notifications[roomId].message} (${notifications[roomId].count})`;
+            item.innerText = infoText;
+            item.onclick = function() {
+                clearNotification(roomId);
+                selectChatRoom(roomId, notifications[roomId]?.otherUserName || "알 수 없음");
+                panel.style.display = "none";
+            };
+            panel.appendChild(item);
+        }
+        panel.style.display = "block";
+    }
+
+    // 11. 알림 초기화
+    function clearNotification(roomId) {
+        if (notifications[roomId]) {
+            delete notifications[roomId];
+        }
+        updateNotificationBadge();
+    }
+
+    // 12. 날짜 포맷 함수
+    function formatDate(dateStr) {
+        const date = new Date(dateStr);
+        const year = date.getFullYear();
+        const month = ('0' + (date.getMonth() + 1)).slice(-2);
+        const day = ('0' + date.getDate()).slice(-2);
+        const hours = ('0' + date.getHours()).slice(-2);
+        const minutes = ('0' + date.getMinutes()).slice(-2);
+        return `${year}-${month}-${day} ${hours}:${minutes}`;
+    }
+
+    // 13. 프로젝트 상세 정보 (채팅방과 연동하여 보여줄 경우)
     function fetchProjectDetails(projectId) {
         if (!projectId) {
             document.getElementById("projectDetails").innerHTML = "<p>프로젝트 정보가 없습니다.</p>";
             return;
         }
-        fetch(`http://3.35.98.202:8080/projects/${projectId}`)
+        fetch(`http://localhost:8080/projects/${projectId}`)
             .then(response => {
                 if (!response.ok) {
-                    throw new Error("프로젝트 정보를 불러올 수 없습니다.");
+                    throw new Error("프로젝트 정보를 가져오지 못했습니다.");
                 }
                 return response.json();
             })
@@ -638,6 +626,103 @@
             });
     }
 
+    // 14. 메시지 전송 (텍스트 + 파일 URL 포함)
+    function sendMessage() {
+        if (!currentRoomId) {
+            alert("채팅방을 선택하세요.");
+            return;
+        }
+        const text = document.getElementById("messageInput").value.trim();
+        // fileUrl가 set되어 있으면 그 값을 사용 (이미지 첨부 후 업로드 완료 시)
+        const fileUrl = document.getElementById("hiddenFileUrl") ? document.getElementById("hiddenFileUrl").value : "";
+        if (!text && !fileUrl) {
+            alert("메시지 내용 또는 이미지를 선택하세요.");
+            return;
+        }
+        const parts = currentRoomId.split(":");
+        let receiver = (parts[0] === currentUser.email) ? parts[1] : parts[0];
+        const chatMessage = {
+            sender: currentUser.email,
+            receiver: receiver,
+            content: text,
+            fileUrl: fileUrl
+        };
+        stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
+        document.getElementById("messageInput").value = "";
+        // 이미지 전송 후 숨겨둔 fileUrl 초기화
+        if (document.getElementById("hiddenFileUrl")) {
+            document.getElementById("hiddenFileUrl").value = "";
+        }
+    }
+
+    // 15. 이미지 업로드: 파일 선택 시 실행
+    function uploadImage(input) {
+        const file = input.files[0];
+        if (!file) {
+            return;
+        }
+
+        // 파일의 MIME 타입과 파일명을 추출합니다.
+        const contentType = file.type;
+
+        // folder는 S3에서 파일이 저장될 폴더 이름입니다.
+        const presignPayload = {
+            folder: "chating",
+            fileName: file.name,
+            contentType: contentType
+        };
+
+        // Presigned URL 요청: 백엔드에서 presigned URL 및 accessUrl을 받아옵니다.
+        fetch('http://localhost:8080/chat/presigned', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(presignPayload)
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Presigned URL 생성에 실패하였습니다.");
+                }
+                return response.json();
+            })
+            .then(data => {
+                // data 객체는 presignedUrl과 accessUrl을 포함하고 있어야 합니다.
+                const presignedUrl = data.presignedUrl;
+                const accessUrl = data.accessUrl;
+
+                // 파일 업로드: presignedUrl로 PUT 요청을 보냅니다.
+                return fetch(presignedUrl, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': contentType  // 반드시 presigned URL 생성 시 사용한 값과 일치해야 합니다.
+                    },
+                    body: file
+                })
+                    .then(uploadResponse => {
+                        if (!uploadResponse.ok) {
+                            throw new Error("파일 업로드에 실패하였습니다. 상태 코드: " + uploadResponse.status);
+                        }
+                        return accessUrl;
+                    });
+            })
+            .then(accessUrl => {
+                alert("이미지 업로드 성공!");
+
+                // 업로드된 이미지 URL(accessUrl)을 숨은 input에 저장합니다.
+                let hiddenInput = document.getElementById("hiddenFileUrl");
+                if (!hiddenInput) {
+                    hiddenInput = document.createElement("input");
+                    hiddenInput.type = "hidden";
+                    hiddenInput.id = "hiddenFileUrl";
+                    document.body.appendChild(hiddenInput);
+                }
+                hiddenInput.value = accessUrl;
+            })
+            .catch(error => {
+                alert("이미지 업로드에 실패하였습니다: " + error.message);
+            });
+    }
     // 초기 실행
     fetchCurrentUser();
 </script>
