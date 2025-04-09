@@ -295,6 +295,8 @@ public class ExpertService {
 				.toList())
 			.introduction(expert.getIntroduction())
 			.careerYears(expert.getCareerYears())
+			.accountNumber(expert.getAccountNumber())
+			.bankName(expert.getBankName())
 			.profileImage(expert.getMember().getProfileImage())
 			.gender(expert.getGender())
 			.portfolioTitle(portfolio.getTitle())
