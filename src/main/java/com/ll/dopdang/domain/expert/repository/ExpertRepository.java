@@ -19,7 +19,11 @@ public interface ExpertRepository extends JpaRepository<Expert, Long> {
     List<Expert> findAllWithMember();
 
 
-    @Query("SELECT e FROM Expert e WHERE e.id = :id AND e.availability = true")
+    @Query("""
+        SELECT e FROM Expert e
+        LEFT JOIN FETCH e.portfolio p
+        WHERE e.id = :id AND e.availability = true
+        """)
     Optional<Expert> findAvailableById(@Param("id") Long id);
 
 
@@ -37,6 +41,8 @@ public interface ExpertRepository extends JpaRepository<Expert, Long> {
         @Param("minYears") Integer minYears,
         @Param("maxYears") Integer maxYears
     );
+
+    Optional<Expert> findByMemberIdAndAvailabilityFalse(Long memberId);
 
     @Modifying
     @Query("UPDATE Expert e SET e.availability = false WHERE e.id = :expertId")

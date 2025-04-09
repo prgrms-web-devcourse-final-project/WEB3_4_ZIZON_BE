@@ -149,9 +149,9 @@ public class ExpertService {
 		// 1. 전문가 조회
 		Expert expert = expertRepository.findAvailableById(expertId)
 			.orElseThrow(() -> new IllegalArgumentException("Expert not found with ID: " + expertId));
-
+		Portfolio portfolio = expert.getPortfolio();
 		// 2. Expert -> ExpertDetailResponseDto로 변환
-		return mapToDetailResponseDto(expert);
+		return mapToDetailResponseDto(expert,portfolio);
 	}
 
 	public List<ExpertResponseDto> searchByName(String name) {
@@ -293,7 +293,7 @@ public class ExpertService {
 	/**
 	 * Expert 엔티티 -> ExpertDetailResponseDto로 변환합니다.
 	 */
-	private ExpertDetailResponseDto mapToDetailResponseDto(Expert expert) {
+	private ExpertDetailResponseDto mapToDetailResponseDto(Expert expert, Portfolio portfolio) {
 		return ExpertDetailResponseDto.builder()
 			.id(expert.getId())
 			.mainCategoryId(expert.getCategory().getId())
@@ -309,6 +309,8 @@ public class ExpertService {
 			.careerYears(expert.getCareerYears())
 			.profileImage(expert.getMember().getProfileImage())
 			.gender(expert.getGender())
+			.portfolioTitle(portfolio.getTitle())
+			.portfolioImage(portfolio.getImageUrl())
 			.certificateNames(expert.getExpertCertificates().stream() // 자격증 추가
 				.map(expertCertificate -> expertCertificate.getCertificate().getName())
 				.toList())

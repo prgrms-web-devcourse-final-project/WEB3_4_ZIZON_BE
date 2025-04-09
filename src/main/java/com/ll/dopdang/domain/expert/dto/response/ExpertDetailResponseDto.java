@@ -23,4 +23,7 @@ public class ExpertDetailResponseDto {
 	private Long mainCategoryId;
 	private List<Long> subCategoryIds;
 	private List<String> certificateNames;
+
+	private String portfolioTitle;
+	private String portfolioImage;
 }

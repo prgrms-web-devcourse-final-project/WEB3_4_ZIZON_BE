@@ -14,7 +14,6 @@ public class ExpertUpdateRequestDto {
     private String introduction; // 자기소개
     private String bankName; // 은행명
     private String accountNumber; // 계좌번호
-    private String sellerInfo; // 판매자 정보 (Optional)
     private List<String> certificateNames;
 
     private String portfolioTitle;

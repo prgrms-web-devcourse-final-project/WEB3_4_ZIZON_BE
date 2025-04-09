@@ -67,6 +67,9 @@ public class Expert {
     @Column(length = 300)
     private String sellerInfo; // 판매자 관련 정보 (Optional
 
+    @OneToOne(mappedBy = "expert", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Portfolio portfolio;
+
     @OneToMany(mappedBy = "expert", cascade = CascadeType.ALL, orphanRemoval = true)
     // @OneToMany(mappedBy = "expert")
     @Builder.Default
