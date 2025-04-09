@@ -23,9 +23,12 @@ public class OfferDetailResponse {
 		this.projectId = offer.getProject().getId();
 		this.expertId = offer.getExpert().getId();
 		this.price = offer.getPrice();
-		this.description = offer.getProject().getDescription();
+		this.description = offer.getDescription();
 		this.deliveryDays = offer.getDeliveryDays();
 		this.status = offer.getStatus();
 		this.createAt = offer.getCreatedAt();
+	}
+	public static OfferDetailResponse from(Offer offer) {
+		return new OfferDetailResponse(offer);
 	}
 }
