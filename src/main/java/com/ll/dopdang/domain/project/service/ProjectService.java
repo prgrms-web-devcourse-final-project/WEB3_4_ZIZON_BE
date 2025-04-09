@@ -133,9 +133,9 @@ public class ProjectService {
 	}
 
 	// 전체이용 프로젝트 목록 조회
-	public ProjectListForAllPageResponse getProjectListForAll(Pageable pageable,
-		Map<Long, String> thumbnailMap) {
-		Page<Project> projectPage = projectRepository.findAll(pageable);
+	public ProjectListForAllPageResponse getProjectListForAll(Pageable pageable, Map<Long, String> thumbnailMap) {
+		// 상태가 COMPLETED가 아닌 프로젝트만 조회
+		Page<Project> projectPage = projectRepository.findByStatusNot(ProjectStatus.COMPLETED, pageable);
 
 		return ProjectListForAllPageResponse.from(projectPage, thumbnailMap);
 	}
