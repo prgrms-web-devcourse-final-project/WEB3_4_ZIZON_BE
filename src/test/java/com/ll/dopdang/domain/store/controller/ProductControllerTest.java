@@ -45,6 +45,7 @@ import com.ll.dopdang.standard.util.JwtUtil;
 
 import jakarta.servlet.http.Cookie;
 import lombok.extern.slf4j.Slf4j;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 @Slf4j
 @SpringBootTest
@@ -85,6 +86,9 @@ class ProductControllerTest {
 	@MockBean
 	private S3Config s3Config;
 
+	@MockBean
+	private S3Presigner s3Presigner;
+	
 	private Member testMember;
 	private Category testCategory;
 	private Expert testExpert;
