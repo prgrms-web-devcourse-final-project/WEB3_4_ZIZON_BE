@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ll.dopdang.domain.expert.dto.response.CertificateResponseDto;
@@ -25,6 +26,12 @@ public class CertificateController {
 	@GetMapping
 	public ResponseEntity<List<CertificateResponseDto>> getAllCertificates() {
 		List<CertificateResponseDto> certificates = certificateService.getAllCertificates();
+		return new ResponseEntity<>(certificates, HttpStatus.OK);
+	}
+
+	@GetMapping("/search")
+	public ResponseEntity<List<CertificateResponseDto>> searchCertificates(@RequestParam String name) {
+		List<CertificateResponseDto> certificates = certificateService.getCertificatesByName(name);
 		return new ResponseEntity<>(certificates, HttpStatus.OK);
 	}
 
