@@ -16,6 +16,8 @@ public class ExpertRequestDto {
 	private Boolean gender; // 0 = 남자, 1 = 여자
 	private String bankName; // 은행명
 	private String accountNumber; // 계좌번호
-	private String sellerInfo; // 판매자 정보
 	private List<String> certificateNames;
+
+	private String portfolioTitle;
+	private String portfolioImage;
 }
