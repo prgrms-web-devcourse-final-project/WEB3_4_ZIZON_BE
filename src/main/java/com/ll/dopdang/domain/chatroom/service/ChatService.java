@@ -176,7 +176,7 @@ public class ChatService {
 			if (latestDbMessageTime == null || (latestRedisMessageTime != null && latestRedisMessageTime.isAfter(latestDbMessageTime))) {
 				return redisMessages;
 			}
-			if (latestDbMessageTime != null && latestRedisMessageTime != null && !latestDbMessageTime.isEqual(latestRedisMessageTime)) {
+			if (latestRedisMessageTime != null && !latestDbMessageTime.isEqual(latestRedisMessageTime)) {
 				log.debug("Redis 캐시와 DB 데이터가 다릅니다. DB에서 최신 데이터를 가져옵니다.");
 				List<ChatMessage> messages = chatMessageRepository.findByRoomIdOrderByTimestampAsc(roomId);
 				redisTemplate.delete(redisKey);
@@ -230,7 +230,8 @@ public class ChatService {
 				msg.getTimestamp(),
 				senderName,
 				senderProfileImage,
-				true
+				true,
+				msg.getFileUrl()
 			));
 		}
 		return responseList;
@@ -507,7 +508,6 @@ public class ChatService {
 	 *
 	 * @param email   현재 로그인한 사용자의 이메일
 	 * @param projectId project 작성자 정보를 찾기 위한 id
-	 * @return void
 	 */
 	@Transactional
 	public void createChatroom(String email, Long projectId) {
@@ -530,7 +530,7 @@ public class ChatService {
 			chatRoom.setMember1(email);
 			chatRoom.setMember2(receiverEmail);
 			chatRoom.setProjectId(projectId);
-			chatRoom = chatRoomRepository.save(chatRoom);
+			chatRoomRepository.save(chatRoom);
 		}
 	}
 
