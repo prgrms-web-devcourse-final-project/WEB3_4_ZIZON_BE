@@ -17,8 +17,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class ProjectDetailResponse {
-
+	//	프로젝트 단건 조회(전체이용)
 	private Long id;
+	private Long categoryId;
 	private String title;
 	private String summary;
 	private String description;
@@ -40,6 +41,7 @@ public class ProjectDetailResponse {
 
 		return ProjectDetailResponse.builder()
 			.id(project.getId())
+			.categoryId(project.getCategory().getId())
 			.title(project.getTitle())
 			.summary(project.getSummary())
 			.description(project.getDescription())
