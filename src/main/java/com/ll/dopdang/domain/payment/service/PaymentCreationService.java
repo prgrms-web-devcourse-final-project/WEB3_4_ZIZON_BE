@@ -37,16 +37,20 @@ public class PaymentCreationService {
 	/**
 	 * 결제 유형과 참조 ID에 대한 주문 ID를 생성하고 관련 정보를 반환합니다.
 	 * 이미 결제가 완료된 경우 ServiceException을 발생시킵니다.
+	 * ORDER 타입인 경우 상품 재고가 주문 수량보다 충분한지 검증합니다.
 	 *
 	 * @param paymentType 결제 유형
 	 * @param referenceId 참조 ID
 	 * @param memberId 회원 ID
 	 * @param quantity 수량 (선택적)
 	 * @return 주문 ID와 고객 키, 결제 유형별 추가 정보가 포함된 맵
-	 * @throws ServiceException 이미 결제가 완료된 경우
+	 * @throws ServiceException 이미 결제가 완료된 경우 또는 재고가 부족한 경우
 	 */
 	public Map<String, Object> createOrderIdWithInfo(PaymentType paymentType, Long referenceId, Long memberId,
 		Integer quantity) {
+
+		// 재고 검증. ORDER 타입인 경우에만 실제 동작함
+		infoProviderFactory.getProvider(paymentType).validateStock(referenceId, quantity);
 
 		String orderId = generateOrderId();
 		String redisKey = PaymentConstants.KEY_PREFIX + orderId;

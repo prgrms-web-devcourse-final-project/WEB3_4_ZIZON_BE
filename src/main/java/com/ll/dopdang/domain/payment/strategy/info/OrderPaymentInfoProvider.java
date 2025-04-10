@@ -11,7 +11,10 @@ import com.ll.dopdang.domain.payment.dto.PaymentResultResponse;
 import com.ll.dopdang.domain.payment.entity.Payment;
 import com.ll.dopdang.domain.payment.service.PaymentQueryService;
 import com.ll.dopdang.domain.store.dto.ProductDetailResponse;
+import com.ll.dopdang.domain.store.entity.Product;
 import com.ll.dopdang.domain.store.service.ProductService;
+import com.ll.dopdang.global.exception.ErrorCode;
+import com.ll.dopdang.global.exception.ServiceException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -61,5 +64,22 @@ public class OrderPaymentInfoProvider implements PaymentOrderInfoProvider {
 	public PaymentResultResponse enrichPaymentResult(Payment payment, PaymentResultResponse baseResponse) {
 		// 주문 결제에는 전문가 정보가 없으므로 기본 응답 반환
 		return baseResponse;
+	}
+
+	/**
+	 * 상품의 재고가 주문 수량보다 충분한지 검증합니다.
+	 *
+	 * @param productId 상품 ID
+	 * @param quantity 주문 수량
+	 * @throws ServiceException 재고가 부족한 경우
+	 */
+	public void validateStock(Long productId, Integer quantity) {
+		Product product = productService.findById(productId);
+		if (product.getStock() < quantity) {
+			throw new ServiceException(ErrorCode.INSUFFICIENT_STOCK,
+				String.format("상품 재고가 부족합니다. 요청: %d, 재고: %d", quantity, product.getStock()));
+		}
+		log.info("상품 재고 검증 완료: productId={}, quantity={}, stock={}",
+			productId, quantity, product.getStock());
 	}
 }

@@ -4,6 +4,7 @@ import java.util.Map;
 
 import com.ll.dopdang.domain.payment.dto.PaymentResultResponse;
 import com.ll.dopdang.domain.payment.entity.Payment;
+import com.ll.dopdang.global.exception.ServiceException;
 
 public interface PaymentOrderInfoProvider {
 
@@ -24,4 +25,16 @@ public interface PaymentOrderInfoProvider {
 	 * @return 추가 정보가 포함된 결제 결과 응답
 	 */
 	PaymentResultResponse enrichPaymentResult(Payment payment, PaymentResultResponse baseResponse);
+
+	/**
+	 * 상품의 재고가 주문 수량보다 충분한지 검증합니다.
+	 * 기본 구현은 아무 검증도 수행하지 않습니다.
+	 *
+	 * @param productId 상품 ID
+	 * @param quantity 주문 수량
+	 * @throws ServiceException 재고가 부족한 경우
+	 */
+	default void validateStock(Long productId, Integer quantity) {
+		// 기본 구현은 아무 검증도 수행하지 않음
+	}
 }
