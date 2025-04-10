@@ -83,6 +83,7 @@ public enum ErrorCode {
 	INVALID_PRODUCT_CONTENT(HttpStatus.BAD_REQUEST, "디지털 상품의 내용은 필수입니다."),
 	INVALID_PRODUCT_PRICE(HttpStatus.BAD_REQUEST, "상품의 가격은 0원 이상이어야 합니다."),
 	INVALID_PRODUCT_STOCK(HttpStatus.BAD_REQUEST, "상품의 재고는 -1 이상이어야 합니다."),
+	INSUFFICIENT_STOCK(HttpStatus.BAD_REQUEST, "상품의 재고가 부족합니다."),
 
 	// S3 Presigned URL 생성 관련
 	PRESIGNED_URL_CREATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Presigned URL 생성 중 알 수 없는 오류가 발생했습니다."),

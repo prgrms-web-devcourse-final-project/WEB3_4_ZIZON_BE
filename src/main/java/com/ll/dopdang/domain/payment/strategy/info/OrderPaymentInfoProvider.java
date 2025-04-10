@@ -1,5 +1,6 @@
 package com.ll.dopdang.domain.payment.strategy.info;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -44,12 +45,13 @@ public class OrderPaymentInfoProvider implements PaymentOrderInfoProvider {
 		PaymentOrderInfo orderInfo = paymentQueryService.getPaymentOrderInfoByOrderId(orderId);
 
 		Map<String, Object> additionalInfo = new HashMap<>();
+		BigDecimal totalPrice = product.getPrice().multiply(BigDecimal.valueOf(orderInfo.getQuantity()));
 
 		// 상품 정보 추가
 		additionalInfo.put("title", product.getTitle());
 		additionalInfo.put("price", product.getPrice());
-
-		// 주문 정보에서 회원 ID 가져오기
+		additionalInfo.put("totalPrice", totalPrice);
+		additionalInfo.put("sellerName", product.getExpertName());
 		additionalInfo.put("clientId", orderInfo.getMemberId());
 
 		return additionalInfo;
