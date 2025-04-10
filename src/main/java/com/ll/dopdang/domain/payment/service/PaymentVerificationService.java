@@ -51,11 +51,12 @@ public class PaymentVerificationService {
 		String orderId) {
 		try {
 			// 전략 패턴을 사용하여 결제 유형에 맞는 검증 로직 실행
-			validatorFactory.getValidator(paymentType).validateAndGetExpectedAmount(referenceId, requestAmount);
+			validatorFactory.getValidator(paymentType)
+				.validateAndGetExpectedAmount(referenceId, requestAmount, orderId);
 		} catch (PaymentAmountManipulationException e) {
 			// 금액 조작이 감지된 경우 관련 정보 저장
 			savePaymentManipulationInfo(paymentType, e.getReferenceId(), e.getExpectedAmount(), e.getRequestAmount(),
-				orderId);
+				e.getOrderId());
 
 			// 예외를 다시 던져서 호출자에게 알림
 			throw e;
@@ -92,8 +93,11 @@ public class PaymentVerificationService {
 		}
 
 		try {
-			Map<String, Object> additionalInfo = infoProviderFactory.getProvider(paymentType)
-				.provideAdditionalInfo(referenceId);
+			Map<String, Object> additionalInfo;
+
+			// 모든 결제 유형에 대해 orderId를 포함하여 추가 정보 조회
+			additionalInfo = infoProviderFactory.getProvider(paymentType)
+				.provideAdditionalInfo(referenceId, orderId);
 
 			String title = additionalInfo.get("title").toString();
 			Member member = memberService.getMemberById((Long)additionalInfo.get("clientId"));

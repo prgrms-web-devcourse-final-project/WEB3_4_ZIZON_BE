@@ -14,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 public class EtcPaymentValidator implements PaymentAmountValidator {
 
 	@Override
-	public BigDecimal validateAndGetExpectedAmount(Long referenceId, BigDecimal requestAmount) {
+	public BigDecimal validateAndGetExpectedAmount(Long referenceId, BigDecimal requestAmount, String orderId) {
 		// Todo: 기타 결제 유형에 대한 금액 검증 로직 추가 필요
 
 		// 임시 처리: 요청 금액을 그대로 반환

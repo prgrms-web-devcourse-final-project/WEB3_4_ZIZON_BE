@@ -210,7 +210,8 @@ public class RebateService {
 				PaymentOrderInfoProvider infoProvider = paymentInfoProviderFactory
 					.getProvider(payment.getPaymentType());                  // 결제 유형에 맞는 정보 제공자 가져오기
 				Map<String, Object> additionalInfo = infoProvider
-					.provideAdditionalInfo(payment.getReferenceId());        // 추가 정보 조회 (전문가 정보 포함)
+					.provideAdditionalInfo(payment.getReferenceId(),
+						payment.getOrderId());        // 추가 정보 조회 (전문가 정보 포함)
 				Member expert = (Member)additionalInfo.get("expert");        // 전문가 정보 추출
 				return Rebate.createFromPayment(payment, feeRate, expert, yearMonth); // Rebate 생성
 			}).collect(Collectors.toList());
