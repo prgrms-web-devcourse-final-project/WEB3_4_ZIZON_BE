@@ -2,6 +2,7 @@ package com.ll.dopdang.domain.project.controller;
 
 import java.util.Map;
 
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -93,6 +94,7 @@ public class ProjectController {
 	)
 	@GetMapping("/all")
 	public ResponseEntity<ProjectListForAllPageResponse> getProjectsForAll(
+		@ParameterObject
 		@PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
 	) {
 		Map<Long, String> thumbnailMap = projectImageService.getThumbnails();
