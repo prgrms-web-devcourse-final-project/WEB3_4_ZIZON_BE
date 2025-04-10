@@ -1,7 +1,13 @@
+server:
+  forward-headers-strategy: native
 spring:
   application:
     name: dopdang
-
+  profiles:
+    active: dev
+  config:
+    import: optional:file:.env[.properties]
+  
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
@@ -10,7 +16,7 @@ spring:
     hikari:
       minimum-idle: 2   # 최소 커넥션 수
       maximum-pool-size: 5  # 최대 커넥션 수
-
+  
   jpa:
     show-sql: true
     properties:
@@ -19,13 +25,13 @@ spring:
         format_sql: true
     hibernate:
       ddl-auto: validate
-
+  
   data:
     redis:
       host: ${REDIS_HOST}
       port: 6379
       password: ${REDIS_PASSWORD}
-
+  
   cloud:
     openfeign:
       client:
@@ -33,14 +39,14 @@ spring:
           default:
             connectTimeout: 5000
             readTimeout: 5000
-
+    
     aws:
       credentials:
         access-key: ${CLOUD_AWS_CREDENTIALS_ACCESS_KEY}
         secret-key: ${CLOUD_AWS_CREDENTIALS_SECRET_KEY}
       region:
         static: ${CLOUD_AWS_REGION}
-
+  
   security:
     oauth2:
       client:
@@ -48,7 +54,7 @@ spring:
           kakao:
             clientId: ${KAKAO_CLIENT_ID}
             client-secret: ${KAKAO_CLIENT_SECRET}
-            redirect-uri: "http://3.35.98.202:8080/login/oauth2/code/kakao"
+            redirect-uri: '{baseUrl}/{action}/oauth2/code/{registrationId}'
             authorization-grant-type: authorization_code
             client-authentication-method: client_secret_post
             client-name: Kakao
@@ -58,7 +64,7 @@ spring:
           google:
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
-            redirect-uri: "http://3.35.98.202:8080/login/oauth2/code/google"
+            redirect-uri: '{baseUrl}/{action}/oauth2/code/{registrationId}'
             scope:
               - profile
               - email
@@ -67,7 +73,7 @@ spring:
             client-secret: ${NAVER_CLIENT_SECRET}
             client-authentication-method: client_secret_post
             authorization-grant-type: authorization_code
-            redirect-uri: "http://3.35.98.202:8080/{action}/oauth2/code/naver"
+            redirect-uri: '{baseUrl}/{action}/oauth2/code/{registrationId}'
             scope:
               - name
               - email
@@ -90,7 +96,7 @@ logging:
 
 common:
   api:
-    base-url: 'http://3.35.98.202:8080'
+    base-url: 'http://localhost:8080'
 
 payment:
   fee:
