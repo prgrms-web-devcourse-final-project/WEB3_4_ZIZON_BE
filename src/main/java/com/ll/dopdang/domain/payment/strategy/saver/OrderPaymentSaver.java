@@ -14,7 +14,6 @@ import com.ll.dopdang.domain.payment.entity.PaymentStatus;
 import com.ll.dopdang.domain.payment.entity.PaymentType;
 import com.ll.dopdang.domain.payment.service.PaymentQueryService;
 import com.ll.dopdang.domain.store.dto.ProductDetailResponse;
-import com.ll.dopdang.domain.store.entity.Product;
 import com.ll.dopdang.domain.store.service.ProductService;
 
 import lombok.RequiredArgsConstructor;
@@ -72,13 +71,6 @@ public class OrderPaymentSaver implements PaymentSaver {
 			.build();
 
 		payment.addPaymentDetail(paymentDetail);
-
-		// 상품 재고 감소 처리
-		Product product = productService.findById(referenceId);
-		Product updatedProduct = productService.decreaseStock(product, quantity);
-
-		log.info("상품 재고 감소 처리 완료: productId={}, quantity={}, remainingStock={}", 
-			referenceId, quantity, updatedProduct.getStock());
 
 		return payment;
 	}
