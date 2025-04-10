@@ -1,10 +1,15 @@
 package com.ll.dopdang.global.security.oauth2.handler;
 
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ll.dopdang.domain.member.dto.response.SocialLoginResponse;
+import com.ll.dopdang.domain.member.entity.Member;
+import com.ll.dopdang.domain.member.entity.MemberRole;
+import com.ll.dopdang.domain.member.entity.MemberStatus;
+import com.ll.dopdang.global.security.custom.CustomUserDetails;
+import com.ll.dopdang.global.security.jwt.service.TokenManagementService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -13,17 +18,8 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ll.dopdang.domain.member.dto.response.SocialLoginResponse;
-import com.ll.dopdang.domain.member.entity.Member;
-import com.ll.dopdang.domain.member.entity.MemberRole;
-import com.ll.dopdang.domain.member.entity.MemberStatus;
-import com.ll.dopdang.global.security.custom.CustomUserDetails;
-import com.ll.dopdang.global.security.jwt.service.TokenManagementService;
-
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
+import java.io.IOException;
+import java.util.Map;
 
 /**
  * 소셜 로그인 성공 핸들러
@@ -66,11 +62,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
 		tokenManagementService.createAndStoreTokens(userDetails, resp);
 
-		SocialLoginResponse dtoResp = createSocialLoginResponse(member);
-
-		setJsonResponse(resp, dtoResp);
-
-		redirectToFrontend(resp, tokenManagementService.getAccessToken(), dtoResp);
+		redirectToFrontend(resp);
 	}
 
 	/**
@@ -182,19 +174,10 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 	/**
 	 * 소셜 로그인 후 프론트 페이지로 리다이렉트
 	 * @param resp HttpServletResponse
-	 * @param accessToken 엑세스 토큰
-	 * @param userInfo 로그인 유저 정보
 	 * @throws IOException 예외
 	 */
-	private void redirectToFrontend(HttpServletResponse resp, String accessToken, SocialLoginResponse userInfo) throws
+	private void redirectToFrontend(HttpServletResponse resp) throws
 		IOException {
-		String encodedUserInfo = URLEncoder.encode(objectMapper.writeValueAsString(userInfo), StandardCharsets.UTF_8);
-		String redirectUrl = String.format("%s/login?token=%s&user=%s",
-			frontendUrl,
-			accessToken,
-			encodedUserInfo
-		);
-
-		resp.sendRedirect(redirectUrl);
+		resp.sendRedirect(frontendUrl);
 	}
 }
