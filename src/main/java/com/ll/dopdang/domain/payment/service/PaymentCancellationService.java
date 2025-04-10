@@ -10,8 +10,6 @@ import com.ll.dopdang.domain.payment.client.TossPaymentClient;
 import com.ll.dopdang.domain.payment.entity.Payment;
 import com.ll.dopdang.domain.payment.entity.PaymentCancellationDetail;
 import com.ll.dopdang.domain.payment.entity.PaymentMetadata;
-import com.ll.dopdang.domain.payment.entity.PaymentStatus;
-import com.ll.dopdang.domain.payment.entity.PaymentType;
 import com.ll.dopdang.domain.payment.repository.PaymentRepository;
 import com.ll.dopdang.domain.payment.util.TossPaymentUtils;
 import com.ll.dopdang.global.exception.ErrorCode;
@@ -38,27 +36,24 @@ public class PaymentCancellationService {
 	 * 결제 유형과 참조 ID로 결제를 취소합니다.
 	 * 취소 금액이 null이거나 결제 총액과 같으면 전액 취소로 처리합니다.
 	 *
-	 * @param paymentType 결제 유형
-	 * @param referenceId 참조 ID
+	 * @param orderId 주문 번호
 	 * @param cancelReason 취소 사유
 	 * @param cancelAmount 취소 금액 (null인 경우 전액 취소)
 	 * @return 취소된 결제 정보
 	 */
 	@Transactional
 	public Payment cancelPayment(
-		PaymentType paymentType, Long referenceId, String cancelReason, BigDecimal cancelAmount) {
+		String orderId, String cancelReason, BigDecimal cancelAmount) {
 
-		log.info("결제 취소 요청(참조 정보): paymentType={}, referenceId={}, cancelReason={}, cancelAmount={}",
-			paymentType, referenceId, cancelReason, cancelAmount);
+		log.info("결제 취소 요청(참조 정보): orderId={}, cancelReason={}, cancelAmount={}",
+			orderId, cancelReason, cancelAmount);
 
-		Payment payment = paymentRepository.findByPaymentTypeAndReferenceIdAndStatus(
-				paymentType, referenceId, PaymentStatus.PAID)
+		Payment payment = paymentRepository.findByOrderId(orderId)
 			.orElseThrow(() -> new ServiceException(ErrorCode.PAYMENT_NOT_FOUND));
 
 		// 이미 취소된 결제인지 확인
 		if (payment.isCanceled()) {
-			throw new ServiceException(ErrorCode.PAYMENT_ALREADY_CANCELED,
-				"이미 취소된 결제입니다: " + payment.getId());
+			throw new ServiceException(ErrorCode.PAYMENT_ALREADY_CANCELED);
 		}
 
 		// 전액 취소 여부 확인
