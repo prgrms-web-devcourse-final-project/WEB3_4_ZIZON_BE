@@ -47,6 +47,33 @@ import lombok.RequiredArgsConstructor;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
+	private static final Map<HttpMethod, List<String>> PUBLIC_URLS = new HashMap<>();
+
+	//권한이 필요 없는 공개 URL 리스트
+	static {
+		PUBLIC_URLS.put(HttpMethod.GET, Arrays.asList(
+			"/h2-console/**",
+			"/login/oauth2/code/kakao",
+			"/login/oauth2/code/google",
+			"/login/oauth2/code/naver",
+			"/oauth2/authorization/kakao",
+			"/oauth2/authorization/google",
+			"/oauth2/authorization/naver",
+			"/swagger-ui/**",
+			"/api-docs/**",
+			"/projects/all",
+			"/api/s3/**",
+			"/experts/**",
+			"/posts/**",
+			"/products/**"
+		));
+		PUBLIC_URLS.put(HttpMethod.POST, Arrays.asList(
+			"/users/login",
+			"/users/signup",
+			"/api/s3/**"
+		));
+	}
+
 	private final JwtUtil jwtUtil;
 	private final ObjectMapper objectMapper;
 	private final CustomOAuth2UserService customOAuth2UserService;
@@ -56,6 +83,14 @@ public class SecurityConfig {
 	private final TokenManagementService tokenManagementService;
 	private final CustomUserDetailsService userDetailsService;
 	private final MemberRepository memberRepository;
+
+	/**
+	 * 공개 URL 리스트 가져오기
+	 * @return {@link Map}
+	 */
+	public static Map<HttpMethod, List<String>> getPublicUrls() {
+		return PUBLIC_URLS;
+	}
 
 	/**
 	 * 비밀번호 인코딩
@@ -86,32 +121,6 @@ public class SecurityConfig {
 		provider.setPasswordEncoder(passwordEncoder());
 		provider.setHideUserNotFoundExceptions(false);
 		return provider;
-	}
-
-	private static final Map<HttpMethod, List<String>> PUBLIC_URLS = new HashMap<>();
-
-	//권한이 필요 없는 공개 URL 리스트
-	static {
-		PUBLIC_URLS.put(HttpMethod.GET, Arrays.asList(
-			"/h2-console/**",
-			"/login/oauth2/code/kakao",
-			"/login/oauth2/code/google",
-			"/login/oauth2/code/naver",
-			"/oauth2/authorization/kakao",
-			"/oauth2/authorization/google",
-			"/oauth2/authorization/naver",
-			"/swagger-ui/**",
-			"/api-docs/**",
-			"/projects/all",
-			"/api/s3/**",
-			"/experts/**",
-			"/posts/**"
-		));
-		PUBLIC_URLS.put(HttpMethod.POST, Arrays.asList(
-			"/users/login",
-			"/users/signup",
-			"/api/s3/**"
-		));
 	}
 
 	/**
@@ -199,13 +208,5 @@ public class SecurityConfig {
 		source.registerCorsConfiguration("/**", configuration);
 
 		return source;
-	}
-
-	/**
-	 * 공개 URL 리스트 가져오기
-	 * @return {@link Map}
-	 */
-	public static Map<HttpMethod, List<String>> getPublicUrls() {
-		return PUBLIC_URLS;
 	}
 }
