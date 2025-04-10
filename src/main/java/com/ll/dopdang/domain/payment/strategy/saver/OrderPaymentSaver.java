@@ -15,13 +15,13 @@ import com.ll.dopdang.global.exception.ServiceException;
 public class OrderPaymentSaver implements PaymentSaver {
 
 	@Override
-	public Payment savePayment(Long referenceId, BigDecimal amount, BigDecimal fee, String paymentKey) {
+	public Payment savePayment(Long referenceId, BigDecimal amount, BigDecimal fee, String paymentKey, String orderId) {
 		// Todo: 스토어 주문 결제 유형에 대한 결제 성공 데이터 저장 로직 추가 필요
 		throw new ServiceException(ErrorCode.PAYMENT_PROCESSING_ERROR, "주문 결제 처리 기능이 아직 구현되지 않았습니다.");
 	}
 
 	@Override
-	public Payment saveFailedPayment(Long referenceId, String errorCode, String errorMessage) {
+	public Payment saveFailedPayment(Long referenceId, String errorCode, String errorMessage, String orderId) {
 		// Todo: 스토어 주문 결제 유형에 대한 결제 실패 데이터 저장 로직 추가 필요
 		throw new ServiceException(ErrorCode.PAYMENT_PROCESSING_ERROR, "주문 결제 처리 기능이 아직 구현되지 않았습니다.");
 	}

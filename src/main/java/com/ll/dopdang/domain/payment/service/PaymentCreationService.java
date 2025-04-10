@@ -63,7 +63,7 @@ public class PaymentCreationService {
 		String orderId = generateOrderId();
 		String redisKey = PaymentConstants.KEY_PREFIX + orderId;
 
-		PaymentOrderInfo orderInfo = new PaymentOrderInfo(paymentType, referenceId);
+		PaymentOrderInfo orderInfo = new PaymentOrderInfo(paymentType, referenceId, orderId);
 		redisRepository.save(redisKey, orderInfo, PaymentConstants.ORDER_EXPIRY_MINUTES, TimeUnit.MINUTES);
 
 		log.info("주문 ID 생성 완료: orderId={}, paymentType={}, referenceId={}",
