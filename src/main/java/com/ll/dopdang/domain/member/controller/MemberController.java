@@ -69,7 +69,7 @@ public class MemberController {
 			return ResponseEntity.ok(resp);
 		}
 		memberService.signup(req, req.getVerifyCodeRequest().getCode());
-		return ResponseEntity.ok("회원 가입 성공");
+		return ResponseEntity.ok().body(Map.of("message", "회원 가입 성공"));
 	}
 
 	/**
@@ -100,7 +100,7 @@ public class MemberController {
 			return ResponseEntity.ok(resp);
 		}
 		memberService.verifyPhone(userId, request.getCode(), request, customUserDetails);
-		return ResponseEntity.ok("전화번호 인증이 완료되었습니다.");
+		return ResponseEntity.ok().body(Map.of("message", "전화번호 인증이 완료되었습니다."));
 	}
 
 	/**
@@ -165,7 +165,7 @@ public class MemberController {
 		@AuthenticationPrincipal CustomUserDetails customUserDetails
 	) {
 		memberService.deleteMember(userId, customUserDetails);
-		return ResponseEntity.ok("회원 탈퇴가 정상적으로 처리되었습니다.");
+		return ResponseEntity.ok().body(Map.of("message", "회원 탈퇴가 정상적으로 처리되었습니다."));
 	}
 
 	@Operation(
