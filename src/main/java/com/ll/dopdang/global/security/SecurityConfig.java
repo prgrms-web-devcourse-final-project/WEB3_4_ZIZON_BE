@@ -1,10 +1,21 @@
 package com.ll.dopdang.global.security;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ll.dopdang.domain.member.repository.MemberRepository;
+import com.ll.dopdang.global.security.custom.CustomUserDetailsService;
+import com.ll.dopdang.global.security.jwt.filter.JwtAuthenticationFilter;
+import com.ll.dopdang.global.security.jwt.filter.JwtAuthorizationFilter;
+import com.ll.dopdang.global.security.jwt.handler.JwtLogoutHandler;
+import com.ll.dopdang.global.security.jwt.handler.JwtLogoutSuccessHandler;
+import com.ll.dopdang.global.security.jwt.service.TokenManagementService;
+import com.ll.dopdang.global.security.jwt.service.TokenService;
+import com.ll.dopdang.global.security.oauth2.handler.OAuth2LoginFailureHandler;
+import com.ll.dopdang.global.security.oauth2.handler.OAuth2LoginSuccessHandler;
+import com.ll.dopdang.global.security.oauth2.service.CustomOAuth2UserService;
+import com.ll.dopdang.standard.util.AuthResponseUtil;
+import com.ll.dopdang.standard.util.JwtUtil;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -22,23 +33,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ll.dopdang.domain.member.repository.MemberRepository;
-import com.ll.dopdang.global.security.custom.CustomUserDetailsService;
-import com.ll.dopdang.global.security.jwt.filter.JwtAuthenticationFilter;
-import com.ll.dopdang.global.security.jwt.filter.JwtAuthorizationFilter;
-import com.ll.dopdang.global.security.jwt.handler.JwtLogoutHandler;
-import com.ll.dopdang.global.security.jwt.handler.JwtLogoutSuccessHandler;
-import com.ll.dopdang.global.security.jwt.service.TokenManagementService;
-import com.ll.dopdang.global.security.jwt.service.TokenService;
-import com.ll.dopdang.global.security.oauth2.handler.OAuth2LoginFailureHandler;
-import com.ll.dopdang.global.security.oauth2.handler.OAuth2LoginSuccessHandler;
-import com.ll.dopdang.global.security.oauth2.service.CustomOAuth2UserService;
-import com.ll.dopdang.standard.util.AuthResponseUtil;
-import com.ll.dopdang.standard.util.JwtUtil;
-
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * SecurityConfig
@@ -185,7 +183,12 @@ public class SecurityConfig {
 
 		// CORS 설정
 		configuration.setAllowedOrigins(
-			List.of("http://localhost:8080", "http://localhost:3000")
+			List.of(
+					"http://localhost:8080",
+					"http://localhost:3000",
+					"http://3.35.98.202:8080",
+					"http://13.209.49.200:11200"
+			)
 		);
 
 		// 자격 증명 허용 설정

@@ -3,7 +3,7 @@ name: Build Docker Image and Push to ghcr.io
 on:
   push:
     branches:
-      - main
+      - deployment
 
 permissions:
   contents: write
