@@ -52,6 +52,17 @@ public class ExpertController {
 		return ResponseEntity.ok(response);
 	}
 
+	@GetMapping("/search")
+	public ResponseEntity<List<ExpertResponseDto>> searchExperts(
+		@RequestParam(required = false) String name,
+		@RequestParam(required = false) List<String> categoryNames,
+		@RequestParam(required = false) String careerLevel
+	) {
+		List<ExpertResponseDto> experts;
+		experts = expertService.searchExperts(categoryNames,careerLevel,name);
+		return ResponseEntity.ok(experts);
+	}
+
 	@Operation(summary = "전문가 목록 조회", description = "모든 전문가 목록을 조회합니다. 카테고리명 또는 경력 수준으로 필터링할 수 있습니다.")
 	@ApiResponse(responseCode = "200", description = "조회 성공")
 	@GetMapping

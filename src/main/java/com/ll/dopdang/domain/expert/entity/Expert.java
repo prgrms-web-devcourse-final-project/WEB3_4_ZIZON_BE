@@ -44,7 +44,6 @@ public class Expert {
     private Category category; // 전문가의 대분류 카테고리
 
     @OneToMany(mappedBy = "expert", cascade = CascadeType.ALL, orphanRemoval = true)
-    // @OneToMany(mappedBy = "expert")
     @Builder.Default
     private List<ExpertCategory> subCategories = new ArrayList<>(); // ExpertCategory와의 1:N 관계
 
@@ -73,7 +72,28 @@ public class Expert {
     private Portfolio portfolio;
 
     @OneToMany(mappedBy = "expert", cascade = CascadeType.ALL, orphanRemoval = true)
-    // @OneToMany(mappedBy = "expert")
     @Builder.Default
     private List<ExpertCertificate> expertCertificates = new ArrayList<>();
+
+	/**
+	 * 전문가를 생성하고 회원과의 양방향 관계를 설정하는 정적 메서드
+	 */
+	public static Expert createExpert(Member member, Category category, String introduction,
+		int careerYears, Boolean gender, String bankName, String accountNumber, boolean availability) {
+		Expert expert = Expert.builder()
+			.member(member)
+			.category(category)
+			.introduction(introduction)
+			.careerYears(careerYears)
+			.gender(gender)
+			.bankName(bankName)
+			.accountNumber(accountNumber)
+			.availability(availability)
+			.build();
+
+		// 양방향 관계 설정
+		member.connectExpert(expert);
+
+		return expert;
+	}
 }
