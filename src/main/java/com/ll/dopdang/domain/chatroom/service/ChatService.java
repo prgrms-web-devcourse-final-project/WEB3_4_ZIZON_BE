@@ -56,13 +56,10 @@ public class ChatService {
 	private static final String CHAT_MESSAGES_KEY_TEMPLATE = "chat:%s:messages";
 	private static final String CHAT_ROOMS_KEY_TEMPLATE = "chatrooms:%s";
 	private static final String CHAT_ROOM_TIMESTAMP_KEY_TEMPLATE = "chatrooms:%s:timestamp";
-
 	// 메시지 캐시와 관련된 채팅방 추적용 키
 	private static final String ACTIVE_ROOMS_KEY = "chat:active_rooms";
-
 	// Redis에 저장된 데이터의 만료 시간 (30분)
 	private static final long CACHE_EXPIRATION = 30;
-
 	// 분산 락의 기본 만료 시간 (예: 10초)
 	private static final long LOCK_EXPIRATION = 10;
 
@@ -216,25 +213,15 @@ public class ChatService {
 	public List<ChatRoomDetailResponse> getChatRoomDetail(String sender, String receiver) {
 		String roomId = getRoomId(sender.trim().toLowerCase(), receiver.trim().toLowerCase());
 		List<ChatMessage> messages = getChatRoomDetailByRoomId(roomId);
-		List<ChatRoomDetailResponse> responseList = new ArrayList<>();
 		Map<String, Member> memberCache = new HashMap<>();
+		List<ChatRoomDetailResponse> responseList = new ArrayList<>();
 		for (ChatMessage msg : messages) {
+			// 캐시나 DB에서 발신자 Member 조회
 			Member senderMember = memberCache.computeIfAbsent(msg.getSender(), email ->
 				memberRepository.findByEmail(email).orElse(null)
 			);
-			String senderName = senderMember != null ? senderMember.getName() : "";
-			String senderProfileImage = senderMember != null ? senderMember.getProfileImage() : "";
-			responseList.add(new ChatRoomDetailResponse(
-				msg.getRoomId(),
-				msg.getSender(),
-				msg.getReceiver(),
-				msg.getContent(),
-				msg.getTimestamp(),
-				senderName,
-				senderProfileImage,
-				true,
-				msg.getFileUrl()
-			));
+			ChatRoomDetailResponse detailDto = ChatRoomDetailResponse.from(msg, senderMember, true);
+			responseList.add(detailDto);
 		}
 		return responseList;
 	}
@@ -292,69 +279,26 @@ public class ChatService {
 			log.debug("Redis에서 채팅방 목록을 가져옵니다. member: {}", member);
 		}
 
+		Member currentMember = memberRepository.findByEmail(member)
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
+
 		List<ChatRoomResponse> dtoList = dbRooms.stream().map(room -> {
-			ChatRoomResponse dto = new ChatRoomResponse();
-			dto.setRoomId(room.getRoomId());
-			dto.setProjectId(room.getProjectId());
+			// 상대방 이메일 결정
+			String otherEmail = room.getMember1().equalsIgnoreCase(member) ? room.getMember2() : room.getMember1();
+			Member otherUser = memberRepository.findByEmail(otherEmail).orElse(null);
 
-			// 현재 사용자인 member와 채팅방의 두 멤버(member1, member2)를 비교하여 상대방 정보 설정
-			if (room.getMember1().equalsIgnoreCase(member)) {
-				dto.setSender(room.getMember1());
-				dto.setReceiver(room.getMember2());
-				Member otherUser = memberRepository.findByEmail(room.getMember2())
-					.orElse(null);
-				if (otherUser != null) {
-					Long others = otherUser.getId();
-					dto.setOtherUserName(otherUser.getName());
-					dto.setOtherUserProfile(otherUser.getProfileImage());
-					dto.setOtherUserId(others);
-					//사용자 : 사용자가 대화 할 일이 없기 때문에
-					//대화상대가 expert가 아니라면 내가 expert
-					if (expertRepository.existsByMemberId(others)) {
-						dto.setExpertId(others);
-					}else {
-						dto.setExpertId(currentUserId);
-					}
-				}
-			} else {
-				dto.setSender(room.getMember2());
-				dto.setReceiver(room.getMember1());
-				Member otherUser = memberRepository.findByEmail(room.getMember1())
-					.orElse(null);
-				if (otherUser != null) {
-					Long others = otherUser.getId();
-					dto.setOtherUserName(otherUser.getName());
-					dto.setOtherUserProfile(otherUser.getProfileImage());
-					dto.setOtherUserId(others);
-					//사용자 : 사용자가 대화 할 일이 없기 때문에
-					//대화상대가 expert가 아니라면 내가 expert
-					if (expertRepository.existsByMemberId(others)) {
-						dto.setExpertId(others);
-					}else {
-						dto.setExpertId(currentUserId);
-					}
-				}
-			}
-
-			// 마지막 메시지 정보 설정
+			// 마지막 메시지 조회
 			List<ChatMessage> messages = chatMessageRepository.findTopMessagesByRoomIdOrderByTimestampDesc(room.getRoomId(), 1);
-			if (!messages.isEmpty()) {
-				ChatMessage lastMessage = messages.get(0);
-				dto.setLastMessage(lastMessage.getContent());
-				dto.setLastMessageTime(lastMessage.getTimestamp());
-			}
+			ChatMessage lastMessage = messages.isEmpty() ? null : messages.get(0);
 
-			// 미확인 메시지 수 가져오기: getUnreadCount 메소드 호출 (채팅방 ID와 현재 사용자)
-			long unreadCount = getUnreadCount(room.getRoomId(), member);
-			dto.setUnreadCount((int) unreadCount);
+			// 미확인 메시지 수 조회
+			int unreadCount = (int) getUnreadCount(room.getRoomId(), member);
 
-			return dto;
-		}).toList();
+			return ChatRoomResponse.from(room, currentMember, otherUser, lastMessage, unreadCount);
+		}).collect(Collectors.toList());
 
-		// 마지막에 dtoList를 반환합니다.
 		return dtoList;
 	}
-
 
 	/**
 	 * JSON 문자열에서 roomId 추출
@@ -524,7 +468,7 @@ public class ChatService {
 	/**
 	 * 채팅방 생성 로직
 	 *
-	 * @param email   현재 로그인한 사용자의 이메일
+	 * @param email     현재 로그인한 사용자의 이메일
 	 * @param projectId project 작성자 정보를 찾기 위한 id
 	 */
 	@Transactional
@@ -551,5 +495,4 @@ public class ChatService {
 			chatRoom = chatRoomRepository.save(chatRoom);
 		}
 	}
-
 }
