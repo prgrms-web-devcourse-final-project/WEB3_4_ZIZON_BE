@@ -2,7 +2,6 @@ package com.ll.dopdang.domain.payment.service;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -11,13 +10,10 @@ import org.springframework.stereotype.Service;
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.service.MemberService;
 import com.ll.dopdang.domain.payment.dto.PaymentOrderInfo;
-import com.ll.dopdang.domain.payment.entity.Payment;
-import com.ll.dopdang.domain.payment.entity.PaymentStatus;
 import com.ll.dopdang.domain.payment.entity.PaymentType;
 import com.ll.dopdang.domain.payment.repository.PaymentRepository;
 import com.ll.dopdang.domain.payment.strategy.info.PaymentInfoProviderFactory;
 import com.ll.dopdang.domain.payment.util.PaymentConstants;
-import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.global.redis.repository.RedisRepository;
 
@@ -45,29 +41,21 @@ public class PaymentCreationService {
 	 * @param paymentType 결제 유형
 	 * @param referenceId 참조 ID
 	 * @param memberId 회원 ID
+	 * @param quantity 수량 (선택적)
 	 * @return 주문 ID와 고객 키, 결제 유형별 추가 정보가 포함된 맵
 	 * @throws ServiceException 이미 결제가 완료된 경우
 	 */
-	public Map<String, Object> createOrderIdWithInfo(PaymentType paymentType, Long referenceId, Long memberId) {
-		// 이미 성공적으로 결제가 완료된 건인지 확인 (실패한 결제는 제외)
-		Optional<Payment> successfulPayment = paymentRepository.findByPaymentTypeAndReferenceIdAndStatus(
-			paymentType, referenceId, PaymentStatus.PAID);
-
-		boolean alreadyPaid = successfulPayment.isPresent();
-
-		if (alreadyPaid) {
-			log.warn("이미 결제가 완료된 건입니다: paymentType={}, referenceId={}", paymentType, referenceId);
-			throw new ServiceException(ErrorCode.PAYMENT_ALREADY_COMPLETED);
-		}
+	public Map<String, Object> createOrderIdWithInfo(PaymentType paymentType, Long referenceId, Long memberId,
+		Integer quantity) {
 
 		String orderId = generateOrderId();
 		String redisKey = PaymentConstants.KEY_PREFIX + orderId;
 
-		PaymentOrderInfo orderInfo = new PaymentOrderInfo(paymentType, referenceId, orderId);
+		PaymentOrderInfo orderInfo = new PaymentOrderInfo(paymentType, referenceId, orderId, quantity);
 		redisRepository.save(redisKey, orderInfo, PaymentConstants.ORDER_EXPIRY_MINUTES, TimeUnit.MINUTES);
 
-		log.info("주문 ID 생성 완료: orderId={}, paymentType={}, referenceId={}",
-			orderId, paymentType, referenceId);
+		log.info("주문 ID 생성 완료: orderId={}, paymentType={}, referenceId={}, quantity={}",
+			orderId, paymentType, referenceId, quantity);
 
 		Member member = memberService.getMemberById(memberId);
 		// 기본 응답 정보
