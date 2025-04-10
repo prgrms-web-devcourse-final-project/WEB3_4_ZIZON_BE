@@ -1,5 +1,7 @@
 package com.ll.dopdang.domain.review.sevice;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -7,6 +9,8 @@ import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.repository.MemberRepository;
 import com.ll.dopdang.domain.project.entity.Contract;
 import com.ll.dopdang.domain.project.repository.ContractRepository;
+import com.ll.dopdang.domain.review.dto.ClientReviewPageResponse;
+import com.ll.dopdang.domain.review.dto.ExpertReviewPageResponse;
 import com.ll.dopdang.domain.review.dto.ReviewCreateRequest;
 import com.ll.dopdang.domain.review.dto.ReviewCreateResponse;
 import com.ll.dopdang.domain.review.dto.ReviewDetailResponse;
@@ -84,5 +88,32 @@ public class ReviewService {
 			.orElseThrow(() -> new ServiceException(ErrorCode.REVIEW_NOT_FOUND));
 
 		return ReviewDetailResponse.from(review);
+	}
+
+	/**
+	 * 전문가가 받은 리뷰 목록 조회 (완료된 계약 기준)
+	 *
+	 * @param expertId 전문가 ID
+	 * @param pageable 페이징 정보
+	 * @return 페이지 형태의 리뷰 응답
+	 */
+	public ExpertReviewPageResponse getReviewsByExpert(Long expertId, Pageable pageable) {
+		Page<Review> page = reviewRepository.findByExpertIdWithReviewer(expertId, pageable);
+		return ExpertReviewPageResponse.from(page);
+	}
+
+	/**
+	 * 특정 클라이언트가 작성한 리뷰 목록 조회
+	 * - 계약이 완료된 리뷰만 조회
+	 * - 무한 스크롤(오프셋 기반) 방식 지원
+	 * - 전문가 이름 및 프로필 이미지 포함
+	 *
+	 * @param clientId 클라이언트(작성자) ID
+	 * @param pageable 페이징 정보 (page, size, sort)
+	 * @return 클라이언트 리뷰 목록 페이지 응답
+	 */
+	public ClientReviewPageResponse getClientReviews(Long clientId, Pageable pageable) {
+		Page<Review> page = reviewRepository.findByReviewerIdAndCompletedContract(clientId, pageable);
+		return ClientReviewPageResponse.from(page);
 	}
 }
