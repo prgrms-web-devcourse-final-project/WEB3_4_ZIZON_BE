@@ -11,9 +11,10 @@ public interface PaymentOrderInfoProvider {
 	 * 결제 유형별 추가 정보를 제공합니다.
 	 *
 	 * @param referenceId 참조 ID
+	 * @param orderId 주문 ID
 	 * @return 결제 유형에 따른 추가 정보
 	 */
-	Map<String, Object> provideAdditionalInfo(Long referenceId);
+	Map<String, Object> provideAdditionalInfo(Long referenceId, String orderId);
 
 	/**
 	 * 결제 정보를 기반으로 결제 결과 응답을 생성합니다.

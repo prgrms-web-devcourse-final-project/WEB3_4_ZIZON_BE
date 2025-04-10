@@ -25,7 +25,7 @@ public class ProjectPaymentInfoProvider implements PaymentOrderInfoProvider {
 	private final ContractService contractService;
 
 	@Override
-	public Map<String, Object> provideAdditionalInfo(Long referenceId) {
+	public Map<String, Object> provideAdditionalInfo(Long referenceId, String orderId) {
 		log.debug("프로젝트 결제 정보 조회: referenceId={}", referenceId);
 
 		Contract contract = contractService.getContractById(referenceId);
