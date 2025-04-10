@@ -90,7 +90,7 @@ logging:
 
 common:
   api:
-    base-url: 'http://3.35.98.202:8080'
+    base-url: "http://3.35.98.202:8080"
 
 payment:
   fee:
@@ -114,7 +114,7 @@ jwt:
 
 site:
   url:
-    frontend: "http://localhost:3000"
+    frontend: "http://13.209.49.200:11200"
 
 springdoc: { swagger-ui: { path: /swagger-ui.html, groups-order: DESC, operationsSorter: method, disable-swagger-default-url: true, display-request-duration: true }, api-docs: { path: /api-docs }, show-actuator: true, default-consumes-media-type: application/json, default-produces-media-type: application/json }
 
