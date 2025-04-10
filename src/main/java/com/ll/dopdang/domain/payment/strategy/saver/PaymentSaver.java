@@ -18,7 +18,7 @@ public interface PaymentSaver {
 	 * @param paymentKey 결제 키
 	 * @return 저장된 Payment 엔티티
 	 */
-	Payment savePayment(Long referenceId, BigDecimal amount, BigDecimal fee, String paymentKey);
+	Payment savePayment(Long referenceId, BigDecimal amount, BigDecimal fee, String paymentKey, String orderId);
 
 	/**
 	 * 실패한 결제 정보를 저장합니다.
@@ -28,5 +28,5 @@ public interface PaymentSaver {
 	 * @param errorMessage 실패 메시지
 	 * @return 저장된 Payment 엔티티
 	 */
-	Payment saveFailedPayment(Long referenceId, String errorCode, String errorMessage);
+	Payment saveFailedPayment(Long referenceId, String errorCode, String errorMessage, String orderId);
 }

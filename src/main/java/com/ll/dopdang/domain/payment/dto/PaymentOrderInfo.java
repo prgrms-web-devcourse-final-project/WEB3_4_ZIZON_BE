@@ -21,6 +21,7 @@ public class PaymentOrderInfo implements Serializable {
 
 	private PaymentType paymentType;
 	private Long referenceId;
+	private String orderId;
 
 	/**
 	 * Map에서 PaymentOrderInfo 객체를 생성합니다.
@@ -31,7 +32,8 @@ public class PaymentOrderInfo implements Serializable {
 	public static PaymentOrderInfo fromMap(Map<String, Object> map) {
 		PaymentType paymentType = PaymentType.valueOf(map.get("paymentType").toString());
 		Long referenceId = Long.valueOf(map.get("referenceId").toString());
+		String orderId = (String)map.get("orderId");
 
-		return new PaymentOrderInfo(paymentType, referenceId);
+		return new PaymentOrderInfo(paymentType, referenceId, orderId);
 	}
 }

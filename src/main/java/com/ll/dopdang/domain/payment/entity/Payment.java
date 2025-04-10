@@ -78,6 +78,9 @@ public class Payment {
 	@Column(name = "payment_date")
 	private LocalDateTime paymentDate;
 
+	@Column(name = "order_id")
+	private String orderId;
+
 	// 결제 상태 필드 추가
 	@Enumerated(EnumType.STRING)
 	@Column(name = "status")
@@ -113,10 +116,12 @@ public class Payment {
 	 * @param paymentKey 결제 키
 	 * @return 생성된 Payment 엔티티
 	 */
-	public static Payment createFromContract(Contract contract, BigDecimal amount, BigDecimal fee, String paymentKey) {
+	public static Payment createFromContract(Contract contract, BigDecimal amount, BigDecimal fee, String paymentKey,
+		String orderId) {
 		return Payment.builder()
 			.member(contract.getClient())
 			.paymentKey(paymentKey)
+			.orderId(orderId)
 			.paymentType(PaymentType.PROJECT)
 			.referenceId(contract.getId())
 			.itemsSummary(contract.getProject().getTitle())
@@ -135,9 +140,10 @@ public class Payment {
 	 * @param contract 계약 정보
 	 * @return 생성된 Payment 엔티티
 	 */
-	public static Payment createFailedPaymentFromContract(Contract contract, BigDecimal fee) {
+	public static Payment createFailedPaymentFromContract(Contract contract, BigDecimal fee, String orderId) {
 		return Payment.builder()
 			.member(contract.getClient())
+			.orderId(orderId)
 			.paymentType(PaymentType.PROJECT)
 			.referenceId(contract.getId())
 			.itemsSummary(contract.getProject().getTitle())
@@ -158,9 +164,10 @@ public class Payment {
 	 * @return 생성된 Payment 엔티티
 	 */
 	public static Payment createForAmountManipulation(PaymentType paymentType, Long referenceId, Member member,
-		String title) {
+		String title, String orderId) {
 		return Payment.builder()
 			.member(member)
+			.orderId(orderId)
 			.paymentType(paymentType)
 			.referenceId(referenceId)
 			.itemsSummary(title)

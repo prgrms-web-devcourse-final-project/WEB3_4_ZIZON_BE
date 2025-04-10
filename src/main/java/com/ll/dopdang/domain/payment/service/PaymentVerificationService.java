@@ -47,13 +47,15 @@ public class PaymentVerificationService {
 	 * @param referenceId 참조 ID
 	 * @param requestAmount 결제 요청 금액
 	 */
-	public void validatePaymentAmount(PaymentType paymentType, Long referenceId, BigDecimal requestAmount) {
+	public void validatePaymentAmount(PaymentType paymentType, Long referenceId, BigDecimal requestAmount,
+		String orderId) {
 		try {
 			// 전략 패턴을 사용하여 결제 유형에 맞는 검증 로직 실행
 			validatorFactory.getValidator(paymentType).validateAndGetExpectedAmount(referenceId, requestAmount);
 		} catch (PaymentAmountManipulationException e) {
 			// 금액 조작이 감지된 경우 관련 정보 저장
-			savePaymentManipulationInfo(paymentType, e.getReferenceId(), e.getExpectedAmount(), e.getRequestAmount());
+			savePaymentManipulationInfo(paymentType, e.getReferenceId(), e.getExpectedAmount(), e.getRequestAmount(),
+				orderId);
 
 			// 예외를 다시 던져서 호출자에게 알림
 			throw e;
@@ -68,7 +70,8 @@ public class PaymentVerificationService {
 		PaymentType paymentType,
 		Long referenceId,
 		BigDecimal expectedAmount,
-		BigDecimal requestAmount) {
+		BigDecimal requestAmount,
+		String orderId) {
 
 		log.warn("결제 금액 조작 감지: 유형={}, 참조ID={}, 예상금액={}, 요청금액={}",
 			paymentType, referenceId, expectedAmount, requestAmount);
@@ -96,7 +99,7 @@ public class PaymentVerificationService {
 			Member member = memberService.getMemberById((Long)additionalInfo.get("clientId"));
 
 			// 결제 정보 생성
-			Payment payment = Payment.createForAmountManipulation(paymentType, referenceId, member, title);
+			Payment payment = Payment.createForAmountManipulation(paymentType, referenceId, member, title, orderId);
 
 			// 조작 세부 정보 생성
 			PaymentManipulationDetail manipulationDetail = PaymentManipulationDetail.create(
