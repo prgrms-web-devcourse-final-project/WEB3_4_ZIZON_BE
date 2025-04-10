@@ -1,5 +1,6 @@
 package com.ll.dopdang.domain.payment.dto;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Map;
 
@@ -17,11 +18,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class PaymentOrderInfo implements Serializable {
 
+	@Serial
 	private static final long serialVersionUID = 1L;
 
 	private PaymentType paymentType;
 	private Long referenceId;
 	private String orderId;
+	private Integer quantity;
 
 	/**
 	 * Map에서 PaymentOrderInfo 객체를 생성합니다.
@@ -33,7 +36,8 @@ public class PaymentOrderInfo implements Serializable {
 		PaymentType paymentType = PaymentType.valueOf(map.get("paymentType").toString());
 		Long referenceId = Long.valueOf(map.get("referenceId").toString());
 		String orderId = (String)map.get("orderId");
+		Integer quantity = map.get("quantity") != null ? Integer.valueOf(map.get("quantity").toString()) : null;
 
-		return new PaymentOrderInfo(paymentType, referenceId, orderId);
+		return new PaymentOrderInfo(paymentType, referenceId, orderId, quantity);
 	}
 }
