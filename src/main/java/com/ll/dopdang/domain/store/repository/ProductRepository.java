@@ -14,6 +14,13 @@ import com.ll.dopdang.domain.store.entity.Product;
 public interface ProductRepository extends JpaRepository<Product, Long> {
 	Optional<Product> findById(Long id);
 
-	@Query("SELECT p FROM Product p WHERE p.category.id = :categoryId")
-	Page<Product> findAllByCategoryId(Long categoryId, Pageable pageable);
+	@Query(value = "SELECT * FROM product WHERE category_id = :categoryId " +
+		"ORDER BY CASE WHEN stock > 0 THEN 0 ELSE 1 END",
+		nativeQuery = true)
+	Page<Product> findAllByCategoryOrderByStockAndCreatedAtDesc(Long categoryId, Pageable pageable);
+
+	@Query(value = "SELECT * FROM product " +
+		"ORDER BY CASE WHEN stock > 0 THEN 0 ELSE 1 END",
+		nativeQuery = true)
+	Page<Product> findAll(Pageable pageable);
 }
