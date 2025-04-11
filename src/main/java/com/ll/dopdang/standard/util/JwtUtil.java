@@ -175,6 +175,7 @@ public class JwtUtil {
 			.path("/")
 			.sameSite("None")
 			.secure(true)
+			.domain(".dopdang.shop")
 			.maxAge(expiration / 1000)
 			.httpOnly(false)
 			.build()
