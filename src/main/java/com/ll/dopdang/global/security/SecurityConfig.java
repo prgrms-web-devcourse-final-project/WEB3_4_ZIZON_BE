@@ -66,7 +66,6 @@ public class SecurityConfig {
 			"/experts/**",
 			"/reviews/project/**",
 			"/reviews/experts/**",
-			"/projects/**",
 			"/posts/**",
 			"/products/**"
 		));
