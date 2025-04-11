@@ -97,7 +97,10 @@ public enum ErrorCode {
 	// 리뷰 관련 에러
 	CONTRACT_NOT_COMPLETED(HttpStatus.BAD_REQUEST, "계약이 완료되지 않아 리뷰를 작성할 수 없습니다."),
 	REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, "리뷰를 찾을 수 없습니다."),
-	REVIEW_ALREADY_EXISTS(HttpStatus.CONFLICT, "해당 계약에 대한 리뷰는 이미 작성되었습니다.");
+	REVIEW_ALREADY_EXISTS(HttpStatus.CONFLICT, "해당 계약에 대한 리뷰는 이미 작성되었습니다."),
+
+	//채팅 관련 에러
+	CHATTING_EQUALS_EMAIL(HttpStatus.BAD_REQUEST, "자신에게는 메시지를 보낼 수 없습니다.");
 	private final HttpStatus status;
 	private final String message;
 }

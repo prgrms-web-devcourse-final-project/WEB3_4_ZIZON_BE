@@ -48,8 +48,9 @@ public class ChatController {
 	@GetMapping("")
 	public ResponseEntity<List<ChatRoomDetailResponse>> getHistory(
 		@RequestParam String sender,
-		@RequestParam String receiver) {
-		List<ChatRoomDetailResponse> messages = chatService.getChatRoomDetail(sender, receiver);
+		@RequestParam String receiver,
+		@RequestParam Long projectId) {
+		List<ChatRoomDetailResponse> messages = chatService.getChatRoomDetail(sender, receiver, projectId);
 		return ResponseEntity.ok(messages);
 	}
 
