@@ -185,7 +185,13 @@ public class SecurityConfig {
 
 		// CORS 설정
 		configuration.setAllowedOrigins(
-			List.of("http://localhost:8080", "http://localhost:3000")
+			List.of(
+				"http://localhost:8080",
+				"http://localhost:3000",
+				"http://3.35.98.202:8080",
+				"http://13.209.49.200:11200",
+				"https://www.dopdang.shop"
+			)
 		);
 
 		// 자격 증명 허용 설정
