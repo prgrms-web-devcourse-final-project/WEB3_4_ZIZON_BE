@@ -77,6 +77,20 @@ public class JwtUtil {
 	}
 
 	/**
+	 * 토큰에서 isClient 값 추출
+	 * @param token 토큰
+	 * @return {@link Boolean}
+	 */
+	public boolean getIsClient(String token) {
+		return Jwts.parser()
+			.verifyWith(secretKey)
+			.build()
+			.parseSignedClaims(token)
+			.getPayload()
+			.get("isClient", Boolean.class);
+	}
+
+	/**
 	 * 토큰이 만료됐는지 확인
 	 * @param token 토큰
 	 * @return {@link Boolean}
@@ -120,6 +134,7 @@ public class JwtUtil {
 			.claim("username", customUserDetails.getUsername())
 			.claim("role", customUserDetails.getMember().getUserRole())
 			.claim("status", customUserDetails.getMember().getStatus())
+			.claim("isClient", customUserDetails.getMember().isClient())
 			.issuedAt(new Date(currentTime))
 			.expiration(new Date(currentTime + expiration))
 			.signWith(secretKey)
@@ -140,6 +155,8 @@ public class JwtUtil {
 			.claim("id", customUserDetails.getMember().getId())
 			.claim("username", customUserDetails.getUsername())
 			.claim("role", customUserDetails.getMember().getUserRole())
+			.claim("status", customUserDetails.getMember().getStatus())
+			.claim("isClient", customUserDetails.getMember().isClient())
 			.issuedAt(new Date(currentTime))
 			.expiration(new Date(currentTime + expiration))
 			.signWith(secretKey)
