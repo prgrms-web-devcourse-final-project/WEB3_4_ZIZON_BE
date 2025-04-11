@@ -6,6 +6,7 @@ import java.util.List;
 import com.ll.dopdang.domain.expert.category.entity.Category;
 import com.ll.dopdang.domain.expert.category.entity.ExpertCategory;
 import com.ll.dopdang.domain.member.entity.Member;
+import com.ll.dopdang.global.entity.BaseEntity;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -29,7 +30,7 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Expert {
+public class Expert extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
