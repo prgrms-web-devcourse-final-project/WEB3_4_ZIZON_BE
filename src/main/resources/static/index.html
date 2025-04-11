@@ -404,7 +404,7 @@
         const emails = chatIdPart.split(":");
         let receiver = (emails[0] === sender) ? emails[1] : emails[0];
 
-        fetch(`http://localhost:8080/chatrooms?sender=${encodeURIComponent(sender)}&receiver=${encodeURIComponent(receiver)}&projectId=${encodeURIComponent(projectId)}`, { credentials: 'include' })
+        fetch(`http://localhost:8080/chatrooms/history?sender=${encodeURIComponent(sender)}&receiver=${encodeURIComponent(receiver)}&projectId=${encodeURIComponent(projectId)}`, { credentials: 'include' })
             .then(response => {
                 if (!response.ok) { throw new Error("채팅 기록을 불러오지 못했습니다."); }
                 return response.json();
