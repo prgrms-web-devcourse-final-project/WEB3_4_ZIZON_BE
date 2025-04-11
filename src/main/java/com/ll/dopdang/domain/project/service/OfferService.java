@@ -152,9 +152,13 @@ public class OfferService {
 		Offer offer = offerRepository.findByProjectIdAndExpertId(projectId, expertId)
 			.orElseThrow(() -> new ServiceException(ErrorCode.OFFER_NOT_FOUND));
 
+
 		Long loggedInUserId = userDetails.getId();
 		Long clientId = offer.getProject().getClient().getId();
-		if (!clientId.equals(loggedInUserId)) {
+		Long expertMemberId = offer.getExpert().getMember().getId(); // 전문가도 Member 엔티티를 갖고 있다고 가정
+
+		// 클라이언트도 아니고, 전문가 본인도 아니라면 예외
+		if (!clientId.equals(loggedInUserId) && !expertMemberId.equals(loggedInUserId)) {
 			throw new ServiceException(ErrorCode.UNAUTHORIZED_USER);
 		}
 

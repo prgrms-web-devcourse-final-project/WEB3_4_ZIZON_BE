@@ -66,7 +66,6 @@ public class SecurityConfig {
 			"/experts/**",
 			"/reviews/project/**",
 			"/reviews/experts/**",
-			"/projects/**",
 			"/posts/**",
 			"/products/**"
 		));
@@ -124,6 +123,33 @@ public class SecurityConfig {
 		provider.setPasswordEncoder(passwordEncoder());
 		provider.setHideUserNotFoundExceptions(false);
 		return provider;
+	}
+
+	//권한이 필요 없는 공개 URL 리스트
+	static {
+		PUBLIC_URLS.put(HttpMethod.GET, Arrays.asList(
+			"/h2-console/**",
+			"/login/oauth2/code/kakao",
+			"/login/oauth2/code/google",
+			"/login/oauth2/code/naver",
+			"/oauth2/authorization/kakao",
+			"/oauth2/authorization/google",
+			"/oauth2/authorization/naver",
+			"/swagger-ui/**",
+			"/api-docs/**",
+			"/projects/all",
+			"/api/s3/**",
+			"/experts/**",
+			"/reviews/project/**",
+			"/reviews/experts/**",
+			"/projects/**",
+			"/posts/**"
+		));
+		PUBLIC_URLS.put(HttpMethod.POST, Arrays.asList(
+			"/users/login",
+			"/users/signup",
+			"/api/s3/**"
+		));
 	}
 
 	/**
