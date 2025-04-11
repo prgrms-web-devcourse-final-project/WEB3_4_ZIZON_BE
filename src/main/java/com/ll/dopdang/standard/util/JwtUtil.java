@@ -174,7 +174,7 @@ public class JwtUtil {
 		return ResponseCookie.from(key, value)
 			.path("/")
 			.sameSite("None")
-			.secure(false)
+			.secure(true)
 			.maxAge(expiration / 1000)
 			.httpOnly(false)
 			.build()
