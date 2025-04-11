@@ -55,6 +55,7 @@ public class ProductController {
 	/**
 	 * 제품 다건 조회 API
 	 * @param categoryId 카테고리 고유 ID
+	 * @param keyword 검색 키워드
 	 * @param pageable Pageable
 	 * @return {@link ResponseEntity}
 	 */
@@ -62,9 +63,10 @@ public class ProductController {
 	@GetMapping
 	public ResponseEntity<?> getAllProducts(
 		@RequestParam(required = false) Long categoryId, // 선택한 제품 타입
+		@RequestParam(required = false) String keyword, // 검색 키워드
 		@PageableDefault(size = 10, sort = "created_at", direction = Sort.Direction.DESC) Pageable pageable) {
 
-		ProductListPageResponse response = productService.getAllProducts(pageable, categoryId);
+		ProductListPageResponse response = productService.getAllProducts(pageable, categoryId, keyword);
 		return ResponseEntity.ok(response);
 	}
 
