@@ -31,6 +31,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -196,5 +197,14 @@ public class MemberController {
 		@Valid @RequestBody PasswordUpdateRequest request) {
 		memberService.updatePassword(userDetails, userId, request);
 		return ResponseEntity.ok().body(Map.of("message", "비밀번호가 성공적으로 변경되었습니다."));
+	}
+
+	@PostMapping("/toggle/{user_id}")
+	public ResponseEntity<?> toggleUserView(
+		@PathVariable("user_id") Long userId,
+		@AuthenticationPrincipal CustomUserDetails userDetails,
+		HttpServletResponse resp) {
+		memberService.toggleUserView(userId, userDetails, resp);
+		return ResponseEntity.ok().body(Map.of("message", "사용자 뷰 상태가 변경되었습니다."));
 	}
 }
