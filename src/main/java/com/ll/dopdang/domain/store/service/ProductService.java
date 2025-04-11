@@ -149,4 +149,31 @@ public class ProductService {
 			throw new ServiceException(ErrorCode.INVALID_PRODUCT_CONTENT);
 		}
 	}
+
+	/**
+	 * 상품 재고 감소 메서드
+	 * @param product 상품
+	 * @param quantity 감소시킬 수량
+	 * @return 업데이트된 상품
+	 */
+	public synchronized Product decreaseStock(Product product, Integer quantity) {
+		if (product.getStock() < quantity) {
+			throw new ServiceException(ErrorCode.INSUFFICIENT_STOCK);
+		}
+
+		Product updateProduct = Product.builder()
+			.id(product.getId())
+			.expert(product.getExpert())
+			.category(product.getCategory())
+			.title(product.getTitle())
+			.description(product.getDescription())
+			.thumbnailImage(product.getThumbnailImage())
+			.price(product.getPrice())
+			.stock(product.getStock() - quantity)
+			.productType(product.getProductType())
+			.status(product.getStatus())
+			.build();
+
+		return productRepository.save(updateProduct);
+	}
 }

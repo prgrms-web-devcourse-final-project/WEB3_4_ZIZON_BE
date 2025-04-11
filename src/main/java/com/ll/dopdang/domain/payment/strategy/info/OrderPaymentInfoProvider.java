@@ -1,12 +1,20 @@
 package com.ll.dopdang.domain.payment.strategy.info;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
+import com.ll.dopdang.domain.payment.dto.PaymentOrderInfo;
 import com.ll.dopdang.domain.payment.dto.PaymentResultResponse;
 import com.ll.dopdang.domain.payment.entity.Payment;
+import com.ll.dopdang.domain.payment.service.PaymentQueryService;
+import com.ll.dopdang.domain.store.dto.ProductDetailResponse;
+import com.ll.dopdang.domain.store.entity.Product;
+import com.ll.dopdang.domain.store.service.ProductService;
+import com.ll.dopdang.global.exception.ErrorCode;
+import com.ll.dopdang.global.exception.ServiceException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,31 +27,68 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class OrderPaymentInfoProvider implements PaymentOrderInfoProvider {
 
-	// TODO: OrderService 주입 필요
-	// private final OrderService orderService;
+	private final ProductService productService;
+	private final PaymentQueryService paymentQueryService;
 
+	/**
+	 * 주문 ID를 사용하여 추가 정보를 제공합니다.
+	 *
+	 * @param referenceId 참조 ID (상품 ID)
+	 * @param orderId 주문 ID
+	 * @return 결제 유형에 따른 추가 정보
+	 */
 	@Override
-	public Map<String, Object> provideAdditionalInfo(Long referenceId) {
-		log.debug("주문 결제 정보 조회: referenceId={}", referenceId);
+	public Map<String, Object> provideAdditionalInfo(Long referenceId, String orderId) {
+		log.debug("주문 결제 정보 조회: referenceId={}, orderId={}", referenceId, orderId);
 
-		// TODO: 주문에 대한 정보 추가 로직 필요
-		// Order order = orderService.getOrderById(referenceId);
-		//
+		// referenceId는 상품 ID
+		ProductDetailResponse product = productService.getProductById(referenceId);
+
+		// 주문 정보 조회
+		PaymentOrderInfo orderInfo = paymentQueryService.getPaymentOrderInfoByOrderId(orderId);
+
 		Map<String, Object> additionalInfo = new HashMap<>();
-		//
-		// // 주문 정보 추가
-		// additionalInfo.put("orderId", order.getId());
-		// additionalInfo.put("orderNumber", order.getOrderNumber());
-		// additionalInfo.put("totalAmount", order.getTotalAmount());
-		// additionalInfo.put("orderDate", order.getOrderDate());
-		// additionalInfo.put("itemCount", order.getOrderItems().size());
+		BigDecimal totalPrice = product.getPrice().multiply(BigDecimal.valueOf(orderInfo.getQuantity()));
+
+		// 상품 정보 추가
+		additionalInfo.put("title", product.getTitle());
+		additionalInfo.put("price", product.getPrice());
+		additionalInfo.put("totalPrice", totalPrice);
+		additionalInfo.put("sellerName", product.getExpertName());
+		additionalInfo.put("clientId", orderInfo.getMemberId());
 
 		return additionalInfo;
 	}
 
 	@Override
 	public PaymentResultResponse enrichPaymentResult(Payment payment, PaymentResultResponse baseResponse) {
-		// 주문 결제에는 전문가 정보가 없으므로 기본 응답 반환
-		return baseResponse;
+
+		Product product = productService.findById(payment.getReferenceId());
+
+		return PaymentResultResponse.builder()
+			.status(baseResponse.getStatus())
+			.amount(baseResponse.getAmount())
+			.errorCode(baseResponse.getErrorCode())
+			.message(baseResponse.getMessage())
+			.expertName(product.getExpert().getMember().getName())
+			.paymentName(payment.getItemsSummary())
+			.build();
+	}
+
+	/**
+	 * 상품의 재고가 주문 수량보다 충분한지 검증합니다.
+	 *
+	 * @param productId 상품 ID
+	 * @param quantity 주문 수량
+	 * @throws ServiceException 재고가 부족한 경우
+	 */
+	public void validateStock(Long productId, Integer quantity) {
+		Product product = productService.findById(productId);
+		if (product.getStock() < quantity) {
+			throw new ServiceException(ErrorCode.INSUFFICIENT_STOCK,
+				String.format("상품 재고가 부족합니다. 요청: %d, 재고: %d", quantity, product.getStock()));
+		}
+		log.info("상품 재고 검증 완료: productId={}, quantity={}, stock={}",
+			productId, quantity, product.getStock());
 	}
 }

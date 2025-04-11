@@ -49,4 +49,9 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 	 */
 	Optional<Payment> findByPaymentTypeAndReferenceIdAndStatus(
 		PaymentType paymentType, Long referenceId, PaymentStatus status);
+
+	/**
+	 * 주문 ID로 결제 정보를 조회합니다.
+	 */
+	Optional<Payment> findByOrderId(String orderId);
 }

@@ -170,6 +170,24 @@ public class Member {
 			.build();
 	}
 
+	public static Member toggleUserView(Member member) {
+		return Member.builder()
+			.id(member.getId())
+			.email(member.getEmail())
+			.password(member.getPassword())
+			.name(member.getName())
+			.profileImage(member.getProfileImage())
+			.phone(member.getPhone())
+			.status(member.getStatus())
+			.userRole(member.getUserRole())
+			.memberId(member.getMemberId())
+			.uniqueKey(member.getUniqueKey())
+			.createdAt(member.getCreatedAt())
+			.updatedAt(LocalDateTime.now())
+			.isClient(!member.isClient())
+			.build();
+	}
+
 	/**
 	 * 전문가와의 양방향 관계를 설정하는 메서드
 	 * @param expert 연결할 전문가 객체

@@ -22,14 +22,14 @@ public class ProjectPaymentValidator implements PaymentAmountValidator {
 	private final ContractService contractService;
 
 	@Override
-	public BigDecimal validateAndGetExpectedAmount(Long referenceId, BigDecimal requestAmount) {
+	public BigDecimal validateAndGetExpectedAmount(Long referenceId, BigDecimal requestAmount, String orderId) {
 		Contract contract = contractService.getContractById(referenceId);
 		BigDecimal expectedAmount = contract.getPrice();
 
 		if (expectedAmount.compareTo(requestAmount) != 0) {
 			log.error("결제 금액 불일치: 예상 금액={}, 요청 금액={}", expectedAmount, requestAmount);
 			throw new PaymentAmountManipulationException(
-				referenceId, expectedAmount, requestAmount);
+				referenceId, expectedAmount, requestAmount, orderId);
 		}
 
 		log.debug("결제 금액 검증 성공: 예상 금액={}, 요청 금액={}", expectedAmount, requestAmount);

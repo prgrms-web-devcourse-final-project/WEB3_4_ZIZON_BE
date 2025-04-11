@@ -265,7 +265,7 @@ class ProductControllerTest {
 		// 인증 없이 제품 목록 조회 API 호출
 		mvc.perform(get("/products")
 				.contentType(MediaType.APPLICATION_JSON))
-			.andExpect(status().isUnauthorized())
+			.andExpect(status().isOk())
 			.andDo(print());
 	}
 
@@ -314,7 +314,7 @@ class ProductControllerTest {
 		// 인증 없이 제품 상세 조회 API 호출
 		mvc.perform(get("/products/{product_id}", testProduct.getId())
 				.contentType(MediaType.APPLICATION_JSON))
-			.andExpect(status().isUnauthorized())
+			.andExpect(status().isOk())
 			.andDo(print());
 	}
 

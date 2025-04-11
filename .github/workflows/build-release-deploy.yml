@@ -209,6 +209,7 @@ jobs:
             
             # 환경 변수 파일을 사용하여 컨테이너 실행
             sudo docker run -d -p 8080:8080 \
+              --network common \
               --env-file .env \
               --name springboot-app \
               ghcr.io/${{ env.OWNER_LC }}/dopdang-1:${{ needs.create_release.outputs.new_tag }}

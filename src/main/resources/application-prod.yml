@@ -1,0 +1,6 @@
+common:
+  api:
+    base-url: 'http://3.35.98.202:8080'
+site:
+  url:
+    frontend: "http://13.209.49.200:11200"
