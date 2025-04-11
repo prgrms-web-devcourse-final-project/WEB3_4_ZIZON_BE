@@ -1,4 +1,9 @@
 package com.ll.dopdang.domain.review.repository;
 
-public class ReviewStatsRepository {
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.ll.dopdang.domain.review.entity.ReviewStats;
+
+public interface ReviewStatsRepository extends JpaRepository<ReviewStats, Long> {
+
 }
