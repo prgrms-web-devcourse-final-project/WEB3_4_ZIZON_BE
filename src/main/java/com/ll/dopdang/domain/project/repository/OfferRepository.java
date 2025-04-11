@@ -6,7 +6,9 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import com.ll.dopdang.domain.expert.entity.Expert;
 import com.ll.dopdang.domain.project.entity.Offer;
+import com.ll.dopdang.domain.project.entity.Project;
 
 @Repository
 public interface OfferRepository extends JpaRepository<Offer, Long> {
@@ -22,4 +24,6 @@ public interface OfferRepository extends JpaRepository<Offer, Long> {
 
 	// 프로젝트 + 전문가로 오퍼 단건 조회
 	Optional<Offer> findByProjectIdAndExpertId(Long projectId, Long expertId);
+
+	boolean existsByProjectAndExpert(Project project, Expert expert);
 }

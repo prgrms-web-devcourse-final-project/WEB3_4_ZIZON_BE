@@ -44,6 +44,11 @@ public class OfferService {
 		Project project = projectRepository.findById(projectId)
 			.orElseThrow(() -> new ServiceException(ErrorCode.PROJECT_NOT_FOUND));
 
+		boolean exists = offerRepository.existsByProjectAndExpert(project, expert);
+		if (exists) {
+			throw new ServiceException(ErrorCode.OFFER_ALREADY_EXISTS);
+		}
+
 		Offer offer = Offer.builder()
 			.expert(expert)
 			.project(project)

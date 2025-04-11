@@ -71,6 +71,7 @@ public enum ErrorCode {
 
 	// 제안서 관련 에러
 	OFFER_NOT_FOUND(HttpStatus.NOT_FOUND, "제안서를 찾을 수 없습니다."),
+	OFFER_ALREADY_EXISTS(HttpStatus.BAD_REQUEST,"이미 오퍼를 생성한 프로젝트입니다."),
 	INVALID_OFFER_PROJECT(HttpStatus.BAD_REQUEST, "제안서에 대한 프로젝트 정보가 올바르지 않습니다."),
 
 	// 문의글 관련 에러
