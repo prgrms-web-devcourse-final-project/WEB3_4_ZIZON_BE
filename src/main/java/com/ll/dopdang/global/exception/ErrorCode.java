@@ -2,6 +2,7 @@ package com.ll.dopdang.global.exception;
 
 import org.springframework.http.HttpStatus;
 
+import co.elastic.clients.elasticsearch.nodes.Http;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -53,10 +54,17 @@ public enum ErrorCode {
 
 	// 카테고리 관련 에러
 	CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 카테고리입니다."),
+	MAIN_CATEGORY_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR,"Main category not found"),
+	SUB_CATEGORY_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR,"Subcategory not found: "),
+
+	// 자격증 관련 에러
+	CERTIFICATE_NOT_FOUND(HttpStatus.NOT_FOUND, "Certificate not found: "),
 
 	// 전문가 관련 에러
 	EXPERT_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 전문가입니다."),
 	INVALID_EXPERT_ASSIGNMENT(HttpStatus.BAD_REQUEST, "지정된 전문가 정보를 확인할 수 없습니다."),
+	INVALID_CAREER_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR,"Invalid careerLevel: "),
+	EXPERT_NOT_EXISTS(HttpStatus.INTERNAL_SERVER_ERROR,"Expert not found with ID: "),
 
 	// 프로젝트 관련 에러
 	PROJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "프로젝트를 찾을 수 없습니다."),
