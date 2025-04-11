@@ -126,4 +126,26 @@ public class ReviewService {
 		Page<Review> page = reviewRepository.findByReviewerIdAndCompletedContract(clientId, pageable);
 		return ClientReviewPageResponse.from(page);
 	}
+
+	@Transactional
+	public void deleteReview(Long reviewId, Long userId) {
+		Review review = reviewRepository.findById(reviewId)
+			.orElseThrow(() -> new ServiceException(ErrorCode.REVIEW_NOT_FOUND));
+
+		// 작성자 체크
+		if (!review.getReviewer().getId().equals(userId)) {
+			throw new ServiceException(ErrorCode.UNAUTHORIZED_USER);
+		}
+
+		// soft delete
+		review.markAsDeleted();
+
+		// 통계 업데이트
+		ReviewStats stats = reviewStatsRepository.findById(review.getContract().getExpert().getId())
+			.orElseThrow(() -> new ServiceException(ErrorCode.REVIEW_STATS_NOT_FOUND));
+
+		stats.removeReview(review.getScore());
+
+		reviewStatsRepository.save(stats);
+	}
 }
