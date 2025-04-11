@@ -104,7 +104,7 @@ public enum ErrorCode {
 	REVIEW_NOT_FOUND_BY_PROJECT(HttpStatus.NOT_FOUND, "프로젝트에 대한 리뷰를 찾을 수 없습니다."),
 	// 리뷰 통계 관련 에러
 	REVIEW_STATS_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 리뷰 통계가 존재합니다."),
-	REVIEW_STATS_NOT_FOUND(HttpStatus.NOT_FOUND, "리뷰를 통계를 찾을 수 없습니다.");
+	REVIEW_STATS_NOT_FOUND(HttpStatus.NOT_FOUND, "리뷰를 통계를 찾을 수 없습니다."),
 
 	//채팅 관련 에러
 	CHATTING_EQUALS_EMAIL(HttpStatus.BAD_REQUEST, "자신에게는 메시지를 보낼 수 없습니다.");
