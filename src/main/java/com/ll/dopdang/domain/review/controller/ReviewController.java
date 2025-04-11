@@ -19,7 +19,9 @@ import com.ll.dopdang.domain.review.dto.ExpertReviewPageResponse;
 import com.ll.dopdang.domain.review.dto.ReviewCreateRequest;
 import com.ll.dopdang.domain.review.dto.ReviewCreateResponse;
 import com.ll.dopdang.domain.review.dto.ReviewDetailResponse;
+import com.ll.dopdang.domain.review.dto.ReviewStatsResponse;
 import com.ll.dopdang.domain.review.sevice.ReviewService;
+import com.ll.dopdang.domain.review.sevice.ReviewStatsService;
 import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
@@ -39,6 +41,7 @@ import lombok.RequiredArgsConstructor;
 public class ReviewController {
 
 	private final ReviewService reviewService;
+	private final ReviewStatsService reviewStatsService;
 
 	/**
 	 * 리뷰를 생성합니다.
@@ -136,6 +139,18 @@ public class ReviewController {
 
 		Long clientId = userDetails.getId();
 		ClientReviewPageResponse response = reviewService.getClientReviews(clientId, pageable);
+		return ResponseEntity.ok(response);
+	}
+
+	@Operation(
+		summary = "전문가 리뷰 통계 조회",
+		description = "전문가의 평균 평점과 총 리뷰 수를 반환합니다."
+	)
+	@GetMapping("/experts/{expertId}/review-stats")
+	public ResponseEntity<ReviewStatsResponse> getExpertReviewStats(
+		@PathVariable Long expertId
+	) {
+		ReviewStatsResponse response = reviewStatsService.getStatsByExpertId(expertId);
 		return ResponseEntity.ok(response);
 	}
 }

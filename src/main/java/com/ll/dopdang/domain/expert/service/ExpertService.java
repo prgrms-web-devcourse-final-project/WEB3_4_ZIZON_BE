@@ -1,5 +1,6 @@
 package com.ll.dopdang.domain.expert.service;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -24,6 +25,8 @@ import com.ll.dopdang.domain.expert.repository.ExpertRepository;
 import com.ll.dopdang.domain.expert.repository.PortfolioRepository;
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.repository.MemberRepository;
+import com.ll.dopdang.domain.review.entity.ReviewStats;
+import com.ll.dopdang.domain.review.repository.ReviewStatsRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +45,7 @@ public class ExpertService {
 	private final ExpertCategoryRepository expertCategoryRepository;
 	private final ExpertCertificateRepository expertCertificateRepository;
 	private final PortfolioRepository portfolioRepository;
+	private final ReviewStatsRepository reviewStatsRepository;
 
 	/**
 	 * 전문가를 등록합니다.
@@ -81,6 +85,7 @@ public class ExpertService {
 			.accountNumber(expertRequestDto.getAccountNumber())
 			.build();
 		expertRepository.save(expert);
+		expertRepository.flush();
 
 		// 5. ExpertCategory 엔티티 생성 및 저장
 		subCategories.forEach(subCategory -> {
@@ -98,14 +103,21 @@ public class ExpertService {
 				.build();
 			expertCertificateRepository.save(expertCertificate);
 		});
-			// 새로운 포트폴리오 생성
-			Portfolio portfolio = Portfolio.builder()
-				.expert(expert)
-				.title(expertRequestDto.getPortfolioTitle() != null ? expertRequestDto.getPortfolioTitle() : "") // 기본값 설정
-				.imageUrl(expertRequestDto.getPortfolioImage() != null ? expertRequestDto.getPortfolioImage() : "") // 기본값: 빈 URL
-				.build();
-			// 새로 생성한 포트폴리오 저장
-			portfolioRepository.save(portfolio);
+
+		// 새로운 포트폴리오 생성
+		Portfolio portfolio = Portfolio.builder()
+			.expert(expert)
+			.title(expertRequestDto.getPortfolioTitle() != null ? expertRequestDto.getPortfolioTitle() :
+				"No Title") // 기본값 설정
+			.imageUrl(
+				expertRequestDto.getPortfolioImage() != null ? expertRequestDto.getPortfolioImage() : "") // 기본값: 빈 URL
+			.build();
+		// 새로 생성한 포트폴리오 저장
+		portfolioRepository.save(portfolio);
+
+		ReviewStats stats = ReviewStats.of(expert, BigDecimal.ZERO, 0);
+		reviewStatsRepository.save(stats);
+
 		return expert.getId();
 	}
 
@@ -141,7 +153,7 @@ public class ExpertService {
 			}
 		}
 		// 데이터베이스 조회를 통한 필터링 결과
-	List<Expert> experts = expertRepository.findByFilters(categoryNames, minYears, maxYears);
+		List<Expert> experts = expertRepository.findByFilters(categoryNames, minYears, maxYears);
 
 		// Expert 데이터를 DTO로 변환하여 반환
 		return experts.stream()
@@ -188,7 +200,7 @@ public class ExpertService {
 			.orElseThrow(() -> new IllegalArgumentException("Expert not found with ID: " + expertId));
 		Portfolio portfolio = expert.getPortfolio();
 		// 2. Expert -> ExpertDetailResponseDto로 변환
-		return mapToDetailResponseDto(expert,portfolio);
+		return mapToDetailResponseDto(expert, portfolio);
 	}
 
 	public List<ExpertResponseDto> searchByName(String name) {
@@ -274,7 +286,8 @@ public class ExpertService {
 
 				Portfolio newPortfolio = Portfolio.builder()
 					.expert(existingExpert) // Expert와 연결
-					.title(updateRequestDto.getPortfolioTitle() != null ? updateRequestDto.getPortfolioTitle() : "Default Title")
+					.title(updateRequestDto.getPortfolioTitle() != null ? updateRequestDto.getPortfolioTitle() :
+						"Default Title")
 					.imageUrl(updateRequestDto.getPortfolioImage() != null ? updateRequestDto.getPortfolioImage() : "")
 					.build();
 
@@ -293,7 +306,7 @@ public class ExpertService {
 		}
 		Expert expert = expertRepository.findById(expertId)
 			.orElseThrow(() -> new IllegalArgumentException("Expert not found with ID: " + expertId));
-		return mapToDetailResponseDto(expert,expert.getPortfolio());
+		return mapToDetailResponseDto(expert, expert.getPortfolio());
 	}
 
 	/**
