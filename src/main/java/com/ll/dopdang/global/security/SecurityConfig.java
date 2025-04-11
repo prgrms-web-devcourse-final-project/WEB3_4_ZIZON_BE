@@ -47,6 +47,36 @@ import lombok.RequiredArgsConstructor;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
+	private static final Map<HttpMethod, List<String>> PUBLIC_URLS = new HashMap<>();
+
+	//권한이 필요 없는 공개 URL 리스트
+	static {
+		PUBLIC_URLS.put(HttpMethod.GET, Arrays.asList(
+			"/h2-console/**",
+			"/login/oauth2/code/kakao",
+			"/login/oauth2/code/google",
+			"/login/oauth2/code/naver",
+			"/oauth2/authorization/kakao",
+			"/oauth2/authorization/google",
+			"/oauth2/authorization/naver",
+			"/swagger-ui/**",
+			"/api-docs/**",
+			"/projects/all",
+			"/api/s3/**",
+			"/experts/**",
+			"/reviews/project/**",
+			"/reviews/experts/**",
+			"/projects/**",
+			"/posts/**",
+			"/products/**"
+		));
+		PUBLIC_URLS.put(HttpMethod.POST, Arrays.asList(
+			"/users/login",
+			"/users/signup",
+			"/api/s3/**"
+		));
+	}
+
 	private final JwtUtil jwtUtil;
 	private final ObjectMapper objectMapper;
 	private final CustomOAuth2UserService customOAuth2UserService;
@@ -56,6 +86,14 @@ public class SecurityConfig {
 	private final TokenManagementService tokenManagementService;
 	private final CustomUserDetailsService userDetailsService;
 	private final MemberRepository memberRepository;
+
+	/**
+	 * 공개 URL 리스트 가져오기
+	 * @return {@link Map}
+	 */
+	public static Map<HttpMethod, List<String>> getPublicUrls() {
+		return PUBLIC_URLS;
+	}
 
 	/**
 	 * 비밀번호 인코딩
@@ -86,35 +124,6 @@ public class SecurityConfig {
 		provider.setPasswordEncoder(passwordEncoder());
 		provider.setHideUserNotFoundExceptions(false);
 		return provider;
-	}
-
-	private static final Map<HttpMethod, List<String>> PUBLIC_URLS = new HashMap<>();
-
-	//권한이 필요 없는 공개 URL 리스트
-	static {
-		PUBLIC_URLS.put(HttpMethod.GET, Arrays.asList(
-			"/h2-console/**",
-			"/login/oauth2/code/kakao",
-			"/login/oauth2/code/google",
-			"/login/oauth2/code/naver",
-			"/oauth2/authorization/kakao",
-			"/oauth2/authorization/google",
-			"/oauth2/authorization/naver",
-			"/swagger-ui/**",
-			"/api-docs/**",
-			"/projects/all",
-			"/api/s3/**",
-			"/experts/**",
-			"/reviews/project/**",
-			"/reviews/experts/**",
-			"/projects/**",
-			"/posts/**"
-		));
-		PUBLIC_URLS.put(HttpMethod.POST, Arrays.asList(
-			"/users/login",
-			"/users/signup",
-			"/api/s3/**"
-		));
 	}
 
 	/**
@@ -185,7 +194,13 @@ public class SecurityConfig {
 
 		// CORS 설정
 		configuration.setAllowedOrigins(
-			List.of("http://localhost:8080", "http://localhost:3000")
+			List.of(
+				"http://localhost:8080",
+				"http://localhost:3000",
+				"http://3.35.98.202:8080",
+				"http://13.209.49.200:11200",
+				"https://www.dopdang.shop"
+			)
 		);
 
 		// 자격 증명 허용 설정
@@ -202,13 +217,5 @@ public class SecurityConfig {
 		source.registerCorsConfiguration("/**", configuration);
 
 		return source;
-	}
-
-	/**
-	 * 공개 URL 리스트 가져오기
-	 * @return {@link Map}
-	 */
-	public static Map<HttpMethod, List<String>> getPublicUrls() {
-		return PUBLIC_URLS;
 	}
 }

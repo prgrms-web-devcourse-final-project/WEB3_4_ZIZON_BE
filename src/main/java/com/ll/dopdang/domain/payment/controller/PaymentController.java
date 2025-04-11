@@ -54,10 +54,11 @@ public class PaymentController {
 	public ResponseEntity<?> createPaymentOrderInfo(
 		@RequestBody @Valid OrderIdRequest request,
 		@AuthenticationPrincipal CustomUserDetails userDetails) {
-		log.info("주문 ID 생성 요청: paymentType={}, referenceId={}", request.getPaymentType(), request.getReferenceId());
+		log.info("주문 ID 생성 요청: paymentType={}, referenceId={}, quantity={}",
+			request.getPaymentType(), request.getReferenceId(), request.getQuantity());
 
 		Map<String, Object> response = paymentCreationService.createOrderIdWithInfo(
-			request.getPaymentType(), request.getReferenceId(), userDetails.getMember().getId());
+			request.getPaymentType(), request.getReferenceId(), userDetails.getMember().getId(), request.getQuantity());
 
 		return ResponseEntity.ok(response);
 	}
@@ -118,11 +119,11 @@ public class PaymentController {
 	@PostMapping("/cancel")
 	public ResponseEntity<?> cancelPayment(
 		@Parameter(description = "결제 취소 요청") @RequestBody @Valid PaymentCancellationRequest request) {
-		log.info("결제 취소 요청: paymentType={}, referenceId={}, reason={}, amount={}", request.getPaymentType(),
-			request.getReferenceId(), request.getCancelReason(), request.getCancelAmount());
+		log.info("결제 취소 요청: orderId={}, reason={}, amount={}",
+			request.getOrderId(), request.getCancelReason(), request.getCancelAmount());
 
-		Payment payment = paymentCancellationService.cancelPayment(request.getPaymentType(), request.getReferenceId(),
-			request.getCancelReason(), request.getCancelAmount());
+		Payment payment = paymentCancellationService.cancelPayment(request.getOrderId(), request.getCancelReason(),
+			request.getCancelAmount());
 
 		return ResponseEntity.ok(PaymentCancellationResponse.from(payment));
 	}

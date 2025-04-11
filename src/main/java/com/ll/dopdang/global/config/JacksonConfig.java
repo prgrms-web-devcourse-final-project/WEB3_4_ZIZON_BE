@@ -40,6 +40,8 @@ public class JacksonConfig {
 		Hibernate6Module hibernateModule = new Hibernate6Module();
 		// 지연 로딩된 객체의 프록시를 무시하고 실제 객체만 직렬화. API 응답에 필요한 데이터가 누락될 수 있음.
 		hibernateModule.configure(Hibernate6Module.Feature.FORCE_LAZY_LOADING, false);
+		// hibernateModule.configure(Hibernate6Module.Feature.SERIALIZE_IDENTIFIER_FOR_LAZY_NOT_LOADED_OBJECTS, true);
+
 		objectMapper.registerModule(hibernateModule);
 
 		// 빈 객체 직렬화 시 예외 발생하지 않도록 설정

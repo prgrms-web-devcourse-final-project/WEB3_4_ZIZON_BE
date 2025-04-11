@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.ll.dopdang.domain.expert.entity.Expert;
 import com.ll.dopdang.domain.store.entity.Product;
 import com.ll.dopdang.domain.store.entity.ProductType;
 
@@ -15,8 +14,9 @@ import lombok.Getter;
 @Builder
 public class ProductDetailResponse {
 	private Long id;
-	private Expert expert;
+	private String expertName;
 	private String title;
+	private String description;
 	private BigDecimal price;
 	private Integer stock;
 	private ProductType productType;
@@ -27,8 +27,9 @@ public class ProductDetailResponse {
 	public static ProductDetailResponse of(Product product) {
 		return ProductDetailResponse.builder()
 			.id(product.getId())
-			.expert(product.getExpert())
+			.expertName(product.getExpert().getMember().getName())
 			.title(product.getTitle())
+			.description(product.getDescription())
 			.price(product.getPrice())
 			.stock(product.getStock())
 			.productType(product.getProductType())
@@ -40,8 +41,9 @@ public class ProductDetailResponse {
 	public static ProductDetailResponse of(Product product, List<DigitalContentDetailResponse> digitalContents) {
 		return ProductDetailResponse.builder()
 			.id(product.getId())
-			.expert(product.getExpert())
+			.expertName(product.getExpert().getMember().getName())
 			.title(product.getTitle())
+			.description(product.getDescription())
 			.price(product.getPrice())
 			.stock(product.getStock())
 			.productType(product.getProductType())

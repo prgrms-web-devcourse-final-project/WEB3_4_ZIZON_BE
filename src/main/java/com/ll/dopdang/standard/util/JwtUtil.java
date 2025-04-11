@@ -7,6 +7,7 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
@@ -76,6 +77,20 @@ public class JwtUtil {
 	}
 
 	/**
+	 * 토큰에서 isClient 값 추출
+	 * @param token 토큰
+	 * @return {@link Boolean}
+	 */
+	public boolean getIsClient(String token) {
+		return Jwts.parser()
+			.verifyWith(secretKey)
+			.build()
+			.parseSignedClaims(token)
+			.getPayload()
+			.get("isClient", Boolean.class);
+	}
+
+	/**
 	 * 토큰이 만료됐는지 확인
 	 * @param token 토큰
 	 * @return {@link Boolean}
@@ -119,6 +134,7 @@ public class JwtUtil {
 			.claim("username", customUserDetails.getUsername())
 			.claim("role", customUserDetails.getMember().getUserRole())
 			.claim("status", customUserDetails.getMember().getStatus())
+			.claim("isClient", customUserDetails.getMember().isClient())
 			.issuedAt(new Date(currentTime))
 			.expiration(new Date(currentTime + expiration))
 			.signWith(secretKey)
@@ -139,6 +155,8 @@ public class JwtUtil {
 			.claim("id", customUserDetails.getMember().getId())
 			.claim("username", customUserDetails.getUsername())
 			.claim("role", customUserDetails.getMember().getUserRole())
+			.claim("status", customUserDetails.getMember().getStatus())
+			.claim("isClient", customUserDetails.getMember().isClient())
 			.issuedAt(new Date(currentTime))
 			.expiration(new Date(currentTime + expiration))
 			.signWith(secretKey)
@@ -152,15 +170,14 @@ public class JwtUtil {
 	 * @param expiration 만료 기간
 	 * @return {@link Cookie}
 	 */
-	public Cookie setJwtCookie(String key, String value, long expiration) {
-
-		Cookie cookie = new Cookie(key, value);
-		cookie.setMaxAge((int)expiration / 1000);
-		cookie.setSecure(false);    // HTTPS에서만 전송
-		cookie.setPath("/");        // 모든 경로에서 접근 가능
-		cookie.setDomain("");        // 모든 서브 도메인에서 접근 가능
-		cookie.setHttpOnly(true);    // XSS 공격 방지
-
-		return cookie;
+	public String setJwtCookie(String key, String value, long expiration) {
+		return ResponseCookie.from(key, value)
+			.path("/")
+			.sameSite("None")
+			.secure(true)
+			.maxAge(expiration / 1000)
+			.httpOnly(true)
+			.build()
+			.toString();
 	}
 }
