@@ -7,12 +7,13 @@ import java.math.BigDecimal;
  */
 public interface PaymentAmountValidator {
 
-	/**
+ /**
 	 * 결제 금액이 유효한지 검증하고 예상 금액을 반환합니다.
 	 *
 	 * @param referenceId 참조 ID
 	 * @param requestAmount 결제 요청 금액
+	 * @param orderId 주문 ID
 	 * @return 예상 금액
 	 */
-	BigDecimal validateAndGetExpectedAmount(Long referenceId, BigDecimal requestAmount);
+	BigDecimal validateAndGetExpectedAmount(Long referenceId, BigDecimal requestAmount, String orderId);
 }

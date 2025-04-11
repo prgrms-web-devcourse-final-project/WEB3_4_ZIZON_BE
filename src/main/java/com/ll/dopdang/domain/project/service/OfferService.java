@@ -11,6 +11,7 @@ import com.ll.dopdang.domain.project.dto.OfferCreateRequest;
 import com.ll.dopdang.domain.project.dto.OfferDetailResponse;
 import com.ll.dopdang.domain.project.entity.Offer;
 import com.ll.dopdang.domain.project.entity.Project;
+import com.ll.dopdang.domain.project.entity.ProjectStatus;
 import com.ll.dopdang.domain.project.repository.OfferRepository;
 import com.ll.dopdang.domain.project.repository.ProjectRepository;
 import com.ll.dopdang.global.exception.ErrorCode;
@@ -28,6 +29,14 @@ public class OfferService {
 	private final ProjectRepository projectRepository;
 	private final OfferRepository offerRepository;
 
+	/**
+	 * 전문가가 특정 프로젝트에 오퍼를 생성합니다.
+	 *
+	 * @param userDetails 로그인한 사용자 정보
+	 * @param projectId 오퍼를 보낼 프로젝트 ID
+	 * @param request 오퍼 생성 요청 정보 (가격, 작업일 등)
+	 * @throws ServiceException 전문가가 아니거나 프로젝트를 찾을 수 없는 경우
+	 */
 	public void createOffer(CustomUserDetails userDetails, Long projectId, OfferCreateRequest request) {
 		Expert expert = expertRepository.findByMemberId(userDetails.getId()).orElseThrow(
 			() -> new ServiceException(ErrorCode.NOT_A_EXPERT_USER));
@@ -43,8 +52,18 @@ public class OfferService {
 			.status(Offer.OfferStatus.PENDING)
 			.build();
 		offerRepository.save(offer);
+		project.updateStatus(ProjectStatus.IN_PROGRESS);
 	}
 
+	/**
+	 * 오퍼 상세 정보를 조회합니다.
+	 * 클라이언트(의뢰자) 또는 전문가(작성자)만 조회할 수 있습니다.
+	 *
+	 * @param userDetails 로그인한 사용자 정보
+	 * @param projectId 프로젝트 ID
+	 * @param offerId 오퍼 ID
+	 * @return 오퍼 상세 응답 DTO
+	 */
 	public OfferDetailResponse getOfferById(CustomUserDetails userDetails, Long projectId, Long offerId) {
 		Project project = projectRepository.findById(projectId).orElseThrow(
 			() -> new ServiceException(ErrorCode.PROJECT_NOT_FOUND));
@@ -103,11 +122,28 @@ public class OfferService {
 		}
 	}
 
+	/**
+	 * 오퍼 ID로 오퍼 엔티티를 조회합니다.
+	 * 내부 서비스용 (검증 없음)
+	 *
+	 * @param offerId 오퍼 ID
+	 * @return 오퍼 엔티티
+	 * @throws ServiceException 오퍼를 찾을 수 없는 경우
+	 */
 	public Offer getOfferById(Long offerId) {
 		return offerRepository.findById(offerId)
 			.orElseThrow(() -> new ServiceException(ErrorCode.OFFER_NOT_FOUND));
 	}
 
+	/**
+	 * 프로젝트 ID와 전문가 ID를 기반으로 오퍼를 조회합니다.
+	 * 클라이언트만 접근 가능하도록 권한 체크 포함.
+	 *
+	 * @param projectId 프로젝트 ID
+	 * @param expertId 전문가 ID
+	 * @param userDetails 로그인한 사용자 정보
+	 * @return 오퍼 엔티티
+	 */
 	public Offer getOfferByProjectAndExpert(Long projectId, Long expertId, CustomUserDetails userDetails) {
 		log.info("userDetails.getId(): {}", userDetails.getId());
 		if (userDetails == null) {

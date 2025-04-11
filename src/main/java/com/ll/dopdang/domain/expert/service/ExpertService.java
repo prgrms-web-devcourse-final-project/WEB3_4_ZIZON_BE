@@ -101,7 +101,7 @@ public class ExpertService {
 			// 새로운 포트폴리오 생성
 			Portfolio portfolio = Portfolio.builder()
 				.expert(expert)
-				.title(expertRequestDto.getPortfolioTitle() != null ? expertRequestDto.getPortfolioTitle() : "No Title") // 기본값 설정
+				.title(expertRequestDto.getPortfolioTitle() != null ? expertRequestDto.getPortfolioTitle() : "") // 기본값 설정
 				.imageUrl(expertRequestDto.getPortfolioImage() != null ? expertRequestDto.getPortfolioImage() : "") // 기본값: 빈 URL
 				.build();
 			// 새로 생성한 포트폴리오 저장
@@ -142,6 +142,39 @@ public class ExpertService {
 		}
 		// 데이터베이스 조회를 통한 필터링 결과
 	List<Expert> experts = expertRepository.findByFilters(categoryNames, minYears, maxYears);
+
+		// Expert 데이터를 DTO로 변환하여 반환
+		return experts.stream()
+			.map(this::mapToResponseDto)
+			.toList();
+	}
+
+	public List<ExpertResponseDto> searchExperts(List<String> categoryNames, String careerLevel, String name) {
+		Integer minYears = null;
+		Integer maxYears = null;
+
+		// careerLevel에 따른 경력 필터링 기준 설정
+		if (Objects.nonNull(careerLevel)) {
+			switch (careerLevel.toLowerCase()) {
+				case "junior": // 1~5년
+					minYears = 1;
+					maxYears = 5;
+					break;
+				case "senior": // 6~10년
+					minYears = 6;
+					maxYears = 10;
+					break;
+				case "expert": // 11년 이상
+					minYears = 11;
+					maxYears = 100; // 제한 없는 최대 값 설정
+					break;
+				default:
+					throw new IllegalArgumentException("Invalid careerLevel: " + careerLevel);
+			}
+		}
+
+		// 데이터베이스에서 조건에 맞는 전문가 조회
+		List<Expert> experts = expertRepository.findByFilters(categoryNames, minYears, maxYears, name);
 
 		// Expert 데이터를 DTO로 변환하여 반환
 		return experts.stream()

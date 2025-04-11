@@ -20,6 +20,7 @@ public class ProductListResponse {
 	private String name;
 	private String description;
 	private BigDecimal price;
+	private Integer stock;
 	private ProductType productType;
 	private String thumbnailUrl;
 	private String expertName;
@@ -32,6 +33,7 @@ public class ProductListResponse {
 			.name(product.getTitle())
 			.description(product.getDescription())
 			.price(product.getPrice())
+			.stock(product.getStock())
 			.productType(product.getProductType())
 			.thumbnailUrl(product.getThumbnailImage())
 			.expertName(product.getExpert().getMember().getName())

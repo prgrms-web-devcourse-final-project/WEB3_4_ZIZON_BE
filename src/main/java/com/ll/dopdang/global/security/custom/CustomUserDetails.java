@@ -17,9 +17,6 @@ import lombok.RequiredArgsConstructor;
  */
 @RequiredArgsConstructor
 public class CustomUserDetails implements UserDetails {
-	/**
-	 * 유저
-	 */
 	private final Member member;
 
 	/**

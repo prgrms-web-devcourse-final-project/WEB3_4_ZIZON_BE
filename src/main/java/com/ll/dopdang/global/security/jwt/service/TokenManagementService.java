@@ -78,8 +78,8 @@ public class TokenManagementService {
 		String accessToken1 = jwtUtil.createAccessToken(userDetails, accessExpiration);
 		String refreshToken = jwtUtil.createRefreshToken(userDetails, refreshExpiration);
 
-		Cookie accessTokenCookie = jwtUtil.setJwtCookie("accessToken", accessToken1, accessExpiration);
-		response.addCookie(accessTokenCookie);
+		String accessTokenCookie = jwtUtil.setJwtCookie("accessToken", accessToken1, accessExpiration);
+		response.addHeader("Set-Cookie", accessTokenCookie);
 
 		redisRepository.save(accessToken1, refreshToken, refreshExpiration, TimeUnit.MILLISECONDS);
 
@@ -115,8 +115,8 @@ public class TokenManagementService {
 		String newAccessToken = jwtUtil.createAccessToken(userDetails, accessExpiration);
 		String newRefreshToken = jwtUtil.createRefreshToken(userDetails, refreshExpiration);
 
-		Cookie newAccessTokenCookie = jwtUtil.setJwtCookie("accessToken", newAccessToken, accessExpiration);
-		response.addCookie(newAccessTokenCookie);
+		String accessTokenCookie = jwtUtil.setJwtCookie("accessToken", newAccessToken, accessExpiration);
+		response.addHeader("Set-Cookie", accessTokenCookie);
 
 		// Redis 업데이트
 		redisRepository.remove(accessToken1); // 이전 액세스 토큰 제거

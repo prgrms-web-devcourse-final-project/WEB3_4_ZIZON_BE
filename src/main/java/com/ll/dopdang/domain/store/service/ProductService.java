@@ -8,11 +8,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ll.dopdang.domain.expert.category.entity.Category;
-import com.ll.dopdang.domain.expert.category.repository.CategoryRepository;
 import com.ll.dopdang.domain.expert.category.service.CategoryService;
 import com.ll.dopdang.domain.expert.entity.Expert;
 import com.ll.dopdang.domain.member.entity.Member;
-import com.ll.dopdang.domain.member.service.MemberService;
 import com.ll.dopdang.domain.member.service.MemberUtilService;
 import com.ll.dopdang.domain.store.dto.DigitalContentDetailResponse;
 import com.ll.dopdang.domain.store.dto.ProductCreateRequest;
@@ -38,9 +36,7 @@ public class ProductService {
 	public final MemberUtilService memberUtilService;
 	private final ProductRepository productRepository;
 	private final CategoryService categoryService;
-	private final CategoryRepository categoryRepository;
 	private final DigitalContentRepository digitalContentRepository;
-	private final MemberService memberService;
 
 	/**
 	 * 상품 생성 메서드
@@ -66,8 +62,9 @@ public class ProductService {
 	public ProductListPageResponse getAllProducts(Pageable pageable, Long categoryId) {
 		Page<Product> page;
 		if (categoryId != null) {
-			page = productRepository.findAllByCategoryId(categoryId, pageable);
+			page = productRepository.findAllByCategoryOrderByStockAndCreatedAtDesc(categoryId, pageable);
 		} else {
+			// findAllOrderByStockAvailabilityAndCreatedAtDesc
 			page = productRepository.findAll(pageable);
 		}
 
@@ -145,5 +142,32 @@ public class ProductService {
 		if (ProductType.DIGITAL.equals(request.getProductType()) && (Objects.isEmpty(request.getDigitalContents()))) {
 			throw new ServiceException(ErrorCode.INVALID_PRODUCT_CONTENT);
 		}
+	}
+
+	/**
+	 * 상품 재고 감소 메서드
+	 * @param product 상품
+	 * @param quantity 감소시킬 수량
+	 * @return 업데이트된 상품
+	 */
+	public synchronized Product decreaseStock(Product product, Integer quantity) {
+		if (product.getStock() < quantity) {
+			throw new ServiceException(ErrorCode.INSUFFICIENT_STOCK);
+		}
+
+		Product updateProduct = Product.builder()
+			.id(product.getId())
+			.expert(product.getExpert())
+			.category(product.getCategory())
+			.title(product.getTitle())
+			.description(product.getDescription())
+			.thumbnailImage(product.getThumbnailImage())
+			.price(product.getPrice())
+			.stock(product.getStock() - quantity)
+			.productType(product.getProductType())
+			.status(product.getStatus())
+			.build();
+
+		return productRepository.save(updateProduct);
 	}
 }

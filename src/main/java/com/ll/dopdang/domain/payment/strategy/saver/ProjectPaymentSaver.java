@@ -24,11 +24,11 @@ public class ProjectPaymentSaver implements PaymentSaver {
 	private BigDecimal feeRate;
 
 	@Override
-	public Payment savePayment(Long referenceId, BigDecimal amount, BigDecimal fee, String paymentKey) {
+	public Payment savePayment(Long referenceId, BigDecimal amount, BigDecimal fee, String paymentKey, String orderId) {
 		Contract contract = contractService.getContractById(referenceId);
 
 		// 1. Payment 엔티티 생성 (paymentKey 포함)
-		Payment payment = Payment.createFromContract(contract, amount, fee, paymentKey);
+		Payment payment = Payment.createFromContract(contract, amount, fee, paymentKey, orderId);
 
 		// 2. PaymentDetail 엔티티 생성
 		PaymentDetail paymentDetail = PaymentDetail.createFromContract(payment, contract, amount, fee);
@@ -38,12 +38,12 @@ public class ProjectPaymentSaver implements PaymentSaver {
 	}
 
 	@Override
-	public Payment saveFailedPayment(Long referenceId, String errorCode, String errorMessage) {
+	public Payment saveFailedPayment(Long referenceId, String errorCode, String errorMessage, String orderId) {
 		Contract contract = contractService.getContractById(referenceId);
 		BigDecimal fee = contract.getPrice().multiply(feeRate); // 10% 수수료
 
 		// 1. 결제 실패한 Payment 엔티티 생성
-		Payment payment = Payment.createFailedPaymentFromContract(contract, fee);
+		Payment payment = Payment.createFailedPaymentFromContract(contract, BigDecimal.ZERO, orderId);
 
 		// 2. 결제 실패한 PaymentDetail 엔티티 생성
 		PaymentDetail paymentDetail = PaymentDetail.createFailedPaymentDetail(payment, contract, fee);

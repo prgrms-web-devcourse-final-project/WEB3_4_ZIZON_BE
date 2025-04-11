@@ -18,6 +18,7 @@ import lombok.NoArgsConstructor;
 public class ProjectListForAllResponse {
 
 	private Long id;
+	private Long categoryId;
 	private String title;
 	private String summary;
 	private String region;
@@ -38,6 +39,7 @@ public class ProjectListForAllResponse {
 
 		return ProjectListForAllResponse.builder()
 			.id(project.getId())
+			.categoryId(project.getCategory().getId())
 			.title(project.getTitle())
 			.summary(project.getSummary())
 			.region(project.getRegion())
