@@ -3,6 +3,7 @@ package com.ll.dopdang.domain.chatroom.service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -224,65 +225,100 @@ public class ChatService {
 	@Transactional(readOnly = true)
 	public List<ChatRoomResponse> getChatRoomsForUser(String member, Long currentUserId) {
 		String redisKey = String.format(CHAT_ROOMS_KEY_TEMPLATE, member);
-		// Redis에서 해당 사용자의 채팅방 정보를 해시로 가져옴
-		Map<Object, Object> redisEntries = redisTemplate.opsForHash().entries(redisKey);
-		List<ChatRoomResponse> dtoList = new ArrayList<>();
+		List<ChatRoom> dbRooms = chatRoomRepository.findByMember(member);
+		Set<String> dbRoomIds = dbRooms.stream()
+			.map(ChatRoom::getRoomId)
+			.collect(Collectors.toSet());
 
-		if (!redisEntries.isEmpty()) {
-			log.debug("Redis에서 채팅방 목록을 가져옵니다. member: {}", member);
-			// Redis에 저장된 값은 이미 채워진 ChatRoomResponse의 JSON 문자열이라고 가정
-			for (Map.Entry<Object, Object> entry : redisEntries.entrySet()) {
-				try {
-					ChatRoomResponse response = objectMapper.readValue((String) entry.getValue(), ChatRoomResponse.class);
-					dtoList.add(response);
-				} catch (Exception e) {
-					log.error("채팅방 응답 파싱 오류: {}", e.getMessage());
-				}
+		Map<Object, Object> roomSummaries = redisTemplate.opsForHash().entries(redisKey);
+		Set<String> redisRoomIds = new HashSet<>();
+		if (!roomSummaries.isEmpty()) {
+			redisRoomIds = roomSummaries.keySet().stream()
+				.map(Object::toString)
+				.collect(Collectors.toSet());
+		}
+
+		// DB와 Redis 간 채팅방 목록이 일치하는지 확인 후 동기화 여부 결정
+		boolean needsSync = false;
+		for (String roomId : dbRoomIds) {
+			if (!redisRoomIds.contains(roomId)) {
+				needsSync = true;
+				break;
 			}
-			// 최신 메시지 시간 기준 내림차순 정렬
-			dtoList.sort((a, b) -> {
-				if (a.getLastMessageTime() == null && b.getLastMessageTime() == null) return 0;
-				if (a.getLastMessageTime() == null) return 1;
-				if (b.getLastMessageTime() == null) return -1;
-				return b.getLastMessageTime().compareTo(a.getLastMessageTime());
-			});
-		} else {
-			log.debug("Redis 캐시 없음. DB에서 채팅방 목록 조회. member: {}", member);
-			List<ChatRoom> dbRooms = chatRoomRepository.findByMember(member);
+		}
+		for (String roomId : redisRoomIds) {
+			if (!dbRoomIds.contains(roomId)) {
+				needsSync = true;
+				break;
+			}
+		}
+		if (needsSync || roomSummaries.isEmpty()) {
+			log.debug("DB와 Redis 채팅방 목록이 일치하지 않아 동기화합니다. member: {}", member);
+			redisTemplate.delete(redisKey);
 			for (ChatRoom room : dbRooms) {
-				String otherEmail = room.getMember1().equalsIgnoreCase(member) ? room.getMember2() : room.getMember1();
-				// DB에서 해당 채팅방의 마지막 메시지 조회
-				List<ChatMessage> messages = chatMessageRepository.findTopMessagesByRoomIdOrderByTimestampDesc(room.getRoomId(), 1);
+				String roomId = room.getRoomId();
+				List<ChatMessage> messages = chatMessageRepository.findTopMessagesByRoomIdOrderByTimestampDesc(roomId, 1);
 				ChatMessage lastMessage = messages.isEmpty() ? null : messages.get(0);
-				int unreadCount = (int) getUnreadCount(room.getRoomId(), member);
-				Member currentMember = memberRepository.findByEmail(member)
-					.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자 없음"));
-				Member otherUser = memberRepository.findByEmail(otherEmail).orElse(null);
-
-				// 완전한 정보를 채워서 ChatRoomResponse 생성
-				ChatRoomResponse response = ChatRoomResponse.from(room, currentMember, otherUser, lastMessage, unreadCount);
-				dtoList.add(response);
-
-				try {
-					// 완전한 ChatRoomResponse 객체를 JSON 문자열로 변환하여 Redis에 저장
-					String json = objectMapper.writeValueAsString(response);
-					redisTemplate.opsForHash().put(redisKey, room.getRoomId(), json);
-				} catch (Exception e) {
-					log.error("Redis 캐시 저장 오류: {}", e.getMessage());
+				Long projectId = room.getProjectId();
+				String roomSummary = createRoomSummaryJson(roomId, lastMessage, projectId);
+				redisTemplate.opsForHash().put(redisKey, roomId, roomSummary);
+				if (lastMessage != null) {
+					updateChatRoomTimestamp(roomId, lastMessage.getTimestamp());
 				}
 			}
 			redisTemplate.expire(redisKey, CACHE_EXPIRATION, TimeUnit.MINUTES);
-
-			// 내림차순 정렬
-			dtoList.sort((a, b) -> {
-				if (a.getLastMessageTime() == null && b.getLastMessageTime() == null) return 0;
-				if (a.getLastMessageTime() == null) return 1;
-				if (b.getLastMessageTime() == null) return -1;
-				return b.getLastMessageTime().compareTo(a.getLastMessageTime());
-			});
+		} else {
+			log.debug("Redis에서 채팅방 목록을 가져옵니다. member: {}", member);
 		}
+
+		Member currentMember = memberRepository.findByEmail(member)
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
+
+		// 각 채팅방에 대해 Redis에 저장된 최신 타임스탬프를 가져와 표시용 마지막 메시지의 시간으로 활용
+		List<ChatRoomResponse> dtoList = dbRooms.stream().map(room -> {
+			// 상대방 이메일 결정
+			String otherEmail = room.getMember1().equalsIgnoreCase(member) ? room.getMember2() : room.getMember1();
+			Member otherUser = memberRepository.findByEmail(otherEmail).orElse(null);
+
+			// Redis에서 최신 메시지 타임스탬프를 조회
+			String timeKey = String.format(CHAT_ROOM_TIMESTAMP_KEY_TEMPLATE, room.getRoomId());
+			Object ts = redisTemplate.opsForValue().get(timeKey);
+			LocalDateTime redisTimestamp = null;
+			if (ts != null) {
+				try {
+					redisTimestamp = LocalDateTime.parse(ts.toString());
+				} catch (Exception e) {
+					log.error("Timestamp 파싱 실패 for room {}: {}", room.getRoomId(), e.getMessage());
+				}
+			}
+
+			// 기존에는 DB에서 마지막 메시지를 조회했으나, Redis 타임스탬프를 우선 반영하도록 함.
+			List<ChatMessage> messages = chatMessageRepository.findTopMessagesByRoomIdOrderByTimestampDesc(room.getRoomId(), 1);
+			ChatMessage lastMessage = messages.isEmpty() ? null : messages.get(0);
+			if (lastMessage != null && redisTimestamp != null) {
+				// 내용은 그대로 두되, 최신 타임스탬프로 업데이트
+				lastMessage.setTimestamp(redisTimestamp);
+			}
+
+			int unreadCount = (int) getUnreadCount(room.getRoomId(), member);
+
+			return ChatRoomResponse.from(room, currentMember, otherUser, lastMessage, unreadCount);
+		}).collect(Collectors.toList());
+
+		// Redis에 저장된 최신 타임스탬프(최종 메시지 시간) 기준으로 내림차순 정렬
+		dtoList.sort((a, b) -> {
+			LocalDateTime timeA = a.getLastMessageTime();
+			LocalDateTime timeB = b.getLastMessageTime();
+			if (timeA == null && timeB == null) return 0;
+			if (timeA == null) return 1;
+			if (timeB == null) return -1;
+			return timeB.compareTo(timeA); // 내림차순 정렬
+		});
+
 		return dtoList;
 	}
+
+
 
 	/**
 	 * 채팅방 캐시 업데이트 (각 사용자 Redis 해시 갱신)
@@ -290,7 +326,7 @@ public class ChatService {
 	private void updateChatRoomCache(String roomId, ChatMessage chatMessage) {
 		if (chatMessage == null) return;
 		ChatRoom room = chatRoomRepository.findByRoomId(roomId)
-			.orElseThrow(() -> new IllegalStateException("채팅방 없음"));
+			.orElseThrow(() -> new IllegalStateException("채팅방을 찾을 수 없습니다."));
 		Long projectId = room.getProjectId();
 		String keySender = String.format(CHAT_ROOMS_KEY_TEMPLATE, chatMessage.getSender());
 		String keyReceiver = String.format(CHAT_ROOMS_KEY_TEMPLATE, chatMessage.getReceiver());
@@ -306,11 +342,12 @@ public class ChatService {
 	 */
 	private String createRoomSummaryJson(String roomId, ChatMessage chatMessage, Long projectId) {
 		if (chatMessage != null) {
-			String content = chatMessage.getContent().replace("\"", "\\\"").replace("\n", "\\n");
+			String content = chatMessage.getContent()
+				.replace("\"", "\\\"")
+				.replace("\n", "\\n");
 			return "{\"roomId\":\"" + roomId + "\"," +
 				"\"lastMessage\":\"" + content + "\"," +
-				"\"timestamp\":\"" + chatMessage.getTimestamp() + "\"," +
-				"\"projectId\":" + projectId + "}";
+				"\"timestamp\":\"" + chatMessage.getTimestamp() + "\"}";
 		} else {
 			return "{\"roomId\":\"" + roomId + "\"," +
 				"\"projectId\":" + projectId + "}";
@@ -343,34 +380,6 @@ public class ChatService {
 			chatRoom.setProjectId(projectId);
 			chatRoom = chatRoomRepository.save(chatRoom);
 		}
-
-		// Redis 캐시 업데이트 (양쪽 사용자 모두)
-		String summaryForEmail = createRoomSummaryJsonExtended(chatRoom, email, receiverEmail, null);
-		String summaryForReceiver = createRoomSummaryJsonExtended(chatRoom, receiverEmail, email, null);
-		String redisKeyForEmail = String.format(CHAT_ROOMS_KEY_TEMPLATE, email);
-		String redisKeyForReceiver = String.format(CHAT_ROOMS_KEY_TEMPLATE, receiverEmail);
-
-		redisTemplate.opsForHash().put(redisKeyForEmail, roomId, summaryForEmail);
-		redisTemplate.expire(redisKeyForEmail, 60, TimeUnit.MINUTES);
-		redisTemplate.opsForHash().put(redisKeyForReceiver, roomId, summaryForReceiver);
-		redisTemplate.expire(redisKeyForReceiver, 60, TimeUnit.MINUTES);
-	}
-
-	/**
-	 * 확장된 채팅방 요약 JSON 생성 (본인, 상대방, 마지막 메시지, projectId 포함)
-	 */
-	private String createRoomSummaryJsonExtended(ChatRoom room, String selfEmail, String otherEmail, ChatMessage lastMessage) {
-		String lastMessageContent = "";
-		String timestamp = null;
-		if (lastMessage != null) {
-			lastMessageContent = lastMessage.getContent().replace("\"", "\\\"").replace("\n", "\\n");
-			timestamp = lastMessage.getTimestamp().toString();
-		}
-		return "{\"roomId\":\"" + room.getRoomId() + "\"," +
-			"\"otherEmail\":\"" + otherEmail + "\"," +
-			"\"lastMessage\":\"" + lastMessageContent + "\"," +
-			(timestamp != null ? "\"timestamp\":\"" + timestamp + "\"," : "") +
-			"\"projectId\":" + room.getProjectId() + "}";
 	}
 
 	/**
