@@ -49,7 +49,11 @@ public class ChatRoomResponse {
 			dto.setOtherUserId(otherUser.getId());
 			dto.setOtherUserName(otherUser.getName());
 			dto.setOtherUserProfile(otherUser.getProfileImage());
-			dto.setExpertId(otherUser.getId());
+			if (otherUser.getExpert() != null && otherUser.getExpert().getId() != null) {
+				dto.setExpertId(otherUser.getExpert().getMember().getId());
+			}else{
+				dto.setExpertId(currentMember.getId());
+			}
 		}
 		dto.setUnreadCount(unreadCount);
 		return dto;
