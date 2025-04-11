@@ -1,6 +1,8 @@
 package com.ll.dopdang.domain.chatroom.controller;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,11 +45,12 @@ public class ChatController {
 		summary = "채팅 내역 조회",
 		description = "두 사용자 간의 채팅 내역을 조회합니다."
 	)
-	@GetMapping("")
+	@GetMapping("/history")
 	public ResponseEntity<List<ChatRoomDetailResponse>> getHistory(
 		@RequestParam String sender,
-		@RequestParam String receiver) {
-		List<ChatRoomDetailResponse> messages = chatService.getChatRoomDetail(sender, receiver);
+		@RequestParam String receiver,
+		@RequestParam Long projectId) {
+		List<ChatRoomDetailResponse> messages = chatService.getChatRoomDetail(sender, receiver, projectId);
 		return ResponseEntity.ok(messages);
 	}
 
@@ -135,12 +138,16 @@ public class ChatController {
 		description = "새 채팅방을 생성합니다. (예: 프로젝트 관련 채팅 생성)"
 	)
 	@PostMapping
-	public ResponseEntity<String> createChatroom(@RequestParam Long projectId,
+	public ResponseEntity<Map<String, String>> createChatroom(
+		@RequestParam Long projectId,
 		@AuthenticationPrincipal CustomUserDetails customUserDetails) {
-		String senderEmail = customUserDetails.getMember().getEmail();
 
+		String senderEmail = customUserDetails.getMember().getEmail();
 		chatService.createChatroom(senderEmail, projectId);
 
-		return ResponseEntity.ok("채팅방이 생성되었습니다.");
+		Map<String, String> response = new HashMap<>();
+		response.put("message", "채팅방이 생성되었습니다.");
+
+		return ResponseEntity.ok(response);
 	}
 }

@@ -7,7 +7,7 @@ spring:
     active: dev
   config:
     import: optional:file:.env[.properties]
-  
+
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
@@ -16,7 +16,7 @@ spring:
     hikari:
       minimum-idle: 2   # 최소 커넥션 수
       maximum-pool-size: 5  # 최대 커넥션 수
-  
+
   jpa:
     show-sql: true
     properties:
@@ -25,13 +25,13 @@ spring:
         format_sql: true
     hibernate:
       ddl-auto: validate
-  
+
   data:
     redis:
       host: ${REDIS_HOST}
       port: 6379
       password: ${REDIS_PASSWORD}
-  
+
   cloud:
     openfeign:
       client:
@@ -39,14 +39,14 @@ spring:
           default:
             connectTimeout: 5000
             readTimeout: 5000
-    
+
     aws:
       credentials:
         access-key: ${CLOUD_AWS_CREDENTIALS_ACCESS_KEY}
         secret-key: ${CLOUD_AWS_CREDENTIALS_SECRET_KEY}
       region:
         static: ${CLOUD_AWS_REGION}
-  
+
   security:
     oauth2:
       client:

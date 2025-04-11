@@ -39,8 +39,7 @@ public interface ExpertRepository extends JpaRepository<Expert, Long> {
         @Param("name") String name
     );
 
-    @Query("SELECT e FROM Expert e WHERE LOWER(e.member.name) LIKE LOWER(CONCAT('%', :name, '%'))")
-    List<Expert> findByMemberNameContaining(@Param("name") String name);
-  
-	  boolean existsByMemberId(Long id);
+	@Query("SELECT e FROM Expert e WHERE LOWER(e.member.name) LIKE LOWER(CONCAT('%', :name, '%'))")
+	List<Expert> findByMemberNameContaining(@Param("name") String name);
+	boolean existsByMemberId(Long id);
 }
