@@ -62,7 +62,7 @@ public class ProductController {
 	@GetMapping
 	public ResponseEntity<?> getAllProducts(
 		@RequestParam(required = false) Long categoryId, // 선택한 제품 타입
-		@PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+		@PageableDefault(size = 10, sort = "created_at", direction = Sort.Direction.DESC) Pageable pageable) {
 
 		ProductListPageResponse response = productService.getAllProducts(pageable, categoryId);
 		return ResponseEntity.ok(response);
