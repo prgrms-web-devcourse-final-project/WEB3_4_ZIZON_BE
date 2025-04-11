@@ -50,7 +50,7 @@ public class ChatRoomResponse {
 			dto.setOtherUserName(otherUser.getName());
 			dto.setOtherUserProfile(otherUser.getProfileImage());
 			if (otherUser.getExpert() != null && otherUser.getExpert().getId() != null) {
-				dto.setExpertId(otherUser.getExpert().getMember().getId());
+				dto.setExpertId(otherUser.getExpert().getId());
 			}else{
 				dto.setExpertId(currentMember.getId());
 			}
