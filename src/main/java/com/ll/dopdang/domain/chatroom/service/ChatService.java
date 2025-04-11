@@ -229,6 +229,7 @@ public class ChatService {
 		Set<String> dbRoomIds = dbRooms.stream()
 			.map(ChatRoom::getRoomId)
 			.collect(Collectors.toSet());
+
 		Map<Object, Object> roomSummaries = redisTemplate.opsForHash().entries(redisKey);
 		Set<String> redisRoomIds = new HashSet<>();
 		if (!roomSummaries.isEmpty()) {
@@ -236,6 +237,8 @@ public class ChatService {
 				.map(Object::toString)
 				.collect(Collectors.toSet());
 		}
+
+		// DB와 Redis 간 채팅방 목록이 일치하는지 확인 후 동기화 여부 결정
 		boolean needsSync = false;
 		for (String roomId : dbRoomIds) {
 			if (!redisRoomIds.contains(roomId)) {
@@ -271,23 +274,50 @@ public class ChatService {
 		Member currentMember = memberRepository.findByEmail(member)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
 
+		// 각 채팅방에 대해 Redis에 저장된 최신 타임스탬프를 가져와 표시용 마지막 메시지의 시간으로 활용
 		List<ChatRoomResponse> dtoList = dbRooms.stream().map(room -> {
 			// 상대방 이메일 결정
 			String otherEmail = room.getMember1().equalsIgnoreCase(member) ? room.getMember2() : room.getMember1();
 			Member otherUser = memberRepository.findByEmail(otherEmail).orElse(null);
 
-			// 마지막 메시지 조회
+			// Redis에서 최신 메시지 타임스탬프를 조회
+			String timeKey = String.format(CHAT_ROOM_TIMESTAMP_KEY_TEMPLATE, room.getRoomId());
+			Object ts = redisTemplate.opsForValue().get(timeKey);
+			LocalDateTime redisTimestamp = null;
+			if (ts != null) {
+				try {
+					redisTimestamp = LocalDateTime.parse(ts.toString());
+				} catch (Exception e) {
+					log.error("Timestamp 파싱 실패 for room {}: {}", room.getRoomId(), e.getMessage());
+				}
+			}
+
+			// 기존에는 DB에서 마지막 메시지를 조회했으나, Redis 타임스탬프를 우선 반영하도록 함.
 			List<ChatMessage> messages = chatMessageRepository.findTopMessagesByRoomIdOrderByTimestampDesc(room.getRoomId(), 1);
 			ChatMessage lastMessage = messages.isEmpty() ? null : messages.get(0);
+			if (lastMessage != null && redisTimestamp != null) {
+				// 내용은 그대로 두되, 최신 타임스탬프로 업데이트
+				lastMessage.setTimestamp(redisTimestamp);
+			}
 
-			// 미확인 메시지 수 조회
 			int unreadCount = (int) getUnreadCount(room.getRoomId(), member);
 
 			return ChatRoomResponse.from(room, currentMember, otherUser, lastMessage, unreadCount);
 		}).collect(Collectors.toList());
 
+		// Redis에 저장된 최신 타임스탬프(최종 메시지 시간) 기준으로 내림차순 정렬
+		dtoList.sort((a, b) -> {
+			LocalDateTime timeA = a.getLastMessageTime();
+			LocalDateTime timeB = b.getLastMessageTime();
+			if (timeA == null && timeB == null) return 0;
+			if (timeA == null) return 1;
+			if (timeB == null) return -1;
+			return timeB.compareTo(timeA); // 내림차순 정렬
+		});
+
 		return dtoList;
 	}
+
 
 
 	/**
