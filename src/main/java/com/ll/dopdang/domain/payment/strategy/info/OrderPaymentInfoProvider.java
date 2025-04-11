@@ -62,8 +62,17 @@ public class OrderPaymentInfoProvider implements PaymentOrderInfoProvider {
 
 	@Override
 	public PaymentResultResponse enrichPaymentResult(Payment payment, PaymentResultResponse baseResponse) {
-		// 주문 결제에는 전문가 정보가 없으므로 기본 응답 반환
-		return baseResponse;
+
+		Product product = productService.findById(payment.getReferenceId());
+
+		return PaymentResultResponse.builder()
+			.status(baseResponse.getStatus())
+			.amount(baseResponse.getAmount())
+			.errorCode(baseResponse.getErrorCode())
+			.message(baseResponse.getMessage())
+			.expertName(product.getExpert().getMember().getName())
+			.paymentName(payment.getItemsSummary())
+			.build();
 	}
 
 	/**
