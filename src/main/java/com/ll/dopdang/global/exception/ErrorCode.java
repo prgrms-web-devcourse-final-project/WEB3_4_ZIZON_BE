@@ -86,6 +86,7 @@ public enum ErrorCode {
 	INVALID_PRODUCT_CONTENT(HttpStatus.BAD_REQUEST, "디지털 상품의 내용은 필수입니다."),
 	INVALID_PRODUCT_PRICE(HttpStatus.BAD_REQUEST, "상품의 가격은 0원 이상이어야 합니다."),
 	INVALID_PRODUCT_STOCK(HttpStatus.BAD_REQUEST, "상품의 재고는 -1 이상이어야 합니다."),
+	INSUFFICIENT_STOCK(HttpStatus.BAD_REQUEST, "상품의 재고가 부족합니다."),
 
 	// S3 Presigned URL 생성 관련
 	PRESIGNED_URL_CREATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Presigned URL 생성 중 알 수 없는 오류가 발생했습니다."),
@@ -104,6 +105,10 @@ public enum ErrorCode {
 	// 리뷰 통계 관련 에러
 	REVIEW_STATS_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 리뷰 통계가 존재합니다."),
 	REVIEW_STATS_NOT_FOUND(HttpStatus.NOT_FOUND, "리뷰를 통계를 찾을 수 없습니다.");
+
+	//채팅 관련 에러
+	CHATTING_EQUALS_EMAIL(HttpStatus.BAD_REQUEST, "자신에게는 메시지를 보낼 수 없습니다.");
+
 	private final HttpStatus status;
 	private final String message;
 }

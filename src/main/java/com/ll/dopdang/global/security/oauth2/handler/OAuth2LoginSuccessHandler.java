@@ -1,8 +1,6 @@
 package com.ll.dopdang.global.security.oauth2.handler;
 
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -66,11 +64,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
 		tokenManagementService.createAndStoreTokens(userDetails, resp);
 
-		SocialLoginResponse dtoResp = createSocialLoginResponse(member);
-
-		setJsonResponse(resp, dtoResp);
-
-		redirectToFrontend(resp, tokenManagementService.getAccessToken(), dtoResp);
+		redirectToFrontend(resp);
 	}
 
 	/**
@@ -182,19 +176,10 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 	/**
 	 * 소셜 로그인 후 프론트 페이지로 리다이렉트
 	 * @param resp HttpServletResponse
-	 * @param accessToken 엑세스 토큰
-	 * @param userInfo 로그인 유저 정보
 	 * @throws IOException 예외
 	 */
-	private void redirectToFrontend(HttpServletResponse resp, String accessToken, SocialLoginResponse userInfo) throws
+	private void redirectToFrontend(HttpServletResponse resp) throws
 		IOException {
-		String encodedUserInfo = URLEncoder.encode(objectMapper.writeValueAsString(userInfo), StandardCharsets.UTF_8);
-		String redirectUrl = String.format("%s/login?token=%s&user=%s",
-			frontendUrl,
-			accessToken,
-			encodedUserInfo
-		);
-
-		resp.sendRedirect(redirectUrl);
+		resp.sendRedirect(frontendUrl);
 	}
 }

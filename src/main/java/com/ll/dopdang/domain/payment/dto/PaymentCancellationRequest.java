@@ -2,8 +2,6 @@ package com.ll.dopdang.domain.payment.dto;
 
 import java.math.BigDecimal;
 
-import com.ll.dopdang.domain.payment.entity.PaymentType;
-
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -21,11 +19,8 @@ import lombok.Setter;
 @AllArgsConstructor
 public class PaymentCancellationRequest {
 
-	@NotNull(message = "결제 유형은 필수입니다.")
-	private PaymentType paymentType;
-
-	@NotNull(message = "참조 ID는 필수입니다.")
-	private Long referenceId;
+	@NotNull(message = "주문 번호는 필수입니다.")
+	private String orderId;
 
 	@NotNull(message = "취소 사유는 필수입니다.")
 	private String cancelReason;

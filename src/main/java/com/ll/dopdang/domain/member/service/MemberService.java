@@ -20,12 +20,16 @@ import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.global.redis.repository.RedisRepository;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
+import com.ll.dopdang.global.security.jwt.service.TokenManagementService;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * MemberService
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MemberService {
@@ -34,6 +38,7 @@ public class MemberService {
 	private final PasswordEncoder passwordEncoder;
 	private final RedisRepository redisRepository;
 	private final MemberUtilService memberUtilService;
+	private final TokenManagementService tokenManagementService;
 
 	// Todo: MemberUtilService의 findMember() 사용하도록 코드 수정
 	public Member getMemberById(Long id) {
@@ -184,5 +189,22 @@ public class MemberService {
 		}
 		Member updateMember = Member.updatePassword(member, request, passwordEncoder);
 		memberRepository.save(updateMember);
+	}
+
+	@Transactional
+	public void toggleUserView(Long id, CustomUserDetails userDetails, HttpServletResponse resp) {
+		memberUtilService.isValidMember(id, userDetails);
+		Member member = memberUtilService.findMember(id);
+		if (!Objects.equals(member.getUserRole(), MemberRole.EXPERT.toString())) {
+			throw new ServiceException(ErrorCode.NOT_A_EXPERT_USER);
+		}
+		log.info("현재 사용자의 isClient 값 : {}", member.isClient());
+
+		Member updateMember = Member.toggleUserView(member);
+		memberRepository.save(updateMember);
+		log.info("현재 사용자의 isClient 값 : {}", updateMember.isClient());
+
+		CustomUserDetails updateUserDetails = new CustomUserDetails(updateMember);
+		tokenManagementService.createAndStoreTokens(updateUserDetails, resp);
 	}
 }
