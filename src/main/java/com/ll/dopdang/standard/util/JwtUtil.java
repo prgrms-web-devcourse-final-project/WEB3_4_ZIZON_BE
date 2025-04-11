@@ -174,10 +174,9 @@ public class JwtUtil {
 		return ResponseCookie.from(key, value)
 			.path("/")
 			.sameSite("None")
-			.secure(true)
-			.domain("https://www.dopdang.shop")
+			.secure(false)
 			.maxAge(expiration / 1000)
-			.httpOnly(true)
+			.httpOnly(false)
 			.build()
 			.toString();
 	}
