@@ -20,6 +20,8 @@ import com.ll.dopdang.domain.payment.strategy.info.PaymentInfoProviderFactory;
 import com.ll.dopdang.domain.payment.strategy.saver.PaymentSaverFactory;
 import com.ll.dopdang.domain.payment.util.PaymentConstants;
 import com.ll.dopdang.domain.payment.util.TossPaymentUtils;
+import com.ll.dopdang.domain.store.entity.Product;
+import com.ll.dopdang.domain.store.service.ProductService;
 import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.global.redis.repository.RedisRepository;
@@ -43,6 +45,7 @@ public class PaymentProcessingService {
 	private final PaymentVerificationService paymentVerificationService;
 	private final PaymentQueryService paymentQueryService;
 	private final PaymentInfoProviderFactory paymentInfoProviderFactory;
+	private final ProductService productService;
 
 	@Value("${payment.toss.secretKey}")
 	private String tossSecretKey;
@@ -67,13 +70,20 @@ public class PaymentProcessingService {
 		Long referenceId = orderInfo.getReferenceId();
 
 		// 결제 금액 검증
-		paymentVerificationService.validatePaymentAmount(paymentType, referenceId, amount);
+		paymentVerificationService.validatePaymentAmount(paymentType, referenceId, amount, orderId);
+
+		// 상품 재고 감소 처리
+		Product product = productService.findById(referenceId);
+		Product updatedProduct = productService.decreaseStock(product, orderInfo.getQuantity());
+
+		log.info("상품 재고 감소 처리 완료: productId={}, quantity={}, remainingStock={}",
+			referenceId, orderInfo.getQuantity(), updatedProduct.getStock());
 
 		// 토스페이먼츠 API 호출
 		String responseBody = callTossPaymentsApi(paymentKey, orderId, amount);
 
 		// 결제 정보 저장
-		Payment payment = savePaymentInformation(paymentType, referenceId, amount, responseBody);
+		Payment payment = savePaymentInformation(paymentType, referenceId, amount, responseBody, orderId);
 
 		// Redis에서 주문 정보 삭제
 		redisRepository.remove(PaymentConstants.KEY_PREFIX + orderId);
@@ -115,7 +125,7 @@ public class PaymentProcessingService {
 
 			// 전략 패턴을 사용하여 결제 유형에 맞는 결제 실패 데이터 저장 로직 실행
 			Payment payment = saverFactory.getSaver(paymentType)
-				.saveFailedPayment(referenceId, errorCode, errorMessage);
+				.saveFailedPayment(referenceId, errorCode, errorMessage, orderId);
 
 			// 실패 메타데이터 추가
 			PaymentMetadata.createFailedPaymentMetadata(payment, metadataJson);
@@ -163,7 +173,7 @@ public class PaymentProcessingService {
 	 */
 	@Transactional
 	public Payment savePaymentInformation(PaymentType paymentType, Long referenceId, BigDecimal amount,
-		String responseBody) {
+		String responseBody, String orderId) {
 		try {
 			// 토스페이먼츠 응답에서 paymentKey 추출
 			Map<String, Object> responseMap = objectMapper.readValue(responseBody, Map.class);
@@ -174,7 +184,7 @@ public class PaymentProcessingService {
 
 			// 전략 패턴을 사용하여 결제 유형에 맞는 저장 로직 실행
 			Payment payment = saverFactory.getSaver(paymentType)
-				.savePayment(referenceId, amount, fee, paymentKey);
+				.savePayment(referenceId, amount, fee, paymentKey, orderId);
 
 			// PaymentMetadata 엔티티 생성
 			PaymentMetadata.createPaymentMetadata(payment, responseBody);
