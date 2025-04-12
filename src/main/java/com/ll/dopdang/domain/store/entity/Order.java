@@ -55,4 +55,13 @@ public class Order extends BaseEntity {
 	@Column(name = "payment_method")
 	private String paymentMethod;
 
+	public static Order from(Member member, String orderNumber, BigDecimal totalAmount, OrderStatus status, String paymentMethod) {
+		return Order.builder()
+			.member(member)
+			.orderNumber(orderNumber)
+			.totalAmount(totalAmount)
+			.status(status)
+			.paymentMethod(paymentMethod)
+			.build();
+	}
 }

@@ -1,5 +1,6 @@
 package com.ll.dopdang.domain.store.entity;
 
+import com.ll.dopdang.domain.store.dto.DigitalContentProjection;
 import com.ll.dopdang.domain.store.dto.DigitalContentRequest;
 import com.ll.dopdang.domain.store.dto.DigitalContentUpdateRequest;
 
@@ -59,6 +60,17 @@ public class DigitalContent {
 			.fileSize(request.getFileSize())
 			.fileType(request.getFileType())
 			.downloadLimit(request.getDownloadLimit())
+			.build();
+	}
+
+	public static DigitalContent from(DigitalContentProjection projection) {
+		return DigitalContent.builder()
+			.id(projection.getId())
+			.fileName(projection.getFileName())
+			.fileUrl(projection.getFileUrl())
+			.fileSize(projection.getFileSize())
+			.fileType(projection.getFileType())
+			.downloadLimit(projection.getDownloadLimit())
 			.build();
 	}
 

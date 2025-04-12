@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class OrderListResponse {
+public class OrderResponse {
 	private Long id;
 	private String orderId;
 	private String sellerName;
@@ -32,8 +32,8 @@ public class OrderListResponse {
 	private LocalDateTime orderedAt;
 	private List<DigitalContent> digitalContent;
 
-	public static OrderListResponse of(Map<String, Object> orderDetails, List<DigitalContent> digitalContents) {
-		return OrderListResponse.builder()
+	public static OrderResponse of(Map<String, Object> orderDetails, List<DigitalContent> digitalContents) {
+		return OrderResponse.builder()
 			.id(((Number)orderDetails.get("id")).longValue())
 			.orderId((String)orderDetails.get("order_number"))
 			.sellerName((String)orderDetails.get("seller_name"))
