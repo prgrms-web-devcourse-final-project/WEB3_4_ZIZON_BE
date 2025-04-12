@@ -150,4 +150,20 @@ public class ChatController {
 
 		return ResponseEntity.ok(response);
 	}
+
+	@Operation(
+		summary = "채팅방 나가기",
+		description = "사용자가 채팅방에서 나갑니다. (멤버에 따라 active 플래그를 false로 업데이트)"
+	)
+	@PostMapping("/{roomId}/leave")
+	public ResponseEntity<?> leaveChatRoom(
+		@PathVariable String roomId,
+		@RequestParam String username) {
+		try {
+			chatService.leaveChatRoomUser(roomId, username);
+			return ResponseEntity.ok("채팅방에서 나갔습니다.");
+		} catch (RuntimeException e) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("채팅방을 찾을 수 없습니다.");
+		}
+	}
 }

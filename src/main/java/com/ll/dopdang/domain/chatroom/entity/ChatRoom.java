@@ -40,6 +40,9 @@ public class ChatRoom {
 
 	private Long projectId;
 
+	private boolean memberActive1 = true;
+	private boolean memberActive2 = true;
+
 	@OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	@JsonManagedReference
 	private List<ChatMessage> messages = new ArrayList<>();
