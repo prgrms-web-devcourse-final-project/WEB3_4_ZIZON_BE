@@ -49,8 +49,8 @@ public class OrderPaymentSaver implements PaymentSaver {
 		String title = productDetail.getTitle();
 
 		PaymentOrderInfo paymentOrderInfo = paymentQueryService.getPaymentOrderInfoByOrderId(orderId);
-		Integer quantity = paymentOrderInfo.getQuantity();
-		Member member = memberService.getMemberById(paymentOrderInfo.getMemberId());
+		Integer quantity = paymentOrderInfo.quantity();
+		Member member = memberService.getMemberById(paymentOrderInfo.memberId());
 
 		// 주문 결제 정보 생성
 		Payment payment = Payment.builder()
@@ -104,8 +104,8 @@ public class OrderPaymentSaver implements PaymentSaver {
 		String title = product.getTitle();
 
 		PaymentOrderInfo paymentOrderInfo = paymentQueryService.getPaymentOrderInfoByOrderId(orderId);
-		Integer quantity = paymentOrderInfo.getQuantity();
-		Member member = memberService.getMemberById(paymentOrderInfo.getMemberId());
+		Integer quantity = paymentOrderInfo.quantity();
+		Member member = memberService.getMemberById(paymentOrderInfo.memberId());
 
 		// 실패한 주문 결제 정보 생성
 		Payment payment = Payment.builder()

@@ -48,14 +48,14 @@ public class OrderPaymentInfoProvider implements PaymentOrderInfoProvider {
 		PaymentOrderInfo orderInfo = paymentQueryService.getPaymentOrderInfoByOrderId(orderId);
 
 		Map<String, Object> additionalInfo = new HashMap<>();
-		BigDecimal totalPrice = product.getPrice().multiply(BigDecimal.valueOf(orderInfo.getQuantity()));
+		BigDecimal totalPrice = product.getPrice().multiply(BigDecimal.valueOf(orderInfo.quantity()));
 
 		// 상품 정보 추가
 		additionalInfo.put("title", product.getTitle());
 		additionalInfo.put("price", product.getPrice());
 		additionalInfo.put("totalPrice", totalPrice);
 		additionalInfo.put("sellerName", product.getExpertName());
-		additionalInfo.put("clientId", orderInfo.getMemberId());
+		additionalInfo.put("clientId", orderInfo.memberId());
 
 		return additionalInfo;
 	}
