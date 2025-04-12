@@ -27,6 +27,8 @@ import com.ll.dopdang.domain.chatroom.entity.ChatMessage;
 import com.ll.dopdang.domain.chatroom.entity.ChatRoom;
 import com.ll.dopdang.domain.chatroom.repository.ChatMessageRepository;
 import com.ll.dopdang.domain.chatroom.repository.ChatRoomRepository;
+import com.ll.dopdang.domain.expert.entity.Expert;
+import com.ll.dopdang.domain.expert.repository.ExpertRepository;
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.repository.MemberRepository;
 import com.ll.dopdang.domain.project.dto.ProjectDetailResponse;
@@ -58,6 +60,7 @@ public class ChatService {
 	private static final String ACTIVE_ROOMS_KEY = "chat:active_rooms";
 	private static final long CACHE_EXPIRATION = 30;
 	private static final long LOCK_EXPIRATION = 10;
+	private final ExpertRepository expertRepository;
 
 	/**
 	 * 프로젝트 ID, sender, receiver를 기반으로 채팅방 ID를 생성합니다.
@@ -89,6 +92,7 @@ public class ChatService {
 
 		// 수정된 getRoomId 메소드로 채팅방 ID 생성
 		String roomId = getRoomId(chatMessage.getSender(), chatMessage.getReceiver(), projectId);
+
 		// 채팅방 조회 또는 생성
 		ChatRoom chatRoom = chatRoomRepository.findByRoomId(roomId)
 			.orElseGet(() -> {
@@ -99,8 +103,31 @@ public class ChatService {
 				newRoom.setProjectId(projectId);
 				return chatRoomRepository.save(newRoom);
 			});
+
+		// 메시지 객체에 채팅방 정보 설정
 		chatMessage.setRoomId(chatRoom.getRoomId());
 		chatMessage.setChatRoom(chatRoom);
+
+		// 파트너 active 상태 확인:
+		// sender가 member1이면 partner는 member2, 아니면 partner는 member1
+		if (chatMessage.getSender().equals(chatRoom.getMember1())) {
+			if (!chatRoom.isMemberActive2()) {
+				// 프론트엔드에 /queue/partner-left 경로로 알림 전송
+				messagingTemplate.convertAndSendToUser(
+					chatMessage.getSender(), "/queue/partner-left", "상대방이 채팅방을 나갔습니다."
+				);
+				throw new ServiceException(ErrorCode.CHATTING_CLOSE_OTHER);
+			}
+		} else if (chatMessage.getSender().equals(chatRoom.getMember2())) {
+			if (!chatRoom.isMemberActive1()) {
+				messagingTemplate.convertAndSendToUser(
+					chatMessage.getSender(), "/queue/partner-left", "상대방이 채팅방을 나갔습니다."
+				);
+				throw new ServiceException(ErrorCode.CHATTING_CLOSE_OTHER);
+			}
+		} else {
+			throw new ServiceException(ErrorCode.CHATTING_SENDER_EQUAL);
+		}
 
 		// Redis 캐시에 메시지 추가 (오른쪽에 추가)
 		String redisKey = String.format(CHAT_MESSAGES_KEY_TEMPLATE, chatRoom.getRoomId());
@@ -336,6 +363,32 @@ public class ChatService {
 		ProjectDetailResponse projectDetail = projectService.getProjectById(projectId);
 		String receiverEmail = projectDetail.getEmails().trim().toLowerCase();
 		email = email.trim().toLowerCase();
+
+		if (email.equals(receiverEmail)) {
+			throw new ServiceException(ErrorCode.CHATTING_EQUALS_EMAIL);
+		}
+
+		// 프로젝트 ID를 포함하여 채팅방 ID 생성
+		String roomId = getRoomId(email, receiverEmail, projectId);
+		Optional<ChatRoom> existingChatRoom = chatRoomRepository.findByRoomId(roomId);
+		ChatRoom chatRoom;
+		if (existingChatRoom.isPresent()) {
+			chatRoom = existingChatRoom.get();
+		} else {
+			chatRoom = new ChatRoom();
+			chatRoom.setRoomId(roomId);
+			chatRoom.setMember1(email);
+			chatRoom.setMember2(receiverEmail);
+			chatRoom.setProjectId(projectId);
+			chatRoom = chatRoomRepository.save(chatRoom);
+		}
+	}
+
+	public void createExpertChatroom(Long expertId, Long projectId) {
+		ProjectDetailResponse projectDetail = projectService.getProjectById(projectId);
+		String receiverEmail = projectDetail.getEmails().trim().toLowerCase();
+		Expert expert = expertRepository.findById(expertId).orElseThrow();
+		String email = expert.getMember().getEmail();
 
 		if (email.equals(receiverEmail)) {
 			throw new ServiceException(ErrorCode.CHATTING_EQUALS_EMAIL);
