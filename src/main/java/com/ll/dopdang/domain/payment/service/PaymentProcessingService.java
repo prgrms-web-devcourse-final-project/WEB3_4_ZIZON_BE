@@ -20,7 +20,6 @@ import com.ll.dopdang.domain.payment.strategy.info.PaymentInfoProviderFactory;
 import com.ll.dopdang.domain.payment.strategy.saver.PaymentSaverFactory;
 import com.ll.dopdang.domain.payment.util.PaymentConstants;
 import com.ll.dopdang.domain.payment.util.TossPaymentUtils;
-import com.ll.dopdang.domain.store.entity.Product;
 import com.ll.dopdang.domain.store.service.ProductService;
 import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
@@ -72,13 +71,9 @@ public class PaymentProcessingService {
 		// 결제 금액 검증
 		paymentVerificationService.validatePaymentAmount(paymentType, referenceId, amount, orderId);
 
-		// 상품 재고 감소 처리
-		Product product = productService.findById(referenceId);
-		Product updatedProduct = productService.decreaseStock(product, orderInfo.getQuantity());
-
-		log.info("상품 재고 감소 처리 완료: productId={}, quantity={}, remainingStock={}",
-			referenceId, orderInfo.getQuantity(), updatedProduct.getStock());
-
+		// 상품 재고 감소 처리 - ORDER 타입인 경우에만 수행
+		productService.decreaseStock(paymentType, referenceId, orderInfo.getQuantity());
+		
 		// 토스페이먼츠 API 호출
 		String responseBody = callTossPaymentsApi(paymentKey, orderId, amount);
 
