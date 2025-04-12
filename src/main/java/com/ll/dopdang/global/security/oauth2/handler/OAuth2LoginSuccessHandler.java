@@ -99,12 +99,12 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 				Map<String, Object> properties = (Map<String, Object>)attributes.get("properties");
 				name = (String)properties.get("nickname");
 				profileImg = (String)properties.get("profile_image");
-				providerId = String.valueOf(attributes.get("id"));
+				providerId = String.valueOf(properties.get("id"));
 
 				return Member.builder()
 					.id(userId)
 					.name(name)
-					.email(name + "@kakao.com")
+					.email(providerId + "@kakao.com")
 					.profileImage(profileImg)
 					.memberId(providerId)
 					.userRole(MemberRole.CLIENT.toString())

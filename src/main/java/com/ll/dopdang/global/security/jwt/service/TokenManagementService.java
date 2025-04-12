@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -172,6 +173,25 @@ public class TokenManagementService {
 		cookie.setMaxAge(0);
 		cookie.setPath("/");
 		cookie.setHttpOnly(true);
+		cookie.setDomain(".dopdang.shop");
 		return cookie;
+	}
+
+	/**
+	 * 쿠키 무효화 수정 버전
+	 * @param key
+	 * @param value
+	 * @return
+	 */
+	public String deleteCookie(String key, String value) {
+		return ResponseCookie.from(key, value)
+			.path("/")
+			.sameSite("None")
+			.secure(true)
+			.domain(".dopdang.shop")
+			.maxAge(0)
+			.httpOnly(true)
+			.build()
+			.toString();
 	}
 }

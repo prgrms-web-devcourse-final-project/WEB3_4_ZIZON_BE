@@ -217,6 +217,7 @@ public class MemberController {
 		return ResponseEntity.ok().body(Map.of("message", "사용자 뷰 상태가 변경되었습니다."));
 	}
 
+
 	@Operation(summary = "내가 판매중인 상품 조회")
 	@GetMapping("/my-selling-products")
 	public ResponseEntity<?> findByMySellingProducts(
@@ -237,5 +238,10 @@ public class MemberController {
 		OrderListPageResponse response = orderService.findMyPurchasedProducts(pageable, userDetails);
 
 		return ResponseEntity.ok().body(response);
+
+	@GetMapping("/profile")
+	public ResponseEntity<?> getUserAllData(@AuthenticationPrincipal CustomUserDetails userDetails) {
+		return ResponseEntity.ok(memberService.getUserAllData(userDetails));
+
 	}
 }

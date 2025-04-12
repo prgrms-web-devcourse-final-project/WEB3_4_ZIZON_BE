@@ -72,8 +72,11 @@ public class JwtLogoutHandler implements LogoutHandler {
 			// 토큰 무효화
 			tokenManagementService.invalidateTokens(accessToken);
 
-			// 쿠키 무효화
-			resp.addCookie(tokenManagementService.invalidateCookie("accessToken"));
+			String deleteToken = tokenManagementService.deleteCookie("accessToken", accessToken);
+			resp.addHeader("Set-Cookie", deleteToken);
+			
+			// // 쿠키 무효화
+			// resp.addCookie(tokenManagementService.invalidateCookie("accessToken"));
 
 			log.info("로그아웃 처리 - 토큰 무효화 완료");
 		} else {
