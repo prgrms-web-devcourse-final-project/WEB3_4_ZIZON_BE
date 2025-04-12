@@ -11,6 +11,7 @@ import com.ll.dopdang.domain.member.dto.request.MemberSignupRequest;
 import com.ll.dopdang.domain.member.dto.request.PasswordUpdateRequest;
 import com.ll.dopdang.domain.member.dto.request.UpdateProfileRequest;
 import com.ll.dopdang.domain.member.dto.request.VerifyCodeRequest;
+import com.ll.dopdang.domain.member.dto.response.LoginResponse;
 import com.ll.dopdang.domain.member.dto.response.UpdateProfileResponse;
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.entity.MemberRole;
@@ -206,5 +207,14 @@ public class MemberService {
 
 		CustomUserDetails updateUserDetails = new CustomUserDetails(updateMember);
 		tokenManagementService.createAndStoreTokens(updateUserDetails, resp);
+	}
+
+	@Transactional
+	public LoginResponse getUserAllData(CustomUserDetails userDetails) {
+		if (userDetails == null) {
+			throw new ServiceException(ErrorCode.MEMBER_NOT_FOUND);
+		}
+		Member member = memberUtilService.findMember(userDetails.getId());
+		return LoginResponse.of(member);
 	}
 }

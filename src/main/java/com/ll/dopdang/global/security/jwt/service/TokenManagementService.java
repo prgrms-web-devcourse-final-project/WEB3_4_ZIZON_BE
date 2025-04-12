@@ -172,6 +172,7 @@ public class TokenManagementService {
 		cookie.setMaxAge(0);
 		cookie.setPath("/");
 		cookie.setHttpOnly(true);
+		cookie.setDomain(".dopdang.shop");
 		return cookie;
 	}
 }
