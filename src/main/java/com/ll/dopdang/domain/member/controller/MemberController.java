@@ -238,7 +238,8 @@ public class MemberController {
 		OrderListPageResponse response = orderService.findMyPurchasedProducts(pageable, userDetails);
 
 		return ResponseEntity.ok().body(response);
-
+	}
+	
 	@GetMapping("/profile")
 	public ResponseEntity<?> getUserAllData(@AuthenticationPrincipal CustomUserDetails userDetails) {
 		return ResponseEntity.ok(memberService.getUserAllData(userDetails));
