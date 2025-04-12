@@ -17,4 +17,5 @@ public record OrderIdRequest(
 
 	@Min(value = 1, message = "수량은 1 이상이어야 합니다")
 	Integer quantity // 수량 (선택적, 제공된 경우 1 이상)
-) {}
+) {
+}

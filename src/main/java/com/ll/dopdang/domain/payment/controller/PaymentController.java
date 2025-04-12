@@ -120,10 +120,10 @@ public class PaymentController {
 	public ResponseEntity<?> cancelPayment(
 		@Parameter(description = "결제 취소 요청") @RequestBody @Valid PaymentCancellationRequest request) {
 		log.info("결제 취소 요청: orderId={}, reason={}, amount={}",
-			request.getOrderId(), request.getCancelReason(), request.getCancelAmount());
+			request.orderId(), request.cancelReason(), request.cancelAmount());
 
-		Payment payment = paymentCancellationService.cancelPayment(request.getOrderId(), request.getCancelReason(),
-			request.getCancelAmount());
+		Payment payment = paymentCancellationService.cancelPayment(request.orderId(), request.cancelReason(),
+			request.cancelAmount());
 
 		return ResponseEntity.ok(PaymentCancellationResponse.from(payment));
 	}
