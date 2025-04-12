@@ -47,6 +47,7 @@ public class ProductController {
 	public ResponseEntity<?> createProduct(
 		@Valid @RequestBody ProductCreateRequest request,
 		@AuthenticationPrincipal CustomUserDetails userDetails) {
+
 		productService.createProduct(request, userDetails);
 
 		return ResponseEntity.ok().body(Map.of("message", "제품이 성공적으로 등록되었습니다."));
@@ -67,6 +68,7 @@ public class ProductController {
 		@PageableDefault(size = 10, sort = "created_at", direction = Sort.Direction.DESC) Pageable pageable) {
 
 		ProductListPageResponse response = productService.getAllProducts(pageable, categoryId, keyword);
+
 		return ResponseEntity.ok(response);
 	}
 
@@ -79,6 +81,7 @@ public class ProductController {
 	@GetMapping("/{product_id}")
 	public ResponseEntity<?> getProductById(
 		@PathVariable("product_id") Long productId) {
+
 		return ResponseEntity.ok(productService.getProductById(productId));
 	}
 
@@ -94,6 +97,7 @@ public class ProductController {
 		@PathVariable("product_id") Long productId,
 		@AuthenticationPrincipal CustomUserDetails userDetails,
 		@Valid @RequestBody ProductUpdateRequest request) {
+
 		productService.updateProduct(request, productId, userDetails);
 
 		return ResponseEntity.ok().body(Map.of("message", "제품이 성공적으로 수정되었습니다."));
@@ -110,7 +114,9 @@ public class ProductController {
 	public ResponseEntity<?> deleteProductById(
 		@PathVariable("product_id") Long productId,
 		@AuthenticationPrincipal CustomUserDetails userDetails) {
+
 		productService.deleteProduct(productId, userDetails);
+
 		return ResponseEntity.ok().body(Map.of("message", "제품이 성공적으로 삭제되었습니다."));
 	}
 }

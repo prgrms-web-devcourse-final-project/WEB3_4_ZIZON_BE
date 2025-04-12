@@ -176,4 +176,24 @@ public class ProductService {
 
 		return productRepository.save(updateProduct);
 	}
+
+	@Transactional
+	public ProductListPageResponse findMySellingProducts(Pageable pageable, CustomUserDetails userDetails) {
+		Member member = memberUtilService.findMember(userDetails.getId());
+		Expert expert = memberUtilService.validateExpert(member);
+
+		// Page<Product> page = productRepository.findMySellingProducts(expert.getId(), pageable);
+		Page<Product> page = productRepository.findAllByExpertId(expert.getId(), pageable);
+
+		List<ProductListResponse> productListResponses = page.getContent().stream()
+			.map(ProductListResponse::of)
+			.toList();
+
+		return ProductListPageResponse.builder()
+			.products(productListResponses)
+			.currentPage(page.getNumber())
+			.pageSize(page.getSize())
+			.hasNext(page.hasNext())
+			.build();
+	}
 }
