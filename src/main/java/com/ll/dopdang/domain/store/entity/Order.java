@@ -21,15 +21,12 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/**
- * 주문 정보를 저장하는 엔티티
- */
 @Entity
-@Table(name = "orders")
 @Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(name = "orders")
 public class Order extends BaseEntity {
 
 	@Id
@@ -53,9 +50,17 @@ public class Order extends BaseEntity {
 	@Column(name = "payment_method", nullable = false)
 	private String paymentMethod;
 
-	/**
-	 * 주문 생성 정적 팩토리 메서드
-	 */
+	public static Order from(Member member, String orderNumber, BigDecimal totalAmount, OrderStatus status,
+		String paymentMethod) {
+		return Order.builder()
+			.member(member)
+			.orderId(orderNumber)
+			.totalAmount(totalAmount)
+			.status(status)
+			.paymentMethod(paymentMethod)
+			.build();
+	}
+
 	public static Order createOrder(Member member, String orderId, BigDecimal totalAmount) {
 		return Order.builder()
 			.member(member)

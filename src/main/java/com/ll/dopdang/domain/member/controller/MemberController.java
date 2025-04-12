@@ -2,6 +2,9 @@ package com.ll.dopdang.domain.member.controller;
 
 import java.util.Map;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -23,6 +26,10 @@ import com.ll.dopdang.domain.member.dto.response.ProfileResponse;
 import com.ll.dopdang.domain.member.dto.response.UpdateProfileResponse;
 import com.ll.dopdang.domain.member.service.MemberService;
 import com.ll.dopdang.domain.member.service.MemberUtilService;
+import com.ll.dopdang.domain.store.dto.OrderListPageResponse;
+import com.ll.dopdang.domain.store.dto.ProductListPageResponse;
+import com.ll.dopdang.domain.store.service.OrderService;
+import com.ll.dopdang.domain.store.service.ProductService;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
 import com.ll.dopdang.global.sms.dto.SmsVerificationResponse;
 
@@ -50,6 +57,8 @@ import lombok.RequiredArgsConstructor;
 public class MemberController {
 	private final MemberService memberService;
 	private final MemberUtilService memberUtilService;
+	private final OrderService orderService;
+	private final ProductService productService;
 
 	/**
 	 * 회원 가입 API
@@ -206,5 +215,27 @@ public class MemberController {
 		HttpServletResponse resp) {
 		memberService.toggleUserView(userId, userDetails, resp);
 		return ResponseEntity.ok().body(Map.of("message", "사용자 뷰 상태가 변경되었습니다."));
+	}
+
+	@Operation(summary = "내가 판매중인 상품 조회")
+	@GetMapping("/my-selling-products")
+	public ResponseEntity<?> findByMySellingProducts(
+		@AuthenticationPrincipal CustomUserDetails userDetails,
+		@PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+
+		ProductListPageResponse response = productService.findMySellingProducts(pageable, userDetails);
+
+		return ResponseEntity.ok().body(response);
+	}
+
+	@Operation(summary = "내가 구매한 상품 조회")
+	@GetMapping("/my-purchased-products")
+	public ResponseEntity<?> findByMyPurchasedProducts(
+		@AuthenticationPrincipal CustomUserDetails userDetails,
+		@PageableDefault(size = 10) Pageable pageable) {
+
+		OrderListPageResponse response = orderService.findMyPurchasedProducts(pageable, userDetails);
+
+		return ResponseEntity.ok().body(response);
 	}
 }
