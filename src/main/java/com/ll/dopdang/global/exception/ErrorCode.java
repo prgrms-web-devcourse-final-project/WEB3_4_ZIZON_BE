@@ -53,10 +53,17 @@ public enum ErrorCode {
 
 	// 카테고리 관련 에러
 	CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 카테고리입니다."),
+	MAIN_CATEGORY_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR,"Main category not found"),
+	SUB_CATEGORY_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR,"Subcategory not found: "),
+
+	// 자격증 관련 에러
+	CERTIFICATE_NOT_FOUND(HttpStatus.NOT_FOUND, "Certificate not found: "),
 
 	// 전문가 관련 에러
 	EXPERT_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 전문가입니다."),
 	INVALID_EXPERT_ASSIGNMENT(HttpStatus.BAD_REQUEST, "지정된 전문가 정보를 확인할 수 없습니다."),
+	INVALID_CAREER_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR,"Invalid careerLevel: "),
+	EXPERT_NOT_EXISTS(HttpStatus.INTERNAL_SERVER_ERROR,"Expert not found with ID: "),
 
 	// 프로젝트 관련 에러
 	PROJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "프로젝트를 찾을 수 없습니다."),
@@ -71,6 +78,7 @@ public enum ErrorCode {
 
 	// 제안서 관련 에러
 	OFFER_NOT_FOUND(HttpStatus.NOT_FOUND, "제안서를 찾을 수 없습니다."),
+	OFFER_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "이미 오퍼를 생성한 프로젝트입니다."),
 	INVALID_OFFER_PROJECT(HttpStatus.BAD_REQUEST, "제안서에 대한 프로젝트 정보가 올바르지 않습니다."),
 
 	// 문의글 관련 에러
@@ -97,7 +105,19 @@ public enum ErrorCode {
 	// 리뷰 관련 에러
 	CONTRACT_NOT_COMPLETED(HttpStatus.BAD_REQUEST, "계약이 완료되지 않아 리뷰를 작성할 수 없습니다."),
 	REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, "리뷰를 찾을 수 없습니다."),
-	REVIEW_ALREADY_EXISTS(HttpStatus.CONFLICT, "해당 계약에 대한 리뷰는 이미 작성되었습니다.");
+	REVIEW_ALREADY_EXISTS(HttpStatus.CONFLICT, "해당 계약에 대한 리뷰는 이미 작성되었습니다."),
+	REVIEW_ALREADY_CANCELED(HttpStatus.CONFLICT, "이미 취소된 리뷰입니다."),
+	REVIEW_CANCELLATION_FAILED(HttpStatus.BAD_REQUEST, "리뷰 취소에 실패했습니다."),
+	REVIEW_NOT_FOUND_BY_PROJECT(HttpStatus.NOT_FOUND, "프로젝트에 대한 리뷰를 찾을 수 없습니다."),
+	// 리뷰 통계 관련 에러
+	REVIEW_STATS_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 리뷰 통계가 존재합니다."),
+	REVIEW_STATS_NOT_FOUND(HttpStatus.NOT_FOUND, "리뷰를 통계를 찾을 수 없습니다."),
+
+	//채팅 관련 에러
+	CHATTING_EQUALS_EMAIL(HttpStatus.BAD_REQUEST, "자신에게는 메시지를 보낼 수 없습니다."),
+	CHATTING_CLOSE_OTHER(HttpStatus.FORBIDDEN, "상대방이 채팅방에서 나간 상태입니다. 메시지를 보낼 수 없습니다."),
+	CHATTING_SENDER_EQUAL(HttpStatus.BAD_REQUEST, "메시지의 sender가 채팅방 멤버와 일치하지 않습니다.");
+
 	private final HttpStatus status;
 	private final String message;
 }

@@ -55,13 +55,8 @@ public class ProjectPaymentInfoProvider implements PaymentOrderInfoProvider {
 		// 결제 정보에서 참조 ID로 계약 정보 조회
 		Contract contract = contractService.getContractById(payment.getReferenceId());
 		// 기존 응답에 전문가 이름 추가
-		return PaymentResultResponse.builder()
-			.status(baseResponse.getStatus())
-			.amount(baseResponse.getAmount())
-			.errorCode(baseResponse.getErrorCode())
-			.message(baseResponse.getMessage())
-			.expertName(contract.getExpert().getMember().getName())
-			.paymentName(payment.getItemsSummary())
-			.build();
+		return baseResponse.withExpertAndPaymentNames(
+			contract.getExpert().getMember().getName(),
+			payment.getItemsSummary());
 	}
 }

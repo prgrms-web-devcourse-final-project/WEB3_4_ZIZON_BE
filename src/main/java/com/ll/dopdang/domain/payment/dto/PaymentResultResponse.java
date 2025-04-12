@@ -2,32 +2,24 @@ package com.ll.dopdang.domain.payment.dto;
 
 import java.math.BigDecimal;
 
-import lombok.Builder;
-import lombok.Getter;
-
-@Getter
-@Builder
-public class PaymentResultResponse {
-	private String status;
-	private BigDecimal amount;
-	private String errorCode;
-	private String message;
-	private String expertName;
-	private String paymentName;
-
+public record PaymentResultResponse(
+	String status,
+	BigDecimal amount,
+	String errorCode,
+	String message,
+	String expertName,
+	String paymentName
+) {
 	public static PaymentResultResponse success(BigDecimal amount) {
-		return PaymentResultResponse.builder()
-			.status("success")
-			.amount(amount)
-			.build();
+		return new PaymentResultResponse("success", amount, null, null, null, null);
 	}
 
 	public static PaymentResultResponse fail(BigDecimal amount, String errorCode, String message) {
-		return PaymentResultResponse.builder()
-			.status("fail")
-			.amount(amount)
-			.errorCode(errorCode)
-			.message(message)
-			.build();
+		return new PaymentResultResponse("fail", amount, errorCode, message, null, null);
+	}
+
+	// Method to create a new instance with updated fields
+	public PaymentResultResponse withExpertAndPaymentNames(String expertName, String paymentName) {
+		return new PaymentResultResponse(status, amount, errorCode, message, expertName, paymentName);
 	}
 }

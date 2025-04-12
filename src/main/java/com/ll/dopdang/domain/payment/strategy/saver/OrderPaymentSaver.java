@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.service.MemberService;
@@ -14,6 +15,11 @@ import com.ll.dopdang.domain.payment.entity.PaymentStatus;
 import com.ll.dopdang.domain.payment.entity.PaymentType;
 import com.ll.dopdang.domain.payment.service.PaymentQueryService;
 import com.ll.dopdang.domain.store.dto.ProductDetailResponse;
+import com.ll.dopdang.domain.store.entity.Order;
+import com.ll.dopdang.domain.store.entity.OrderItem;
+import com.ll.dopdang.domain.store.entity.Product;
+import com.ll.dopdang.domain.store.repository.OrderItemRepository;
+import com.ll.dopdang.domain.store.repository.OrderRepository;
 import com.ll.dopdang.domain.store.service.ProductService;
 
 import lombok.RequiredArgsConstructor;
@@ -30,8 +36,11 @@ public class OrderPaymentSaver implements PaymentSaver {
 	private final ProductService productService;
 	private final PaymentQueryService paymentQueryService;
 	private final MemberService memberService;
+	private final OrderRepository orderRepository;
+	private final OrderItemRepository orderItemRepository;
 
 	@Override
+	@Transactional
 	public Payment savePayment(Long referenceId, BigDecimal amount, BigDecimal fee, String paymentKey, String orderId) {
 		log.info("주문 결제 정보 저장: referenceId={}, amount={}, fee={}, paymentKey={}, orderId={}",
 			referenceId, amount, fee, paymentKey, orderId);
@@ -40,8 +49,8 @@ public class OrderPaymentSaver implements PaymentSaver {
 		String title = productDetail.getTitle();
 
 		PaymentOrderInfo paymentOrderInfo = paymentQueryService.getPaymentOrderInfoByOrderId(orderId);
-		Integer quantity = paymentOrderInfo.getQuantity();
-		Member member = memberService.getMemberById(paymentOrderInfo.getMemberId());
+		Integer quantity = paymentOrderInfo.quantity();
+		Member member = memberService.getMemberById(paymentOrderInfo.memberId());
 
 		// 주문 결제 정보 생성
 		Payment payment = Payment.builder()
@@ -72,6 +81,17 @@ public class OrderPaymentSaver implements PaymentSaver {
 
 		payment.addPaymentDetail(paymentDetail);
 
+		// 주문 정보 저장
+		Product product = productService.findById(referenceId);
+		Order order = Order.createOrder(member, orderId, amount);
+		Order savedOrder = orderRepository.save(order);
+
+		// 주문 아이템 정보 저장
+		OrderItem orderItem = OrderItem.createOrderItem(savedOrder, product, quantity, productDetail.getPrice());
+		orderItemRepository.save(orderItem);
+
+		log.info("주문 정보 저장 완료: orderId={}, productId={}, quantity={}", orderId, referenceId, quantity);
+
 		return payment;
 	}
 
@@ -84,8 +104,8 @@ public class OrderPaymentSaver implements PaymentSaver {
 		String title = product.getTitle();
 
 		PaymentOrderInfo paymentOrderInfo = paymentQueryService.getPaymentOrderInfoByOrderId(orderId);
-		Integer quantity = paymentOrderInfo.getQuantity();
-		Member member = memberService.getMemberById(paymentOrderInfo.getMemberId());
+		Integer quantity = paymentOrderInfo.quantity();
+		Member member = memberService.getMemberById(paymentOrderInfo.memberId());
 
 		// 실패한 주문 결제 정보 생성
 		Payment payment = Payment.builder()

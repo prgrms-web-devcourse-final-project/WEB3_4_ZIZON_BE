@@ -1,5 +1,6 @@
 package com.ll.dopdang.domain.expert.service;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -24,6 +25,10 @@ import com.ll.dopdang.domain.expert.repository.ExpertRepository;
 import com.ll.dopdang.domain.expert.repository.PortfolioRepository;
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.repository.MemberRepository;
+import com.ll.dopdang.global.exception.ErrorCode;
+import com.ll.dopdang.global.exception.ServiceException;
+import com.ll.dopdang.domain.review.entity.ReviewStats;
+import com.ll.dopdang.domain.review.repository.ReviewStatsRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +47,7 @@ public class ExpertService {
 	private final ExpertCategoryRepository expertCategoryRepository;
 	private final ExpertCertificateRepository expertCertificateRepository;
 	private final PortfolioRepository portfolioRepository;
+	private final ReviewStatsRepository reviewStatsRepository;
 
 	/**
 	 * 전문가를 등록합니다.
@@ -51,24 +57,24 @@ public class ExpertService {
 	 * @throws IllegalArgumentException 회원 또는 카테고리가 존재하지 않을 경우 예외 발생.
 	 */
 	@Transactional
-	public Long createExpert(ExpertRequestDto expertRequestDto, Long memberId) throws Exception {
+	public Long createExpert(ExpertRequestDto expertRequestDto, Long memberId) {
 		// 1. 회원 조회 및 검증
 		Member member = memberRepository.findById(memberId)
-			.orElseThrow(() -> new IllegalArgumentException("Member not found"));
+			.orElseThrow(() -> new ServiceException(ErrorCode.MEMBER_NOT_FOUND));
 
 		// 2. 대분류 카테고리 조회 및 검증
 		Category category = categoryRepository.findByNameAndParentIsNull(expertRequestDto.getCategoryName())
-			.orElseThrow(() -> new IllegalArgumentException("Main category not found"));
+			.orElseThrow(() -> new ServiceException(ErrorCode.MAIN_CATEGORY_NOT_FOUND));
 
 		// 3. 소분류 카테고리 조회 및 검증
 		List<Category> subCategories = expertRequestDto.getSubCategoryNames().stream()
 			.map(subCategoryName -> categoryRepository.findByNameAndParent(subCategoryName, category)
-				.orElseThrow(() -> new IllegalArgumentException("Subcategory not found: " + subCategoryName)))
+				.orElseThrow(() -> new ServiceException(ErrorCode.SUB_CATEGORY_NOT_FOUND)))
 			.toList();
 
 		List<Certificate> certificates = expertRequestDto.getCertificateNames().stream()
 			.map(certificateName -> certificateRepository.findByName(certificateName)
-				.orElseThrow(() -> new IllegalArgumentException("Certificate not found: " + certificateName)))
+				.orElseThrow(() -> new ServiceException(ErrorCode.CERTIFICATE_NOT_FOUND, certificateName)))
 			.toList();
 		// 4. Expert 엔티티 생성 및 저장
 		Expert expert = Expert.builder()
@@ -81,6 +87,7 @@ public class ExpertService {
 			.accountNumber(expertRequestDto.getAccountNumber())
 			.build();
 		expertRepository.save(expert);
+		expertRepository.flush();
 
 		// 5. ExpertCategory 엔티티 생성 및 저장
 		subCategories.forEach(subCategory -> {
@@ -98,6 +105,7 @@ public class ExpertService {
 				.build();
 			expertCertificateRepository.save(expertCertificate);
 		});
+
 			// 새로운 포트폴리오 생성
 			Portfolio portfolio = Portfolio.builder()
 				.expert(expert)
@@ -106,6 +114,11 @@ public class ExpertService {
 				.build();
 			// 새로 생성한 포트폴리오 저장
 			portfolioRepository.save(portfolio);
+			member.updateRoleToExpert();
+
+    	ReviewStats stats = ReviewStats.of(expert, BigDecimal.ZERO, 0);
+		  reviewStatsRepository.save(stats);
+    
 		return expert.getId();
 	}
 
@@ -137,11 +150,11 @@ public class ExpertService {
 					maxYears = 100; // 제한 없는 최대값 설정
 					break;
 				default:
-					throw new IllegalArgumentException("Invalid careerLevel: " + careerLevel);
+					throw new ServiceException(ErrorCode.INVALID_CAREER_EXCEPTION, careerLevel);
 			}
 		}
 		// 데이터베이스 조회를 통한 필터링 결과
-	List<Expert> experts = expertRepository.findByFilters(categoryNames, minYears, maxYears);
+		List<Expert> experts = expertRepository.findByFilters(categoryNames, minYears, maxYears);
 
 		// Expert 데이터를 DTO로 변환하여 반환
 		return experts.stream()
@@ -169,7 +182,7 @@ public class ExpertService {
 					maxYears = 100; // 제한 없는 최대 값 설정
 					break;
 				default:
-					throw new IllegalArgumentException("Invalid careerLevel: " + careerLevel);
+					throw new ServiceException(ErrorCode.INVALID_CAREER_EXCEPTION, careerLevel);
 			}
 		}
 
@@ -185,10 +198,10 @@ public class ExpertService {
 	public ExpertDetailResponseDto getExpertById(Long expertId) {
 		// 1. 전문가 조회
 		Expert expert = expertRepository.findById(expertId)
-			.orElseThrow(() -> new IllegalArgumentException("Expert not found with ID: " + expertId));
+			.orElseThrow(() -> new ServiceException(ErrorCode.EXPERT_NOT_EXISTS, String.valueOf(expertId)));
 		Portfolio portfolio = expert.getPortfolio();
 		// 2. Expert -> ExpertDetailResponseDto로 변환
-		return mapToDetailResponseDto(expert,portfolio);
+		return mapToDetailResponseDto(expert, portfolio);
 	}
 
 	public List<ExpertResponseDto> searchByName(String name) {
@@ -209,14 +222,13 @@ public class ExpertService {
 	public ExpertDetailResponseDto updateExpert(Long expertId, ExpertUpdateRequestDto updateRequestDto) {
 		// 1. 전문가 조회
 		Expert existingExpert = expertRepository.findById(expertId)
-			.orElseThrow(() -> new IllegalArgumentException("Expert not found with ID: " + expertId));
+			.orElseThrow(() -> new ServiceException(ErrorCode.EXPERT_NOT_EXISTS,String.valueOf(expertId)));
 
 		// 2. 대분류 카테고리 변경 처리
 		Category category = existingExpert.getCategory(); // 기존 대분류
 		if (updateRequestDto.getCategoryName() != null) {
 			category = categoryRepository.findByNameAndParentIsNull(updateRequestDto.getCategoryName())
-				.orElseThrow(() -> new IllegalArgumentException(
-					"Main category not found: " + updateRequestDto.getCategoryName()));
+				.orElseThrow(() -> new ServiceException(ErrorCode.MAIN_CATEGORY_NOT_FOUND, updateRequestDto.getCategoryName()));
 		}
 		existingExpert.setCategory(category);
 
@@ -229,7 +241,7 @@ public class ExpertService {
 			// 새로운 소분류 생성 및 저장
 			List<Category> subCategories = updateRequestDto.getSubCategoryNames().stream()
 				.map(name -> categoryRepository.findByName(name)
-					.orElseThrow(() -> new IllegalArgumentException("Subcategory not found: " + name)))
+					.orElseThrow(() -> new ServiceException(ErrorCode.SUB_CATEGORY_NOT_FOUND, name)))
 				.toList();
 
 			subCategories.forEach(subCategory -> {
@@ -249,7 +261,7 @@ public class ExpertService {
 				// 새로운 자격증 저장
 				List<Certificate> certificates = updateRequestDto.getCertificateNames().stream()
 					.map(name -> certificateRepository.findByName(name)
-						.orElseThrow(() -> new IllegalArgumentException("Certificate not found: " + name)))
+						.orElseThrow(() -> new ServiceException(ErrorCode.CERTIFICATE_NOT_FOUND, name)))
 					.toList();
 
 				expertCertificates = certificates.stream()
@@ -274,7 +286,8 @@ public class ExpertService {
 
 				Portfolio newPortfolio = Portfolio.builder()
 					.expert(existingExpert) // Expert와 연결
-					.title(updateRequestDto.getPortfolioTitle() != null ? updateRequestDto.getPortfolioTitle() : "Default Title")
+					.title(updateRequestDto.getPortfolioTitle() != null ? updateRequestDto.getPortfolioTitle() :
+						"Default Title")
 					.imageUrl(updateRequestDto.getPortfolioImage() != null ? updateRequestDto.getPortfolioImage() : "")
 					.build();
 
@@ -292,7 +305,8 @@ public class ExpertService {
 			return mapToDetailResponseDto(existingExpert, existingExpert.getPortfolio());
 		}
 		Expert expert = expertRepository.findById(expertId)
-			.orElseThrow(() -> new IllegalArgumentException("Expert not found with ID: " + expertId));
+
+			.orElseThrow(() -> new ServiceException(ErrorCode.EXPERT_NOT_EXISTS,String.valueOf(expertId)));
 		return mapToDetailResponseDto(expert,expert.getPortfolio());
 	}
 

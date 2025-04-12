@@ -6,26 +6,19 @@ import java.util.Map;
 
 import com.ll.dopdang.domain.payment.entity.PaymentType;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-
 /**
- * 결제 주문 정보를 저장하기 위한 DTO 클래스
+ * 결제 주문 정보를 저장하기 위한 DTO 레코드
  */
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
-public class PaymentOrderInfo implements Serializable {
+public record PaymentOrderInfo(
+	PaymentType paymentType,
+	Long referenceId,
+	String orderId,
+	Integer quantity,
+	Long memberId
+) implements Serializable {
 
 	@Serial
 	private static final long serialVersionUID = 1L;
-
-	private PaymentType paymentType;
-	private Long referenceId;
-	private String orderId;
-	private Integer quantity;
-	private Long memberId;
 
 	/**
 	 * Map에서 PaymentOrderInfo 객체를 생성합니다.

@@ -4,36 +4,19 @@ import java.math.BigDecimal;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 /**
  * 결제 취소 요청을 처리하기 위한 DTO
  * cancelAmount가 null이면 전액 취소, 값이 있으면 부분 취소로 처리
  */
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class PaymentCancellationRequest {
-
+public record PaymentCancellationRequest(
 	@NotNull(message = "주문 번호는 필수입니다.")
-	private String orderId;
+	String orderId,
 
 	@NotNull(message = "취소 사유는 필수입니다.")
-	private String cancelReason;
+	String cancelReason,
 
 	@DecimalMin(value = "0.01", message = "취소 금액은 0보다 커야 합니다.")
-	private BigDecimal cancelAmount; // null이면 전액 취소
-
-	/**
-	 * 전액 취소 여부를 반환합니다.
-	 *
-	 * @return 전액 취소 여부
-	 */
-	public boolean isFullCancellation() {
-		return cancelAmount == null;
-	}
+	BigDecimal cancelAmount // null이면 전액 취소
+) {
 }

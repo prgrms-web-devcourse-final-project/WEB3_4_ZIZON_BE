@@ -45,11 +45,12 @@ public class ChatController {
 		summary = "채팅 내역 조회",
 		description = "두 사용자 간의 채팅 내역을 조회합니다."
 	)
-	@GetMapping("")
+	@GetMapping
 	public ResponseEntity<List<ChatRoomDetailResponse>> getHistory(
 		@RequestParam String sender,
-		@RequestParam String receiver) {
-		List<ChatRoomDetailResponse> messages = chatService.getChatRoomDetail(sender, receiver);
+		@RequestParam String receiver,
+		@RequestParam Long projectId) {
+		List<ChatRoomDetailResponse> messages = chatService.getChatRoomDetail(sender, receiver, projectId);
 		return ResponseEntity.ok(messages);
 	}
 
@@ -148,5 +149,45 @@ public class ChatController {
 		response.put("message", "채팅방이 생성되었습니다.");
 
 		return ResponseEntity.ok(response);
+	}
+
+	/**
+	 * 채팅방 생성 로직
+	 *
+	 * @param expertId   내가 고른 expert 정보
+	 * @param projectId project 작성자 정보를 찾기 위한 id
+	 * @return void
+	 */
+	@Operation(
+		summary = "채팅방 생성(전문가 선택)",
+		description = "새 채팅방을 생성합니다. (예: 프로젝트 관련 채팅 생성)"
+	)
+	@PostMapping("/choose")
+	public ResponseEntity<Map<String, String>> createExpertChatroom(
+		@RequestParam Long projectId,
+		@RequestParam Long expertId) {
+
+		chatService.createExpertChatroom(expertId, projectId);
+
+		Map<String, String> response = new HashMap<>();
+		response.put("message", "채팅방이 생성되었습니다.");
+
+		return ResponseEntity.ok(response);
+	}
+
+	@Operation(
+		summary = "채팅방 나가기",
+		description = "사용자가 채팅방에서 나갑니다. (멤버에 따라 active 플래그를 false로 업데이트)"
+	)
+	@PostMapping("/{roomId}/leave")
+	public ResponseEntity<?> leaveChatRoom(
+		@PathVariable String roomId,
+		@RequestParam String username) {
+		try {
+			chatService.leaveChatRoomUser(roomId, username);
+			return ResponseEntity.ok("채팅방에서 나갔습니다.");
+		} catch (RuntimeException e) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("채팅방을 찾을 수 없습니다.");
+		}
 	}
 }
