@@ -77,7 +77,6 @@ public class ExpertController {
 	}
 
 	@Operation(summary = "전문가 상세 조회", description = "전문가 ID를 통해 해당 전문가의 상세 정보를 조회합니다.")
-
 	@ApiResponse(responseCode = "200", description = "조회 성공")
 	@ApiResponse(responseCode = "404", description = "존재하지 않는 전문가 ID")
 	@GetMapping("/{expertId}")

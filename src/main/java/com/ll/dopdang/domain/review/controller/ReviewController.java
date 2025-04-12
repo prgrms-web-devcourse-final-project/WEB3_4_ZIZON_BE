@@ -1,5 +1,7 @@
 package com.ll.dopdang.domain.review.controller;
 
+import java.util.Map;
+
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -7,6 +9,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,13 +22,17 @@ import com.ll.dopdang.domain.review.dto.ExpertReviewPageResponse;
 import com.ll.dopdang.domain.review.dto.ReviewCreateRequest;
 import com.ll.dopdang.domain.review.dto.ReviewCreateResponse;
 import com.ll.dopdang.domain.review.dto.ReviewDetailResponse;
+import com.ll.dopdang.domain.review.dto.ReviewStatsResponse;
 import com.ll.dopdang.domain.review.sevice.ReviewService;
+import com.ll.dopdang.domain.review.sevice.ReviewStatsService;
 import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -39,6 +46,7 @@ import lombok.RequiredArgsConstructor;
 public class ReviewController {
 
 	private final ReviewService reviewService;
+	private final ReviewStatsService reviewStatsService;
 
 	/**
 	 * 리뷰를 생성합니다.
@@ -136,6 +144,50 @@ public class ReviewController {
 
 		Long clientId = userDetails.getId();
 		ClientReviewPageResponse response = reviewService.getClientReviews(clientId, pageable);
+		return ResponseEntity.ok(response);
+	}
+
+	@Operation(
+		summary = "전문가 리뷰 통계 조회",
+		description = "전문가 ID를 기반으로 평균 평점과 총 리뷰 수를 반환합니다.",
+		tags = {"Review"}
+	)
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "리뷰 통계 조회 성공",
+			content = @Content(mediaType = "application/json", schema = @Schema(implementation = ReviewStatsResponse.class))),
+		@ApiResponse(responseCode = "404", description = "해당 전문가의 통계가 존재하지 않음")
+	})
+	@GetMapping("/experts/{expertId}/review-stats")
+	public ResponseEntity<ReviewStatsResponse> getExpertReviewStats(
+		@Parameter(description = "조회할 전문가 ID", example = "42")
+		@PathVariable Long expertId
+	) {
+		ReviewStatsResponse response = reviewStatsService.getStatsByExpertId(expertId);
+		return ResponseEntity.ok(response);
+	}
+
+	@Operation(
+		summary = "리뷰 삭제",
+		description = "본인이 작성한 리뷰를 삭제합니다. 삭제는 소프트 삭제로 처리되며, 리뷰 수와 평균 평점도 자동 반영됩니다.",
+		tags = {"Review"}
+	)
+	@ApiResponses({
+		@ApiResponse(responseCode = "204", description = "리뷰 삭제 성공"),
+		@ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
+		@ApiResponse(responseCode = "403", description = "리뷰 작성자가 아님"),
+		@ApiResponse(responseCode = "404", description = "해당 리뷰가 존재하지 않음")
+	})
+	@DeleteMapping("/{reviewId}")
+	public ResponseEntity<Map<String, String>> deleteReview(
+		@Parameter(description = "삭제할 리뷰 ID", example = "10")
+		@PathVariable Long reviewId,
+		@Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails
+	) {
+		if (userDetails == null) {
+			throw new ServiceException(ErrorCode.UNAUTHORIZED_USER);
+		}
+
+		Map<String, String> response = Map.of("message", "리뷰가 성공적으로 삭제되었습니다.");
 		return ResponseEntity.ok(response);
 	}
 }

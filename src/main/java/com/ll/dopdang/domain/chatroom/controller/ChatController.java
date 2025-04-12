@@ -45,11 +45,12 @@ public class ChatController {
 		summary = "채팅 내역 조회",
 		description = "두 사용자 간의 채팅 내역을 조회합니다."
 	)
-	@GetMapping("")
+	@GetMapping
 	public ResponseEntity<List<ChatRoomDetailResponse>> getHistory(
 		@RequestParam String sender,
-		@RequestParam String receiver) {
-		List<ChatRoomDetailResponse> messages = chatService.getChatRoomDetail(sender, receiver);
+		@RequestParam String receiver,
+		@RequestParam Long projectId) {
+		List<ChatRoomDetailResponse> messages = chatService.getChatRoomDetail(sender, receiver, projectId);
 		return ResponseEntity.ok(messages);
 	}
 

@@ -12,6 +12,16 @@ on:
 jobs:
   build-test:
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v3
 
@@ -42,7 +52,7 @@ jobs:
         run: |
           # GitHub 시크릿을 JSON으로 변환하고 파싱하여 GitHub 환경 파일에 추가
           echo '${{ toJSON(secrets) }}' | jq -r 'to_entries | .[] | select(.key != "github_token" and .key != "EC2_SSH_KEY") | "\(.key)=\(.value)"' >> $GITHUB_ENV
-          
+
           # 확인 메시지 (실제 값은 표시되지 않음)
           echo "환경변수가 성공적으로 설정되었습니다."
           echo "설정된 변수 목록 (값은 보안상 표시되지 않음):"
@@ -67,6 +77,16 @@ jobs:
   code-quality:
     needs: build-test
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     strategy:
       fail-fast: false
       matrix:
@@ -105,7 +125,7 @@ jobs:
         run: |
           # GitHub 시크릿을 JSON으로 변환하고 파싱하여 GitHub 환경 파일에 추가
           echo '${{ toJSON(secrets) }}' | jq -r 'to_entries | .[] | select(.key != "GITHUB_TOKEN" and .key != "EC2_SSH_KEY") | "\(.key)=\(.value)"' >> $GITHUB_ENV
-          
+
           # 확인 메시지 (실제 값은 표시되지 않음)
           echo "환경변수가 성공적으로 설정되었습니다."
           echo "설정된 변수 목록 (값은 보안상 표시되지 않음):"

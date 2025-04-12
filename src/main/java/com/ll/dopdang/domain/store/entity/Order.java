@@ -16,7 +16,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -34,34 +33,41 @@ public class Order extends BaseEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@NotNull
-	@JoinColumn(name = "member_id", nullable = false)
 	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "member_id", nullable = false)
 	private Member member;
 
-	@NotNull
-	@Column(name = "order_number")
-	private String orderNumber;
+	@Column(name = "order_number", nullable = false)
+	private String orderId;
 
-	@NotNull
-	@Column(name = "total_amount")
+	@Column(name = "total_amount", nullable = false)
 	private BigDecimal totalAmount;
 
-	@NotNull
+	@Column(name = "status", nullable = false)
 	@Enumerated(EnumType.STRING)
 	private OrderStatus status;
 
-	@NotNull
-	@Column(name = "payment_method")
+	@Column(name = "payment_method", nullable = false)
 	private String paymentMethod;
 
-	public static Order from(Member member, String orderNumber, BigDecimal totalAmount, OrderStatus status, String paymentMethod) {
+	public static Order from(Member member, String orderNumber, BigDecimal totalAmount, OrderStatus status,
+		String paymentMethod) {
 		return Order.builder()
 			.member(member)
-			.orderNumber(orderNumber)
+			.orderId(orderNumber)
 			.totalAmount(totalAmount)
 			.status(status)
 			.paymentMethod(paymentMethod)
+			.build();
+	}
+
+	public static Order createOrder(Member member, String orderId, BigDecimal totalAmount) {
+		return Order.builder()
+			.member(member)
+			.orderId(orderId)
+			.totalAmount(totalAmount)
+			.status(OrderStatus.PAID)
+			.paymentMethod("CARD")
 			.build();
 	}
 }
