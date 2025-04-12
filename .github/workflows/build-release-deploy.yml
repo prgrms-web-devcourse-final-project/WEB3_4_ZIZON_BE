@@ -12,6 +12,16 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
 
@@ -32,7 +42,7 @@ jobs:
         run: |
           # GitHub 시크릿을 JSON으로 변환하고 파싱하여 GitHub 환경 파일에 추가
           echo '${{ toJSON(secrets) }}' | jq -r 'to_entries | .[] | select(.key != "GITHUB_TOKEN" and .key != "EC2_SSH_KEY") | "\(.key)=\(.value)"' >> $GITHUB_ENV
-          
+
           # 확인 메시지 (실제 값은 표시되지 않음)
           echo "환경변수가 성공적으로 설정되었습니다."
           echo "설정된 변수 목록 (값은 보안상 표시되지 않음):"
@@ -160,7 +170,7 @@ jobs:
           # 시크릿 이름 목록 생성 (GITHUB_TOKEN 제외)
           SECRET_NAMES=$(echo '${{ toJSON(secrets) }}' | jq 'keys | map(select(. != "GITHUB_TOKEN"))' -c)
           echo "secret_names=$SECRET_NAMES" >> $GITHUB_OUTPUT
-          
+
           # 시크릿 값을 JSON으로 변환
           SECRET_JSON=$(echo '${{ toJSON(secrets) }}' | jq 'with_entries(select(.key != "GITHUB_TOKEN"))' -c)
           echo "secret_json=$SECRET_JSON" >> $GITHUB_OUTPUT
@@ -174,46 +184,46 @@ jobs:
           script: |
             # 오류 발생 시 스크립트 실행 중지
             set -e
-            
+
             echo "===== SSH 연결 성공! EC2 인스턴스 정보 ====="
             echo "호스트명: $(hostname)"
             echo "현재 사용자: $(whoami)"
             echo "운영체제 정보: $(cat /etc/os-release | grep PRETTY_NAME)"
             echo "현재 시간: $(date)"
             echo "============================================="
-            
+
             echo "도커 이미지 경로: ghcr.io/${{ env.OWNER_LC }}/dopdang-1:${{ needs.create_release.outputs.new_tag }}"
             echo "GitHub Container Registry에 로그인 시도..."
-            
+
             # 안전한 방식으로 도커 로그인
             echo "${{ secrets.GHCR_TOKEN }}" | sudo docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
-            
+
             # 환경 변수 파일 생성 (모든 시크릿 포함)
             cat > .env << 'EOL'
             # 자동 생성된 환경 변수 파일
             # 생성 시간: $(date)
-            
+
             # GitHub Actions에서 자동으로 생성된 모든 시크릿
             EOL
-            
+
             # 모든 시크릿을 환경 변수 파일에 추가
             echo '${{ steps.secrets.outputs.secret_json }}' | jq -r 'to_entries | .[] | select(.key != "EC2_SSH_KEY") | "\(.key)=\(.value)"' >> .env
-            
+
             # 환경 변수 파일 권한 설정 (소유자만 읽기/쓰기 가능)
             chmod 600 .env
-            
+
             # 도커 컨테이너 실행
             sudo docker pull ghcr.io/${{ env.OWNER_LC }}/dopdang-1:${{ needs.create_release.outputs.new_tag }}
             sudo docker stop springboot-app || true
             sudo docker rm springboot-app || true
-            
+
             # 환경 변수 파일을 사용하여 컨테이너 실행
             sudo docker run -d -p 8080:8080 \
               --network common \
               --env-file .env \
               --name springboot-app \
               ghcr.io/${{ env.OWNER_LC }}/dopdang-1:${{ needs.create_release.outputs.new_tag }}
-            
+
             echo "배포 완료: 버전 ${{ needs.create_release.outputs.new_tag }}"
 
       # 배포 성공 시 슬랙 알림
