@@ -65,15 +65,15 @@ public class PaymentProcessingService {
 
 		// 주문 ID로 결제 정보 조회
 		PaymentOrderInfo orderInfo = paymentQueryService.getPaymentOrderInfoByOrderId(orderId);
-		PaymentType paymentType = orderInfo.getPaymentType();
-		Long referenceId = orderInfo.getReferenceId();
+		PaymentType paymentType = orderInfo.paymentType();
+		Long referenceId = orderInfo.referenceId();
 
 		// 결제 금액 검증
 		paymentVerificationService.validatePaymentAmount(paymentType, referenceId, amount, orderId);
 
 		// 상품 재고 감소 처리 - ORDER 타입인 경우에만 수행
-		productService.decreaseStock(paymentType, referenceId, orderInfo.getQuantity());
-		
+		productService.decreaseStock(paymentType, referenceId, orderInfo.quantity());
+
 		// 토스페이먼츠 API 호출
 		String responseBody = callTossPaymentsApi(paymentKey, orderId, amount);
 
@@ -100,8 +100,8 @@ public class PaymentProcessingService {
 		try {
 			// 주문 ID로 Redis에서 결제 정보 조회
 			PaymentOrderInfo orderInfo = paymentQueryService.getPaymentOrderInfoByOrderId(orderId);
-			PaymentType paymentType = orderInfo.getPaymentType();
-			Long referenceId = orderInfo.getReferenceId();
+			PaymentType paymentType = orderInfo.paymentType();
+			Long referenceId = orderInfo.referenceId();
 
 			// 실패 메타데이터 생성
 			Map<String, String> failureMetadata = new HashMap<>();
