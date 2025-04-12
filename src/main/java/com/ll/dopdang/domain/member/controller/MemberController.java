@@ -207,4 +207,9 @@ public class MemberController {
 		memberService.toggleUserView(userId, userDetails, resp);
 		return ResponseEntity.ok().body(Map.of("message", "사용자 뷰 상태가 변경되었습니다."));
 	}
+
+	@GetMapping("/profile")
+	public ResponseEntity<?> getUserAllData(@AuthenticationPrincipal CustomUserDetails userDetails) {
+		return ResponseEntity.ok(memberService.getUserAllData(userDetails));
+	}
 }
