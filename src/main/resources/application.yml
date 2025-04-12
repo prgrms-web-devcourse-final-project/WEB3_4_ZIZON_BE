@@ -9,13 +9,16 @@ spring:
     import: optional:file:.env[.properties]
 
   datasource:
-    url: ${DB_URL}
+    url: ${DB_URL}?serverTimezone=Asia/Seoul
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       minimum-idle: 2   # 최소 커넥션 수
       maximum-pool-size: 5  # 최대 커넥션 수
+
+  jackson:
+    time-zone: Asia/Seoul
 
   jpa:
     show-sql: true
