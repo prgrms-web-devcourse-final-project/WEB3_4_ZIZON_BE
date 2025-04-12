@@ -7,7 +7,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <style>
-        /* CSS 스타일 (기존 그대로 유지) */
+        /* 기존 CSS 스타일 유지 */
         .navbar {
             display: flex;
             justify-content: flex-end;
@@ -16,6 +16,15 @@
             background-color: #f2f2f2;
             padding: 0 20px;
             position: relative;
+        }
+        .navbar button.leave-btn {
+            margin-left: 20px;
+            padding: 5px 10px;
+            cursor: pointer;
+            background-color: #ff4d4d;
+            border: none;
+            color: white;
+            border-radius: 4px;
         }
         .notification-icon {
             position: relative;
@@ -193,10 +202,13 @@
 <body>
 <!-- 네비게이션 바 -->
 <div class="navbar">
+    <!-- 알림 아이콘 -->
     <div class="notification-icon" onclick="openNotificationPanel(event)">
         <img alt="알림 아이콘" src="https://cdn-icons-png.flaticon.com/512/3602/3602145.png" />
         <span class="badge" id="notificationBadge">0</span>
     </div>
+    <!-- 채팅방 나가기 버튼: 현재 채팅방이 선택되어 있을 때만 활성화하도록 처리 -->
+    <button class="leave-btn" id="leaveChatRoomBtn" onclick="leaveCurrentChatRoom()" style="display: none;">채팅 나가기</button>
     <div id="notificationPanel"></div>
 </div>
 
@@ -366,7 +378,7 @@
             }
             roomDiv.appendChild(badge);
 
-            // room.roomId 형식은 "projectId|sender:receiver"
+            // 클릭 시 채팅방 선택
             roomDiv.onclick = function() {
                 selectChatRoom(room.roomId, (room.otherUserName && room.otherUserName.trim() !== "") ? room.otherUserName : room.receiver, room.projectId);
             };
@@ -387,12 +399,49 @@
         clearNotification(roomId);
         fetchChatHistory(roomId, projectId);
         fetchProjectDetails(projectId);
+        // 채팅방 선택 시 나가기 버튼 표시
+        document.getElementById("leaveChatRoomBtn").style.display = "inline-block";
         chatSubscription = stompClient.subscribe('/topic/chat/' + roomId, function(messageOutput) {
             showMessage(JSON.parse(messageOutput.body));
         });
         readSubscription = stompClient.subscribe('/topic/read/' + roomId, function(messageOutput) {
             // 필요시 읽음 상태 업데이트 구현
         });
+    }
+
+    // 채팅방 나가기 버튼 클릭 처리
+    function leaveCurrentChatRoom() {
+        if (!currentRoomId || !currentUser) {
+            alert("나갈 채팅방이 선택되지 않았습니다.");
+            return;
+        }
+        if(confirm("정말 이 채팅방을 나가시겠습니까?")) {
+            fetch(`http://localhost:8080/chatrooms/${currentRoomId}/leave?username=${encodeURIComponent(currentUser.email)}`, {
+                method: 'POST',
+                credentials: 'include'
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("채팅방 나가기 처리 실패");
+                    }
+                    return response.text();
+                })
+                .then(text => {
+                    alert("채팅방에서 나갔습니다.");
+                    // 나간 후 현재 채팅방 ID 초기화하고 채팅 로그 및 헤더 업데이트
+                    currentRoomId = null;
+                    document.getElementById("chatRoomHeader").innerText = "채팅방을 선택하세요";
+                    document.getElementById("chatLog").innerHTML = '<p style="text-align:center;color:#888;">채팅 메시지가 없습니다.</p>';
+                    // 나가기 버튼 숨김
+                    document.getElementById("leaveChatRoomBtn").style.display = "none";
+                    // 채팅방 목록 새로고침
+                    fetchChatRoomsDetail();
+                })
+                .catch(error => {
+                    console.error("채팅방 나가기 에러:", error);
+                    alert("채팅방 나가기 처리 중 문제가 발생하였습니다.");
+                });
+        }
     }
 
     // 채팅 기록 가져오기 (projectId 포함)

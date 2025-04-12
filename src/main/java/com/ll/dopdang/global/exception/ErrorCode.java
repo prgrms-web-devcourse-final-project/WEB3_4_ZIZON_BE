@@ -2,7 +2,6 @@ package com.ll.dopdang.global.exception;
 
 import org.springframework.http.HttpStatus;
 
-import co.elastic.clients.elasticsearch.nodes.Http;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -115,7 +114,9 @@ public enum ErrorCode {
 	REVIEW_STATS_NOT_FOUND(HttpStatus.NOT_FOUND, "리뷰를 통계를 찾을 수 없습니다."),
 
 	//채팅 관련 에러
-	CHATTING_EQUALS_EMAIL(HttpStatus.BAD_REQUEST, "자신에게는 메시지를 보낼 수 없습니다.");
+	CHATTING_EQUALS_EMAIL(HttpStatus.BAD_REQUEST, "자신에게는 메시지를 보낼 수 없습니다."),
+	CHATTING_CLOSE_OTHER(HttpStatus.FORBIDDEN, "상대방이 채팅방에서 나간 상태입니다. 메시지를 보낼 수 없습니다."),
+	CHATTING_SENDER_EQUAL(HttpStatus.BAD_REQUEST, "메시지의 sender가 채팅방 멤버와 일치하지 않습니다.");
 
 	private final HttpStatus status;
 	private final String message;

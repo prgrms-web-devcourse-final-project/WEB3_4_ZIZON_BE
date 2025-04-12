@@ -27,6 +27,8 @@ public class ChatRoomResponse {
 	private String otherUserProfile;
 	private Long otherUserId;
 	private Long expertId;
+	private boolean memberActive1;
+	private boolean memberActive2;
 
 	public static ChatRoomResponse from(ChatRoom chatRoom, Member currentMember,
 		Member otherUser, ChatMessage lastMessage, int unreadCount) {
@@ -56,6 +58,8 @@ public class ChatRoomResponse {
 			}
 		}
 		dto.setUnreadCount(unreadCount);
+		dto.setMemberActive1(chatRoom.isMemberActive1());
+		dto.setMemberActive2(chatRoom.isMemberActive2());
 		return dto;
 	}
 }
