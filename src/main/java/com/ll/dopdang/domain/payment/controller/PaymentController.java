@@ -55,10 +55,10 @@ public class PaymentController {
 		@RequestBody @Valid OrderIdRequest request,
 		@AuthenticationPrincipal CustomUserDetails userDetails) {
 		log.info("주문 ID 생성 요청: paymentType={}, referenceId={}, quantity={}",
-			request.getPaymentType(), request.getReferenceId(), request.getQuantity());
+			request.paymentType(), request.referenceId(), request.quantity());
 
 		Map<String, Object> response = paymentCreationService.createOrderIdWithInfo(
-			request.getPaymentType(), request.getReferenceId(), userDetails.getMember().getId(), request.getQuantity());
+			request.paymentType(), request.referenceId(), userDetails.getMember().getId(), request.quantity());
 
 		return ResponseEntity.ok(response);
 	}
