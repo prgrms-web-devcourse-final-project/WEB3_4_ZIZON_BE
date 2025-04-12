@@ -276,7 +276,7 @@ class ProductControllerTest {
 		mvc.perform(get("/products")
 				.param("keyword", "테스트")
 				.contentType(MediaType.APPLICATION_JSON))
-			.andExpect(status().isUnauthorized())
+			.andExpect(status().isOk())
 			.andDo(print());
 	}
 
@@ -288,7 +288,7 @@ class ProductControllerTest {
 				.param("categoryId", String.valueOf(testCategory.getId()))
 				.param("keyword", "테스트")
 				.contentType(MediaType.APPLICATION_JSON))
-			.andExpect(status().isUnauthorized())
+			.andExpect(status().isOk())
 			.andDo(print());
 	}
 
