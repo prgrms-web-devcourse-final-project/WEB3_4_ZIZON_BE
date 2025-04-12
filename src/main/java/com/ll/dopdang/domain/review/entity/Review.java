@@ -66,6 +66,10 @@ public class Review extends BaseEntity {
 		return review;
 	}
 
+	public void markAsDeleted() {
+		this.deleted = true;
+	}
+
 	// public static Review fromOrder(Order order, Member reviewer, BigDecimal score, String content, String imageUrl) {
 	// 	Review review = new Review();
 	// 	review.order = order;

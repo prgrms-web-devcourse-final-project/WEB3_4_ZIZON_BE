@@ -227,10 +227,66 @@ class ProductControllerTest {
 	}
 
 	@Test
+	@DisplayName("제품 목록 키워드 검색 테스트 - 인증된 사용자")
+	void testGetAllProductsWithKeyword() throws Exception {
+		// 로그인하여 액세스 토큰 획득
+		Cookie accessTokenCookie = performLoginAndGetAccessToken();
+
+		// 키워드로 제품 목록 조회 API 호출
+		mvc.perform(get("/products")
+				.param("keyword", "테스트")
+				.cookie(accessTokenCookie)
+				.contentType(MediaType.APPLICATION_JSON))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.products").isArray())
+			.andDo(print());
+	}
+
+	@Test
+	@DisplayName("제품 목록 카테고리 및 키워드 검색 테스트 - 인증된 사용자")
+	void testGetAllProductsWithCategoryAndKeyword() throws Exception {
+		// 로그인하여 액세스 토큰 획득
+		Cookie accessTokenCookie = performLoginAndGetAccessToken();
+
+		// 카테고리와 키워드로 제품 목록 조회 API 호출
+		mvc.perform(get("/products")
+				.param("categoryId", String.valueOf(testCategory.getId()))
+				.param("keyword", "테스트")
+				.cookie(accessTokenCookie)
+				.contentType(MediaType.APPLICATION_JSON))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.products").isArray())
+			.andDo(print());
+	}
+
+	@Test
 	@DisplayName("제품 목록 조회 테스트 - 인증되지 않은 사용자")
 	void testGetAllProductsUnauthenticated() throws Exception {
 		// 인증 없이 제품 목록 조회 API 호출
 		mvc.perform(get("/products")
+				.contentType(MediaType.APPLICATION_JSON))
+			.andExpect(status().isOk())
+			.andDo(print());
+	}
+
+	@Test
+	@DisplayName("제품 목록 키워드 검색 테스트 - 인증되지 않은 사용자")
+	void testGetAllProductsWithKeywordUnauthenticated() throws Exception {
+		// 인증 없이 키워드로 제품 목록 조회 API 호출
+		mvc.perform(get("/products")
+				.param("keyword", "테스트")
+				.contentType(MediaType.APPLICATION_JSON))
+			.andExpect(status().isOk())
+			.andDo(print());
+	}
+
+	@Test
+	@DisplayName("제품 목록 카테고리 및 키워드 검색 테스트 - 인증되지 않은 사용자")
+	void testGetAllProductsWithCategoryAndKeywordUnauthenticated() throws Exception {
+		// 인증 없이 카테고리와 키워드로 제품 목록 조회 API 호출
+		mvc.perform(get("/products")
+				.param("categoryId", String.valueOf(testCategory.getId()))
+				.param("keyword", "테스트")
 				.contentType(MediaType.APPLICATION_JSON))
 			.andExpect(status().isOk())
 			.andDo(print());
