@@ -331,6 +331,7 @@ public class ExpertService {
 			.introduction(expert.getIntroduction())
 			.mainCategoryId(expert.getCategory().getId())
 			.profileImage(expert.getMember().getProfileImage())
+			.reviewCounts(reviewStats != null ? reviewStats.getReviewCount() : 0)
 			.averageScore(reviewStats != null ? reviewStats.getAverageScore() : BigDecimal.ZERO)
 			.build();
 	}
