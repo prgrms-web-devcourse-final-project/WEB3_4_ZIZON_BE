@@ -195,6 +195,13 @@ public class ExpertService {
 			.toList();
 	}
 
+	public List<ExpertResponseDto> getTopRatedExperts(Long categoryId) {
+		List<ReviewStats> statsList = reviewStatsRepository.findTopExpertsByRatingAndCategory(categoryId);
+		return statsList.stream()
+			.map(rs -> mapToResponseDto(rs.getExpert())) // ReviewStats에서 Expert로 매핑
+			.toList();
+	}
+
 	public ExpertDetailResponseDto getExpertById(Long expertId) {
 		// 1. 전문가 조회
 		Expert expert = expertRepository.findById(expertId)
@@ -314,6 +321,8 @@ public class ExpertService {
 	 * Expert 엔티티를 ExpertResponseDto로 변환합니다.
 	 */
 	private ExpertResponseDto mapToResponseDto(Expert expert) {
+		ReviewStats reviewStats = expert.getReviewStats();
+
 		return ExpertResponseDto.builder()
 			.expertId(expert.getId())
 			.name(expert.getMember().getName()) // Member 이름
@@ -322,6 +331,7 @@ public class ExpertService {
 			.introduction(expert.getIntroduction())
 			.mainCategoryId(expert.getCategory().getId())
 			.profileImage(expert.getMember().getProfileImage())
+			.averageScore(reviewStats != null ? reviewStats.getAverageScore() : BigDecimal.ZERO)
 			.build();
 	}
 
