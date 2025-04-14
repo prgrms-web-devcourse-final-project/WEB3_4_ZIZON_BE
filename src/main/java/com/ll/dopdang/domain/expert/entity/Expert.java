@@ -6,6 +6,7 @@ import java.util.List;
 import com.ll.dopdang.domain.expert.category.entity.Category;
 import com.ll.dopdang.domain.expert.category.entity.ExpertCategory;
 import com.ll.dopdang.domain.member.entity.Member;
+import com.ll.dopdang.domain.review.entity.ReviewStats;
 import com.ll.dopdang.global.entity.BaseEntity;
 
 import jakarta.persistence.CascadeType;
@@ -71,6 +72,10 @@ public class Expert extends BaseEntity {
 
 	@OneToOne(mappedBy = "expert", cascade = CascadeType.ALL, orphanRemoval = true)
 	private Portfolio portfolio;
+
+	@OneToOne(mappedBy = "expert", cascade = CascadeType.ALL, orphanRemoval = true)
+	private ReviewStats reviewStats; // ReviewStats와 1:1 관계
+
 
 	@OneToMany(mappedBy = "expert", cascade = CascadeType.ALL, orphanRemoval = true)
 	@Builder.Default
