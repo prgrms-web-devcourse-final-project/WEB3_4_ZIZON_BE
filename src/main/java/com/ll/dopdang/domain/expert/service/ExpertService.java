@@ -24,6 +24,8 @@ import com.ll.dopdang.domain.expert.repository.ExpertRepository;
 import com.ll.dopdang.domain.expert.repository.PortfolioRepository;
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.repository.MemberRepository;
+import com.ll.dopdang.global.exception.ErrorCode;
+import com.ll.dopdang.global.exception.ServiceException;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -98,14 +100,15 @@ public class ExpertService {
 				.build();
 			expertCertificateRepository.save(expertCertificate);
 		});
-			// 새로운 포트폴리오 생성
-			Portfolio portfolio = Portfolio.builder()
-				.expert(expert)
-				.title(expertRequestDto.getPortfolioTitle() != null ? expertRequestDto.getPortfolioTitle() : "") // 기본값 설정
-				.imageUrl(expertRequestDto.getPortfolioImage() != null ? expertRequestDto.getPortfolioImage() : "") // 기본값: 빈 URL
-				.build();
-			// 새로 생성한 포트폴리오 저장
-			portfolioRepository.save(portfolio);
+		// 새로운 포트폴리오 생성
+		Portfolio portfolio = Portfolio.builder()
+			.expert(expert)
+			.title(expertRequestDto.getPortfolioTitle() != null ? expertRequestDto.getPortfolioTitle() : "") // 기본값 설정
+			.imageUrl(
+				expertRequestDto.getPortfolioImage() != null ? expertRequestDto.getPortfolioImage() : "") // 기본값: 빈 URL
+			.build();
+		// 새로 생성한 포트폴리오 저장
+		portfolioRepository.save(portfolio);
 		return expert.getId();
 	}
 
@@ -141,7 +144,7 @@ public class ExpertService {
 			}
 		}
 		// 데이터베이스 조회를 통한 필터링 결과
-	List<Expert> experts = expertRepository.findByFilters(categoryNames, minYears, maxYears);
+		List<Expert> experts = expertRepository.findByFilters(categoryNames, minYears, maxYears);
 
 		// Expert 데이터를 DTO로 변환하여 반환
 		return experts.stream()
@@ -188,7 +191,7 @@ public class ExpertService {
 			.orElseThrow(() -> new IllegalArgumentException("Expert not found with ID: " + expertId));
 		Portfolio portfolio = expert.getPortfolio();
 		// 2. Expert -> ExpertDetailResponseDto로 변환
-		return mapToDetailResponseDto(expert,portfolio);
+		return mapToDetailResponseDto(expert, portfolio);
 	}
 
 	public List<ExpertResponseDto> searchByName(String name) {
@@ -274,7 +277,8 @@ public class ExpertService {
 
 				Portfolio newPortfolio = Portfolio.builder()
 					.expert(existingExpert) // Expert와 연결
-					.title(updateRequestDto.getPortfolioTitle() != null ? updateRequestDto.getPortfolioTitle() : "Default Title")
+					.title(updateRequestDto.getPortfolioTitle() != null ? updateRequestDto.getPortfolioTitle() :
+						"Default Title")
 					.imageUrl(updateRequestDto.getPortfolioImage() != null ? updateRequestDto.getPortfolioImage() : "")
 					.build();
 
@@ -293,7 +297,7 @@ public class ExpertService {
 		}
 		Expert expert = expertRepository.findById(expertId)
 			.orElseThrow(() -> new IllegalArgumentException("Expert not found with ID: " + expertId));
-		return mapToDetailResponseDto(expert,expert.getPortfolio());
+		return mapToDetailResponseDto(expert, expert.getPortfolio());
 	}
 
 	/**
@@ -338,5 +342,10 @@ public class ExpertService {
 				.map(expertCertificate -> expertCertificate.getCertificate().getName())
 				.toList())
 			.build();
+	}
+
+	public Expert findExpertById(Long expertId) {
+		return expertRepository.findById(expertId)
+			.orElseThrow(() -> new ServiceException(ErrorCode.EXPERT_NOT_FOUND));
 	}
 }
