@@ -81,7 +81,7 @@ public class ContractService {
 
 		// 7. 프로젝트 상태 변경
 		Project project = offer.getProject();
-		project.updateStatus(ProjectStatus.COMPLETED);
+		project.updateStatus(ProjectStatus.IN_PROGRESS);
 
 		// 8. 생성된 계약 ID 반환
 		return savedContract.getId();
@@ -163,5 +163,9 @@ public class ContractService {
 
 		// 4. 상태 변경
 		contract.updateStatus(Contract.ContractStatus.COMPLETED);
+
+		// 5. 프로젝트 상태 변경
+		Project project = contract.getProject();
+		project.updateStatus(ProjectStatus.COMPLETED);
 	}
 }
