@@ -27,6 +27,8 @@ import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.repository.MemberRepository;
 import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
+import com.ll.dopdang.global.exception.ErrorCode;
+import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.domain.review.entity.ReviewStats;
 import com.ll.dopdang.domain.review.repository.ReviewStatsRepository;
 
@@ -118,7 +120,7 @@ public class ExpertService {
 
     	ReviewStats stats = ReviewStats.of(expert, BigDecimal.ZERO, 0);
 		  reviewStatsRepository.save(stats);
-    
+
 		return expert.getId();
 	}
 
@@ -312,7 +314,6 @@ public class ExpertService {
 			return mapToDetailResponseDto(existingExpert, existingExpert.getPortfolio());
 		}
 		Expert expert = expertRepository.findById(expertId)
-
 			.orElseThrow(() -> new ServiceException(ErrorCode.EXPERT_NOT_EXISTS,String.valueOf(expertId)));
 		return mapToDetailResponseDto(expert,expert.getPortfolio());
 	}
@@ -363,5 +364,10 @@ public class ExpertService {
 				.map(expertCertificate -> expertCertificate.getCertificate().getName())
 				.toList())
 			.build();
+	}
+
+	public Expert findExpertById(Long expertId) {
+		return expertRepository.findById(expertId)
+			.orElseThrow(() -> new ServiceException(ErrorCode.EXPERT_NOT_FOUND));
 	}
 }

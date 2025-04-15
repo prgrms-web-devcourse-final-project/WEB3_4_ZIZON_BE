@@ -81,6 +81,7 @@ public class OAuthAttributes {
 			.memberId(memberId)
 			.userRole(MemberRole.CLIENT.toString())
 			.status(MemberStatus.UNVERIFIED.toString())
+			.isClient(true)
 			.build();
 	}
 }

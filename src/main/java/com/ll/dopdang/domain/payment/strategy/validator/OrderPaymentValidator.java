@@ -28,7 +28,7 @@ public class OrderPaymentValidator implements PaymentAmountValidator {
 	public BigDecimal validateAndGetExpectedAmount(Long referenceId, BigDecimal requestAmount, String orderId) {
 		// referenceId는 상품 ID
 		ProductDetailResponse product = productService.getProductById(referenceId);
-		BigDecimal productPrice = product.getPrice();
+		BigDecimal productPrice = product.price();
 
 		// Redis에서 주문 정보 조회하여 수량 가져오기
 		PaymentOrderInfo orderInfo = paymentQueryService.getPaymentOrderInfoByOrderId(orderId);
