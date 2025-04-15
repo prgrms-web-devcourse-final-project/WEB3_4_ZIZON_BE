@@ -12,6 +12,7 @@ import com.ll.dopdang.domain.expert.category.service.CategoryService;
 import com.ll.dopdang.domain.expert.entity.Expert;
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.service.MemberUtilService;
+import com.ll.dopdang.domain.payment.entity.PaymentType;
 import com.ll.dopdang.domain.store.dto.DigitalContentDetailResponse;
 import com.ll.dopdang.domain.store.dto.ProductCreateRequest;
 import com.ll.dopdang.domain.store.dto.ProductDetailResponse;
@@ -47,7 +48,7 @@ public class ProductService {
 	public void createProduct(ProductCreateRequest request, CustomUserDetails userDetails) {
 		Member member = memberUtilService.findMember(userDetails.getId());
 		Expert expert = memberUtilService.validateExpert(member);
-		Category category = categoryService.findById(request.getCategoryId());
+		Category category = categoryService.findById(request.categoryId());
 		validateDigitalProduct(request);
 		Product product = Product.from(request, category, expert);
 		productRepository.save(product);
@@ -57,14 +58,20 @@ public class ProductService {
 	 * 상품 전체 조회 메서드
 	 * @param pageable Pageable
 	 * @param categoryId 카테고리 고유 ID
+	 * @param keyword 검색 키워드
 	 * return {@link ProductListPageResponse}
 	 */
-	public ProductListPageResponse getAllProducts(Pageable pageable, Long categoryId) {
+	public ProductListPageResponse getAllProducts(Pageable pageable, Long categoryId, String keyword) {
 		Page<Product> page;
-		if (categoryId != null) {
+
+		if (categoryId != null && keyword != null && !keyword.isEmpty()) {
+			// 카테고리와 키워드로 검색
+			page = productRepository.findAllByCategoryAndKeyword(categoryId, keyword, pageable);
+		} else if (categoryId != null) {
+			// 카테고리로만 검색
 			page = productRepository.findAllByCategoryOrderByStockAndCreatedAtDesc(categoryId, pageable);
 		} else {
-			// findAllOrderByStockAvailabilityAndCreatedAtDesc
+			// 모든 상품 조회
 			page = productRepository.findAll(pageable);
 		}
 
@@ -72,12 +79,11 @@ public class ProductService {
 			.map(ProductListResponse::of)
 			.toList();
 
-		return ProductListPageResponse.builder()
-			.products(productListResponses)
-			.currentPage(page.getNumber())
-			.pageSize(page.getSize())
-			.hasNext(page.hasNext())
-			.build();
+		return ProductListPageResponse.of(
+			productListResponses,
+			page.getNumber(),
+			page.getSize(),
+			page.hasNext());
 	}
 
 	/**
@@ -139,18 +145,24 @@ public class ProductService {
 	}
 
 	public void validateDigitalProduct(ProductCreateRequest request) {
-		if (ProductType.DIGITAL.equals(request.getProductType()) && (Objects.isEmpty(request.getDigitalContents()))) {
+		if (ProductType.DIGITAL.equals(request.productType()) && (Objects.isEmpty(request.digitalContents()))) {
 			throw new ServiceException(ErrorCode.INVALID_PRODUCT_CONTENT);
 		}
 	}
 
 	/**
 	 * 상품 재고 감소 메서드
-	 * @param product 상품
+	 * @param referenceId 상품 번호
 	 * @param quantity 감소시킬 수량
 	 * @return 업데이트된 상품
 	 */
-	public synchronized Product decreaseStock(Product product, Integer quantity) {
+	public synchronized Product decreaseStock(PaymentType paymentType, Long referenceId, Integer quantity) {
+		if (!paymentType.equals(PaymentType.ORDER)) {
+			return null;
+		}
+
+		Product product = findById(referenceId);
+
 		if (product.getStock() < quantity) {
 			throw new ServiceException(ErrorCode.INSUFFICIENT_STOCK);
 		}
@@ -169,5 +181,24 @@ public class ProductService {
 			.build();
 
 		return productRepository.save(updateProduct);
+	}
+
+	@Transactional
+	public ProductListPageResponse findMySellingProducts(Pageable pageable, CustomUserDetails userDetails) {
+		Member member = memberUtilService.findMember(userDetails.getId());
+		Expert expert = memberUtilService.validateExpert(member);
+
+		// Page<Product> page = productRepository.findMySellingProducts(expert.getId(), pageable);
+		Page<Product> page = productRepository.findAllByExpertId(expert.getId(), pageable);
+
+		List<ProductListResponse> productListResponses = page.getContent().stream()
+			.map(ProductListResponse::of)
+			.toList();
+
+		return ProductListPageResponse.of(
+			productListResponses,
+			page.getNumber(),
+			page.getSize(),
+			page.hasNext());
 	}
 }

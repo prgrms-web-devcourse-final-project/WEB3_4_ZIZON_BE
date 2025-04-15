@@ -28,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 @RestController
 @RequestMapping("/admin/rebate")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAuthority('ADMIN')")
 @Tag(name = "정산 관리자 API", description = "정산 데이터 검증 및 관리 API")
 public class RebateAdminController {
 

@@ -7,50 +7,45 @@ import java.util.List;
 import com.ll.dopdang.domain.store.entity.Product;
 import com.ll.dopdang.domain.store.entity.ProductType;
 
-import lombok.Builder;
-import lombok.Getter;
-
-@Getter
-@Builder
-public class ProductDetailResponse {
-	private Long id;
-	private String expertName;
-	private String title;
-	private String description;
-	private BigDecimal price;
-	private Integer stock;
-	private ProductType productType;
-	private String thumbnailImage;
-	private LocalDateTime createAt;
-	private List<DigitalContentDetailResponse> digitalContents;
-
+public record ProductDetailResponse(
+	Long id,
+	String expertName,
+	String title,
+	String description,
+	BigDecimal price,
+	Integer stock,
+	ProductType productType,
+	String thumbnailImage,
+	LocalDateTime createAt,
+	List<DigitalContentDetailResponse> digitalContents
+) {
 	public static ProductDetailResponse of(Product product) {
-		return ProductDetailResponse.builder()
-			.id(product.getId())
-			.expertName(product.getExpert().getMember().getName())
-			.title(product.getTitle())
-			.description(product.getDescription())
-			.price(product.getPrice())
-			.stock(product.getStock())
-			.productType(product.getProductType())
-			.thumbnailImage(product.getThumbnailImage())
-			.createAt(product.getCreatedAt())
-			.build();
+		return new ProductDetailResponse(
+			product.getId(),
+			product.getExpert().getMember().getName(),
+			product.getTitle(),
+			product.getDescription(),
+			product.getPrice(),
+			product.getStock(),
+			product.getProductType(),
+			product.getThumbnailImage(),
+			product.getCreatedAt(),
+			null
+		);
 	}
 
 	public static ProductDetailResponse of(Product product, List<DigitalContentDetailResponse> digitalContents) {
-		return ProductDetailResponse.builder()
-			.id(product.getId())
-			.expertName(product.getExpert().getMember().getName())
-			.title(product.getTitle())
-			.description(product.getDescription())
-			.price(product.getPrice())
-			.stock(product.getStock())
-			.productType(product.getProductType())
-			.thumbnailImage(product.getThumbnailImage())
-			.createAt(product.getCreatedAt())
-			.digitalContents(digitalContents)
-			.build();
+		return new ProductDetailResponse(
+			product.getId(),
+			product.getExpert().getMember().getName(),
+			product.getTitle(),
+			product.getDescription(),
+			product.getPrice(),
+			product.getStock(),
+			product.getProductType(),
+			product.getThumbnailImage(),
+			product.getCreatedAt(),
+			digitalContents
+		);
 	}
 }
-

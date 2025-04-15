@@ -1,5 +1,6 @@
 package com.ll.dopdang.domain.store.entity;
 
+import com.ll.dopdang.domain.store.dto.DigitalContentProjection;
 import com.ll.dopdang.domain.store.dto.DigitalContentRequest;
 import com.ll.dopdang.domain.store.dto.DigitalContentUpdateRequest;
 
@@ -11,6 +12,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,6 +24,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(name = "digital_content")
 public class DigitalContent {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -54,23 +57,34 @@ public class DigitalContent {
 	public static DigitalContent from(DigitalContentRequest request, Product product) {
 		return DigitalContent.builder()
 			.product(product)
-			.fileName(request.getFileName())
-			.fileUrl(request.getFileUrl())
-			.fileSize(request.getFileSize())
-			.fileType(request.getFileType())
-			.downloadLimit(request.getDownloadLimit())
+			.fileName(request.fileName())
+			.fileUrl(request.fileUrl())
+			.fileSize(request.fileSize())
+			.fileType(request.fileType())
+			.downloadLimit(request.downloadLimit())
+			.build();
+	}
+
+	public static DigitalContent from(DigitalContentProjection projection) {
+		return DigitalContent.builder()
+			.id(projection.getId())
+			.fileName(projection.getFileName())
+			.fileUrl(projection.getFileUrl())
+			.fileSize(projection.getFileSize())
+			.fileType(projection.getFileType())
+			.downloadLimit(projection.getDownloadLimit())
 			.build();
 	}
 
 	public static DigitalContent update(DigitalContentUpdateRequest request, Product product) {
 		return DigitalContent.builder()
-			.id(request.getId())
+			.id(request.id())
 			.product(product)
-			.fileName(request.getFileName())
-			.fileUrl(request.getFileUrl())
-			.fileSize(request.getFileSize())
-			.fileType(request.getFileType())
-			.downloadLimit(request.getDownloadLimit())
+			.fileName(request.fileName())
+			.fileUrl(request.fileUrl())
+			.fileSize(request.fileSize())
+			.fileType(request.fileType())
+			.downloadLimit(request.downloadLimit())
 			.build();
 	}
 }

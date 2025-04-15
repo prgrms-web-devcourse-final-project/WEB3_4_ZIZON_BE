@@ -17,6 +17,16 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       build_status: ${{ steps.build.outcome }}
+    services:
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v3
 
@@ -34,7 +44,7 @@ jobs:
         run: |
           # GitHub 시크릿을 JSON으로 변환하고 파싱하여 GitHub 환경 파일에 추가
           echo '${{ toJSON(secrets) }}' | jq -r 'to_entries | .[] | select(.key != "GITHUB_TOKEN" and .key != "EC2_SSH_KEY") | "\(.key)=\(.value)"' >> $GITHUB_ENV
-          
+
           # 확인 메시지 (실제 값은 표시되지 않음)
           echo "환경변수가 성공적으로 설정되었습니다."
           echo "설정된 변수 목록 (값은 보안상 표시되지 않음):"
@@ -113,7 +123,7 @@ jobs:
         run: |
           # GitHub 시크릿을 JSON으로 변환하고 파싱하여 GitHub 환경 파일에 추가
           echo '${{ toJSON(secrets) }}' | jq -r 'to_entries | .[] | select(.key != "GITHUB_TOKEN" and .key != "EC2_SSH_KEY") | "\(.key)=\(.value)"' >> $GITHUB_ENV
-          
+
           # 확인 메시지 (실제 값은 표시되지 않음)
           echo "환경변수가 성공적으로 설정되었습니다."
           echo "설정된 변수 목록 (값은 보안상 표시되지 않음):"
@@ -200,13 +210,13 @@ jobs:
           # GitHub API를 사용하여 코드 스캐닝 알림 확인
           ALERTS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/${{ github.repository }}/code-scanning/alerts?state=open")
-          
+
           # 열린 알림 수 계산
           ALERT_COUNT=$(echo $ALERTS | jq length)
-          
+
           echo "Security alert count: $ALERT_COUNT"
           echo "alert_count=$ALERT_COUNT" >> $GITHUB_OUTPUT
-          
+
           if [ "$ALERT_COUNT" -gt 0 ]; then
             echo "Security vulnerabilities found!"
           fi

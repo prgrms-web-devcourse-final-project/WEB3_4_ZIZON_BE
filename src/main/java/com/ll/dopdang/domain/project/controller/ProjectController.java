@@ -75,10 +75,10 @@ public class ProjectController {
 		summary = "프로젝트 단건 조회",
 		description = "프로젝트 ID를 기반으로 단일 프로젝트의 상세 정보를 조회합니다.",
 		tags = {"Project"}
-	)
+	) // 이거
 	@ApiResponse(responseCode = "200", description = "프로젝트 조회 성공")
 	@ApiResponse(responseCode = "404", description = "해당 프로젝트를 찾을 수 없음")
-	@GetMapping("/{projectId}")
+	@GetMapping("/detail/{projectId}")
 	public ResponseEntity<ProjectDetailResponse> getProjectById(
 		@Parameter(description = "조회할 프로젝트의 ID", required = true, example = "1")
 		@PathVariable Long projectId

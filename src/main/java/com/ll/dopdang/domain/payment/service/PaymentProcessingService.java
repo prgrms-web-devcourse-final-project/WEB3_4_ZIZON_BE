@@ -20,9 +20,9 @@ import com.ll.dopdang.domain.payment.strategy.info.PaymentInfoProviderFactory;
 import com.ll.dopdang.domain.payment.strategy.saver.PaymentSaverFactory;
 import com.ll.dopdang.domain.payment.util.PaymentConstants;
 import com.ll.dopdang.domain.payment.util.TossPaymentUtils;
-import com.ll.dopdang.domain.store.entity.Product;
 import com.ll.dopdang.domain.store.service.ProductService;
 import com.ll.dopdang.global.exception.ErrorCode;
+import com.ll.dopdang.global.exception.PaymentAmountManipulationException;
 import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.global.redis.repository.RedisRepository;
 
@@ -60,24 +60,20 @@ public class PaymentProcessingService {
 	 * @param orderId 주문 ID
 	 * @param amount 결제 금액
 	 */
-	// 해당 메서드에 @Transactional을 붙일 경우 결제 금액 검증이 실패했을 때 데이터 저장 안됨. 각 메서드에 트랜잭션 붙일 것.
+	@Transactional(noRollbackFor = PaymentAmountManipulationException.class)
 	public Payment confirmPayment(String paymentKey, String orderId, BigDecimal amount) {
 		log.info("결제 승인 요청: paymentKey={}, orderId={}, amount={}", paymentKey, orderId, amount);
 
 		// 주문 ID로 결제 정보 조회
 		PaymentOrderInfo orderInfo = paymentQueryService.getPaymentOrderInfoByOrderId(orderId);
-		PaymentType paymentType = orderInfo.getPaymentType();
-		Long referenceId = orderInfo.getReferenceId();
+		PaymentType paymentType = orderInfo.paymentType();
+		Long referenceId = orderInfo.referenceId();
 
 		// 결제 금액 검증
 		paymentVerificationService.validatePaymentAmount(paymentType, referenceId, amount, orderId);
 
-		// 상품 재고 감소 처리
-		Product product = productService.findById(referenceId);
-		Product updatedProduct = productService.decreaseStock(product, orderInfo.getQuantity());
-
-		log.info("상품 재고 감소 처리 완료: productId={}, quantity={}, remainingStock={}",
-			referenceId, orderInfo.getQuantity(), updatedProduct.getStock());
+		// 상품 재고 감소 처리 - ORDER 타입인 경우에만 수행
+		productService.decreaseStock(paymentType, referenceId, orderInfo.quantity());
 
 		// 토스페이먼츠 API 호출
 		String responseBody = callTossPaymentsApi(paymentKey, orderId, amount);
@@ -105,8 +101,8 @@ public class PaymentProcessingService {
 		try {
 			// 주문 ID로 Redis에서 결제 정보 조회
 			PaymentOrderInfo orderInfo = paymentQueryService.getPaymentOrderInfoByOrderId(orderId);
-			PaymentType paymentType = orderInfo.getPaymentType();
-			Long referenceId = orderInfo.getReferenceId();
+			PaymentType paymentType = orderInfo.paymentType();
+			Long referenceId = orderInfo.referenceId();
 
 			// 실패 메타데이터 생성
 			Map<String, String> failureMetadata = new HashMap<>();
