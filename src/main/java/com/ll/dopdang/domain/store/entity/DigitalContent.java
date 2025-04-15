@@ -57,11 +57,11 @@ public class DigitalContent {
 	public static DigitalContent from(DigitalContentRequest request, Product product) {
 		return DigitalContent.builder()
 			.product(product)
-			.fileName(request.getFileName())
-			.fileUrl(request.getFileUrl())
-			.fileSize(request.getFileSize())
-			.fileType(request.getFileType())
-			.downloadLimit(request.getDownloadLimit())
+			.fileName(request.fileName())
+			.fileUrl(request.fileUrl())
+			.fileSize(request.fileSize())
+			.fileType(request.fileType())
+			.downloadLimit(request.downloadLimit())
 			.build();
 	}
 
