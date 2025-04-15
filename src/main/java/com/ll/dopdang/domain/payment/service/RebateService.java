@@ -13,7 +13,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ll.dopdang.domain.member.entity.Member;
+import com.ll.dopdang.domain.expert.entity.Expert;
+import com.ll.dopdang.domain.expert.service.ExpertService;
 import com.ll.dopdang.domain.payment.entity.Payment;
 import com.ll.dopdang.domain.payment.entity.PaymentStatus;
 import com.ll.dopdang.domain.payment.entity.Rebate;
@@ -36,6 +37,7 @@ public class RebateService {
 
 	private final PaymentRepository paymentRepository;
 	private final RebateRepository rebateRepository;
+	private final ExpertService expertService;
 	private final PaymentInfoProviderFactory paymentInfoProviderFactory;
 
 	@Value("${payment.fee.rate}")
@@ -67,7 +69,8 @@ public class RebateService {
 	 * @param yearMonth 정산 대상 년월
 	 * @return 생성된 정산 데이터 수
 	 */
-	private int createRebateDataForPeriod(LocalDateTime startDateTime, LocalDateTime endDateTime, YearMonth yearMonth) {
+	@Transactional
+	public int createRebateDataForPeriod(LocalDateTime startDateTime, LocalDateTime endDateTime, YearMonth yearMonth) {
 		// 해당 기간에 결제 완료된 건들 조회
 		List<Payment> eligiblePayments = getEligiblePayments(startDateTime, endDateTime);
 
@@ -145,7 +148,6 @@ public class RebateService {
 	 * @param yearMonth 정산 대상 년월
 	 * @return 생성된 정산 데이터 수
 	 */
-	@Transactional
 	public int createRebateDataManually(YearMonth yearMonth) {
 		return createRebateData(yearMonth);
 	}
@@ -156,7 +158,7 @@ public class RebateService {
 	 * @param yearMonth 정산 대상 년월
 	 * @return 생성된 정산 데이터 수
 	 */
-	private int createRebateData(YearMonth yearMonth) {
+	public int createRebateData(YearMonth yearMonth) {
 		YearMonth nextMonth = yearMonth.plusMonths(1);
 
 		LocalDateTime startDateTime = yearMonth.atDay(1).atStartOfDay();
@@ -212,7 +214,7 @@ public class RebateService {
 				Map<String, Object> additionalInfo = infoProvider
 					.provideAdditionalInfo(payment.getReferenceId(),
 						payment.getOrderId());        // 추가 정보 조회 (전문가 정보 포함)
-				Member expert = (Member)additionalInfo.get("expert");        // 전문가 정보 추출
+				Expert expert = expertService.findExpertById((Long)additionalInfo.get("expertId"));
 				return Rebate.createFromPayment(payment, feeRate, expert, yearMonth); // Rebate 생성
 			}).collect(Collectors.toList());
 	}

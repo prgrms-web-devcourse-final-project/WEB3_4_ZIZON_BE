@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -89,6 +90,25 @@ public class GlobalExceptionHandler {
 			.build();
 
 		return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+	}
+
+	/**
+	 * 접근 권한 예외 처리를 위한 핸들러
+	 *
+	 * @param exception AccessDeniedException
+	 * @return 에러 응답
+	 */
+	@ExceptionHandler(AccessDeniedException.class)
+	public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException exception) {
+		log.error("접근 권한 예외 발생: {}", exception.getMessage());
+
+		ErrorResponse response = ErrorResponse.builder()
+			.status(HttpStatus.FORBIDDEN.value())
+			.message("접근 권한이 없습니다.")
+			.timestamp(LocalDateTime.now())
+			.build();
+
+		return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
 	}
 
 	/**

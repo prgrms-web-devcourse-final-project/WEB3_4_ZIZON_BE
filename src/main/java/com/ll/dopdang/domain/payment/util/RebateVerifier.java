@@ -202,7 +202,7 @@ public class RebateVerifier {
 				// 전문가 정보 추가 (있는 경우)
 				if (rebate.getExpert() != null) {
 					incorrectRebate.put("expertId", rebate.getExpert().getId());
-					incorrectRebate.put("expertName", rebate.getExpert().getName());
+					incorrectRebate.put("expertName", rebate.getExpert().getMember().getName());
 				}
 
 				incorrectRebates.add(incorrectRebate);

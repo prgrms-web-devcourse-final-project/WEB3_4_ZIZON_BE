@@ -5,7 +5,7 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 
-import com.ll.dopdang.domain.member.entity.Member;
+import com.ll.dopdang.domain.expert.entity.Expert;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -44,7 +44,7 @@ public class Rebate {
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "expert_id")
-	private Member expert;
+	private Expert expert;
 
 	@Column(name = "rebate_year_month")
 	private String rebateYearMonth; // 정산 년월 (YYYY-MM 형식)
@@ -88,7 +88,7 @@ public class Rebate {
 	 * @param rebateYearMonth 정산 년월
 	 * @return 생성된 Rebate 엔티티
 	 */
-	public static Rebate createFromPayment(Payment payment, BigDecimal feeRate, Member expert,
+	public static Rebate createFromPayment(Payment payment, BigDecimal feeRate, Expert expert,
 		YearMonth rebateYearMonth) {
 		// 남은 결제 금액 (부분 취소 반영)
 		BigDecimal remainingAmount = payment.getRemainingAmount();
