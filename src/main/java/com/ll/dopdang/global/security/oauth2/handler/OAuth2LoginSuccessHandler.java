@@ -109,6 +109,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 					.memberId(providerId)
 					.userRole(MemberRole.CLIENT.toString())
 					.status(MemberStatus.UNVERIFIED.toString())
+					.isClient(true)
 					.build();
 			} else if ("google".equals(registrationId)) {
 				name = (String)attributes.get("name");
@@ -124,6 +125,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 					.memberId(providerId)
 					.userRole(MemberRole.CLIENT.toString())
 					.status(MemberStatus.UNVERIFIED.toString())
+					.isClient(true)
 					.build();
 			} else {
 				Map<String, Object> response = (Map<String, Object>)attributes.get("response");
@@ -140,6 +142,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 					.memberId(providerId)
 					.userRole(MemberRole.CLIENT.toString())
 					.status(MemberStatus.UNVERIFIED.toString())
+					.isClient(true)
 					.build();
 			}
 
