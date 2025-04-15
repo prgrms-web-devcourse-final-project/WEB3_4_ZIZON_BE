@@ -24,6 +24,7 @@ import com.ll.dopdang.domain.project.dto.ContractDetailResponse;
 import com.ll.dopdang.domain.project.dto.ContractSummaryResponse;
 import com.ll.dopdang.domain.project.service.ContractService;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
+import com.ll.dopdang.standard.util.LogSanitizer;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -58,7 +59,9 @@ public class ContractController {
 	@PostMapping
 	public ResponseEntity<Map<String, Object>> createContract(@RequestBody ContractCreateRequest request) {
 		log.info("계약 생성 요청: offerId={}, price={}, startDate={}, endDate={}",
-			request.getOfferId(), request.getPrice(), request.getStartDate(), request.getEndDate());
+			request.getOfferId(), request.getPrice(),
+			LogSanitizer.sanitizeLogInput(request.getStartDate().toString()),
+			LogSanitizer.sanitizeLogInput(request.getEndDate().toString()));
 
 		Long contractId = contractService.createContractFromOffer(
 			request.getOfferId(),
@@ -69,7 +72,7 @@ public class ContractController {
 
 		Map<String, Object> response = new HashMap<>();
 		response.put("contractId", contractId);
-		
+
 		return ResponseEntity.ok(response);
 	}
 

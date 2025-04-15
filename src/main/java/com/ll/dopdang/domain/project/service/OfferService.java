@@ -17,6 +17,7 @@ import com.ll.dopdang.domain.project.repository.ProjectRepository;
 import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
+import com.ll.dopdang.standard.util.LogSanitizer;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -84,9 +85,9 @@ public class OfferService {
 		Long clientId = project.getClient().getId();
 		Long expertMemberId = offer.getExpert().getMember().getId();
 
-		log.info("로그인한 유저 ID: {}", userId);
-		log.info("프로젝트 클라이언트 ID: {}", clientId);
-		log.info("오퍼 전문가 멤버 ID: {}", expertMemberId);
+		log.info("로그인한 유저 ID: {}", LogSanitizer.sanitizeLogInput(userId.toString()));
+		log.info("프로젝트 클라이언트 ID: {}", LogSanitizer.sanitizeLogInput(clientId.toString()));
+		log.info("오퍼 전문가 멤버 ID: {}", LogSanitizer.sanitizeLogInput(expertMemberId.toString()));
 
 		boolean isClient = clientId.equals(userId);
 		boolean isExpert = expertMemberId.equals(userId);
@@ -150,7 +151,7 @@ public class OfferService {
 	 * @return 오퍼 엔티티
 	 */
 	public Offer getOfferByProjectAndExpert(Long projectId, Long expertId, CustomUserDetails userDetails) {
-		log.info("userDetails.getId(): {}", userDetails.getId());
+		log.info("userDetails.getId(): {}", LogSanitizer.sanitizeLogInput(userDetails.getId().toString()));
 		if (userDetails == null) {
 			throw new ServiceException(ErrorCode.UNAUTHORIZED_USER);
 		}
