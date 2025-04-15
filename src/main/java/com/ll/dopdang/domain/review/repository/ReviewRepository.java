@@ -7,12 +7,20 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import com.ll.dopdang.domain.project.entity.Contract;
 import com.ll.dopdang.domain.review.entity.Review;
 
+@Repository
 public interface ReviewRepository extends JpaRepository<Review, Long> {
-	boolean existsByContract(Contract contract);
+
+	@Query(
+    "SELECT COUNT(r) > 0 FROM Review r "
+    + "WHERE r.contract = :contract "
+    + "AND r.deleted = false "
+	)
+	boolean existsByContract(@Param("contract") Contract contract);
 
 	Optional<Review> findByContract(Contract contract);
 

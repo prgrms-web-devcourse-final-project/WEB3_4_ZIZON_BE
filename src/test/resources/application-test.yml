@@ -1,57 +1,57 @@
-spring:
-  datasource:
-    driver-class-name: org.h2.Driver
-    url: jdbc:h2:mem:test;MODE=MYSQL;DATABASE_TO_LOWER=TRUE
-    username: sa
-    password:
-  sql:
-    init:
-      mode: never
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-      naming:
-        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
-    properties:
-      hibernate:
-        default_batch_fetch_size: 100
-        dialect: org.hibernate.dialect.H2Dialect
-        highlight_sql: true
-        format_sql: true
-        show_sql: true
-        use_sql_comments: true
-    open-in-view: false
-    defer-datasource-initialization: true
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      database: 0
-  cloud:
-    aws:
-      credentials:
-        access-key: cloud-access-key
-        secret-key: cloud-secret-key
-      region:
-        static: ap-northeast-2
-jwt:
-  secret: c99197156d1d4db89296e58473b8d37c3bd2285ae5014594ac211603b44071feDFASDFASDFASDFASDFASDF
-  token:
-    access-expiration: 3600000    # 1시간
-    refresh-expiration: 1209600000 # 2주
-coolsms:
-  api_key: test-api-key
-  api_secret: test-api-secret
-  from_number: 01000000000
-
-service: # 자격증 API
-  key: 123123123123
-
-payment:
-  fee:
-    rate: 0.1  # 결제 수수료율 10%
-  toss:
-    secretKey: 123123123123123123123
-    api-url: https://api.tosspayments.com
-    elasticsearch:
-      uris: http://localhost:9200
+#spring:
+#  datasource:
+#    driver-class-name: org.h2.Driver
+#    url: jdbc:h2:mem:test;MODE=MYSQL;DATABASE_TO_LOWER=TRUE
+#    username: sa
+#    password:
+#  sql:
+#    init:
+#      mode: never
+#  jpa:
+#    hibernate:
+#      ddl-auto: create-drop
+#      naming:
+#        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+#    properties:
+#      hibernate:
+#        default_batch_fetch_size: 100
+#        dialect: org.hibernate.dialect.H2Dialect
+#        highlight_sql: true
+#        format_sql: true
+#        show_sql: true
+#        use_sql_comments: true
+#    open-in-view: false
+#    defer-datasource-initialization: true
+#  data:
+#    redis:
+#      host: localhost
+#      port: 6379
+#      database: 0
+#cloud:
+#  aws:
+#    credentials:
+#      access-key: cloud-access-key
+#      secret-key: cloud-secret-key
+#    region:
+#      static: ap-northeast-2
+#jwt:
+#  secret: c99197156d1d4db89296e58473b8d37c3bd2285ae5014594ac211603b44071feDFASDFASDFASDFASDFASDF
+#  token:
+#    access-expiration: 3600000    # 1시간
+#    refresh-expiration: 1209600000 # 2주
+#coolsms:
+#  api_key: test-api-key
+#  api_secret: test-api-secret
+#  from_number: 01000000000
+#
+#service: # 자격증 API
+#  key: 123123123123
+#
+#payment:
+#  fee:
+#    rate: 0.1  # 결제 수수료율 10%
+#  toss:
+#    secretKey: 123123123123123123123
+#    api-url: https://api.tosspayments.com
+#    elasticsearch:
+#      uris: http://localhost:9200

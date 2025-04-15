@@ -44,6 +44,11 @@ public class OfferService {
 		Project project = projectRepository.findById(projectId)
 			.orElseThrow(() -> new ServiceException(ErrorCode.PROJECT_NOT_FOUND));
 
+		boolean exists = offerRepository.existsByProjectAndExpert(project, expert);
+		if (exists) {
+			throw new ServiceException(ErrorCode.OFFER_ALREADY_EXISTS);
+		}
+
 		Offer offer = Offer.builder()
 			.expert(expert)
 			.project(project)
@@ -154,7 +159,10 @@ public class OfferService {
 
 		Long loggedInUserId = userDetails.getId();
 		Long clientId = offer.getProject().getClient().getId();
-		if (!clientId.equals(loggedInUserId)) {
+		Long expertMemberId = offer.getExpert().getMember().getId();
+
+		// 클라이언트도 아니고, 전문가 본인도 아니라면 예외
+		if (!clientId.equals(loggedInUserId) && !expertMemberId.equals(loggedInUserId)) {
 			throw new ServiceException(ErrorCode.UNAUTHORIZED_USER);
 		}
 

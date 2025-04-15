@@ -77,7 +77,6 @@ public class ExpertController {
 	}
 
 	@Operation(summary = "전문가 상세 조회", description = "전문가 ID를 통해 해당 전문가의 상세 정보를 조회합니다.")
-
 	@ApiResponse(responseCode = "200", description = "조회 성공")
 	@ApiResponse(responseCode = "404", description = "존재하지 않는 전문가 ID")
 	@GetMapping("/{expertId}")
@@ -89,9 +88,17 @@ public class ExpertController {
 	}
 
 	@GetMapping("/search/name")
-	public ResponseEntity<List<ExpertResponseDto>> searchExpertsByName(@RequestParam String name) {
+	public ResponseEntity<List<ExpertResponseDto>> searchExpertsByName(@RequestParam(required = false) String name) {
 		List<ExpertResponseDto> experts = expertService.searchByName(name);
 		return ResponseEntity.ok(experts);
+	}
+	@GetMapping("/topReviews")
+	public ResponseEntity<List<ExpertResponseDto>> getTopRatedExpertsByCategory(
+		@RequestParam(required = false) Long categoryId
+	) {
+		// 카테고리 ID를 기반으로 필터링된 리스트 반환
+		List<ExpertResponseDto> filteredExperts = expertService.getTopRatedExperts(categoryId);
+		return ResponseEntity.ok(filteredExperts);
 	}
 
 	@Operation(summary = "전문가 프로필 수정", description = "전문가 ID를 통해 해당 전문가의 프로필을 수정합니다.")

@@ -15,7 +15,9 @@ import com.ll.dopdang.domain.review.dto.ReviewCreateRequest;
 import com.ll.dopdang.domain.review.dto.ReviewCreateResponse;
 import com.ll.dopdang.domain.review.dto.ReviewDetailResponse;
 import com.ll.dopdang.domain.review.entity.Review;
+import com.ll.dopdang.domain.review.entity.ReviewStats;
 import com.ll.dopdang.domain.review.repository.ReviewRepository;
+import com.ll.dopdang.domain.review.repository.ReviewStatsRepository;
 import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
 
@@ -27,6 +29,7 @@ public class ReviewService {
 	private final ContractRepository contractRepository;
 	private final MemberRepository memberRepository;
 	private final ReviewRepository reviewRepository;
+	private final ReviewStatsRepository reviewStatsRepository;
 
 	/**
 	 * 주어진 프로젝트 ID에 대해 리뷰를 생성합니다.
@@ -67,6 +70,13 @@ public class ReviewService {
 			request.getContent(),
 			request.getImageUrl());
 		Review saved = reviewRepository.save(review);
+
+		// 5. 리뷰 통계 업데이트
+		ReviewStats stats = reviewStatsRepository.findById(contract.getExpert().getId())
+			.orElseThrow(() -> new ServiceException(ErrorCode.REVIEW_STATS_NOT_FOUND)); // 혹시 모를 예외 대비
+
+		stats.addReview(review.getScore());
+		reviewStatsRepository.save(stats);
 
 		// 5. 응답 생성
 		return ReviewCreateResponse.from(saved);
@@ -115,5 +125,27 @@ public class ReviewService {
 	public ClientReviewPageResponse getClientReviews(Long clientId, Pageable pageable) {
 		Page<Review> page = reviewRepository.findByReviewerIdAndCompletedContract(clientId, pageable);
 		return ClientReviewPageResponse.from(page);
+	}
+
+	@Transactional
+	public void deleteReview(Long reviewId, Long userId) {
+		Review review = reviewRepository.findById(reviewId)
+			.orElseThrow(() -> new ServiceException(ErrorCode.REVIEW_NOT_FOUND));
+
+		// 작성자 체크
+		if (!review.getReviewer().getId().equals(userId)) {
+			throw new ServiceException(ErrorCode.UNAUTHORIZED_USER);
+		}
+
+		// soft delete
+		review.markAsDeleted();
+
+		// 통계 업데이트
+		ReviewStats stats = reviewStatsRepository.findById(review.getContract().getExpert().getId())
+			.orElseThrow(() -> new ServiceException(ErrorCode.REVIEW_STATS_NOT_FOUND));
+
+		stats.removeReview(review.getScore());
+
+		reviewStatsRepository.save(stats);
 	}
 }

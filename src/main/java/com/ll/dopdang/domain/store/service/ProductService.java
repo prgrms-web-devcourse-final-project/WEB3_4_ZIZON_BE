@@ -58,14 +58,20 @@ public class ProductService {
 	 * 상품 전체 조회 메서드
 	 * @param pageable Pageable
 	 * @param categoryId 카테고리 고유 ID
+	 * @param keyword 검색 키워드
 	 * return {@link ProductListPageResponse}
 	 */
-	public ProductListPageResponse getAllProducts(Pageable pageable, Long categoryId) {
+	public ProductListPageResponse getAllProducts(Pageable pageable, Long categoryId, String keyword) {
 		Page<Product> page;
-		if (categoryId != null) {
+
+		if (categoryId != null && keyword != null && !keyword.isEmpty()) {
+			// 카테고리와 키워드로 검색
+			page = productRepository.findAllByCategoryAndKeyword(categoryId, keyword, pageable);
+		} else if (categoryId != null) {
+			// 카테고리로만 검색
 			page = productRepository.findAllByCategoryOrderByStockAndCreatedAtDesc(categoryId, pageable);
 		} else {
-			// findAllOrderByStockAvailabilityAndCreatedAtDesc
+			// 모든 상품 조회
 			page = productRepository.findAll(pageable);
 		}
 
@@ -176,5 +182,25 @@ public class ProductService {
 			.build();
 
 		return productRepository.save(updateProduct);
+	}
+
+	@Transactional
+	public ProductListPageResponse findMySellingProducts(Pageable pageable, CustomUserDetails userDetails) {
+		Member member = memberUtilService.findMember(userDetails.getId());
+		Expert expert = memberUtilService.validateExpert(member);
+
+		// Page<Product> page = productRepository.findMySellingProducts(expert.getId(), pageable);
+		Page<Product> page = productRepository.findAllByExpertId(expert.getId(), pageable);
+
+		List<ProductListResponse> productListResponses = page.getContent().stream()
+			.map(ProductListResponse::of)
+			.toList();
+
+		return ProductListPageResponse.builder()
+			.products(productListResponses)
+			.currentPage(page.getNumber())
+			.pageSize(page.getSize())
+			.hasNext(page.hasNext())
+			.build();
 	}
 }
