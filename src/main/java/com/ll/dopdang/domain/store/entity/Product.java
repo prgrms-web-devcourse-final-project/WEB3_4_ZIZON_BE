@@ -99,16 +99,16 @@ public class Product extends BaseEntity {
 		Product product = Product.builder()
 			.expert(expert)
 			.category(category)
-			.title(request.getTitle())
-			.description(request.getDescription())
-			.thumbnailImage(request.getThumbnailImage())
-			.price(request.getPrice())
-			.stock(request.getStock())
-			.productType(request.getProductType())
+			.title(request.title())
+			.description(request.description())
+			.thumbnailImage(request.thumbnailImage())
+			.price(request.price())
+			.stock(request.stock())
+			.productType(request.productType())
 			.status(ProductStatus.AVAILABLE) // Default status
 			.build();
-		if (Objects.equals(request.getProductType(), ProductType.DIGITAL) && request.getDigitalContents() != null) {
-			request.getDigitalContents().forEach(req -> {
+		if (Objects.equals(request.productType(), ProductType.DIGITAL) && request.digitalContents() != null) {
+			request.digitalContents().forEach(req -> {
 				DigitalContent digitalContent = DigitalContent.from(req, product);
 				product.getDigitalContentList().add(digitalContent);
 			});
