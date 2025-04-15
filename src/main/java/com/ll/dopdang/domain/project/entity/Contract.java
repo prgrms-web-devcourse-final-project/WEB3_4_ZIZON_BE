@@ -83,7 +83,7 @@ public class Contract {
 			.price(price)
 			.startDate(startDate)
 			.endDate(endDate)
-			.status(ContractStatus.PENDING)
+			.status(ContractStatus.IN_PROGRESS)
 			.build();
 	}
 

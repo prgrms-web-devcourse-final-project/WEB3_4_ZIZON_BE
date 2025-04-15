@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ll.dopdang.domain.member.entity.Member;
+import com.ll.dopdang.domain.project.dto.ContractCompletedResponse;
 import com.ll.dopdang.domain.project.dto.ContractCreateRequest;
 import com.ll.dopdang.domain.project.dto.ContractDetailResponse;
 import com.ll.dopdang.domain.project.dto.ContractSummaryResponse;
@@ -130,15 +131,15 @@ public class ContractController {
 	}
 
 	@Operation(summary = "계약 완료 처리", description = "클라이언트가 자신의 프로젝트에 해당하는 계약을 완료 상태로 변경합니다.")
-	@ApiResponse(responseCode = "204", description = "계약 완료 처리 성공")
+	@ApiResponse(responseCode = "200", description = "계약 완료 처리 성공")
 	@ApiResponse(responseCode = "404", description = "계약을 찾을 수 없음")
 	@ApiResponse(responseCode = "401", description = "접근 권한이 없음")
 	@PatchMapping("/{contractId}/complete")
-	public ResponseEntity<Void> completeContract(
+	public ResponseEntity<ContractCompletedResponse> completeContract(
 		@Parameter(description = "계약 ID", required = true) @PathVariable Long contractId,
 		@Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails
 	) {
-		contractService.updateContractStatusToAsCompleted(contractId, userDetails.getId());
-		return ResponseEntity.noContent().build();
+		ContractCompletedResponse response = contractService.updateContractStatusToAsCompleted(contractId, userDetails.getId());
+		return ResponseEntity.ok(response);
 	}
 }
