@@ -25,6 +25,7 @@ import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.PaymentAmountManipulationException;
 import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.global.redis.repository.RedisRepository;
+import com.ll.dopdang.standard.util.LogSanitizer;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,7 +63,8 @@ public class PaymentProcessingService {
 	 */
 	@Transactional(noRollbackFor = PaymentAmountManipulationException.class)
 	public Payment confirmPayment(String paymentKey, String orderId, BigDecimal amount) {
-		log.info("결제 승인 요청: paymentKey={}, orderId={}, amount={}", paymentKey, orderId, amount);
+		log.info("결제 승인 요청: paymentKey={}, orderId={}, amount={}", LogSanitizer.sanitizeLogInput(paymentKey), orderId,
+			amount);
 
 		// 주문 ID로 결제 정보 조회
 		PaymentOrderInfo orderInfo = paymentQueryService.getPaymentOrderInfoByOrderId(orderId);
@@ -84,7 +86,7 @@ public class PaymentProcessingService {
 		// Redis에서 주문 정보 삭제
 		redisRepository.remove(PaymentConstants.KEY_PREFIX + orderId);
 
-		log.info("결제 승인 성공: paymentKey={}", paymentKey);
+		log.info("결제 승인 성공: paymentKey={}", LogSanitizer.sanitizeLogInput(paymentKey));
 		return payment;
 	}
 
@@ -132,7 +134,7 @@ public class PaymentProcessingService {
 			// Redis에서 주문 정보 삭제
 			redisRepository.remove(PaymentConstants.KEY_PREFIX + orderId);
 
-			log.info("결제 실패 정보 저장 완료: orderId={}, errorCode={}", orderId, errorCode);
+			log.info("결제 실패 정보 저장 완료: orderId={}, errorCode={}", orderId, LogSanitizer.sanitizeLogInput(errorCode));
 			return savedPayment;
 		} catch (Exception e) {
 			log.error("결제 실패 정보 저장 중 오류 발생", e);
@@ -189,7 +191,7 @@ public class PaymentProcessingService {
 			paymentRepository.save(payment);
 
 			log.info("결제 정보 저장 완료: paymentId={} paymentKey={}, amount={}, fee={}",
-				payment.getId(), paymentKey, amount, fee);
+				payment.getId(), LogSanitizer.sanitizeLogInput(paymentKey), amount, fee);
 			return payment;
 		} catch (Exception e) {
 			log.error("결제 정보 저장 중 오류 발생", e);
