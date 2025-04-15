@@ -8,46 +8,37 @@ import java.util.Map;
 
 import com.ll.dopdang.domain.store.entity.DigitalContent;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class OrderResponse {
-	private Long id;
-	private String orderId;
-	private String sellerName;
-	private String productType;
-	private String productThumbnail;
-	private String productTitle;
-	private String productPrice;
-	private String quantity;
-	private BigDecimal totalPrice;
-	private String status;
-	private String paymentMethod;
-	private LocalDateTime orderedAt;
-	private List<DigitalContent> digitalContent;
-
+public record OrderResponse(
+	Long id,
+	String orderId,
+	String sellerName,
+	String productType,
+	String productThumbnail,
+	String productTitle,
+	String productPrice,
+	String quantity,
+	BigDecimal totalPrice,
+	String status,
+	String paymentMethod,
+	LocalDateTime orderedAt,
+	List<DigitalContent> digitalContent
+) {
 	public static OrderResponse of(Map<String, Object> orderDetails, List<DigitalContent> digitalContents) {
-		return OrderResponse.builder()
-			.id(((Number)orderDetails.get("id")).longValue())
-			.orderId((String)orderDetails.get("order_number"))
-			.sellerName((String)orderDetails.get("seller_name"))
-			.productType((String)orderDetails.get("product_type"))
-			.productThumbnail((String)orderDetails.get("product_thumbnail"))
-			.productTitle((String)orderDetails.get("product_title"))
-			.productPrice(orderDetails.get("product_price").toString())
-			.quantity(orderDetails.get("quantity").toString())
-			.totalPrice(new BigDecimal(orderDetails.get("total_amount").toString()))
-			.status((String)orderDetails.get("status"))
-			.paymentMethod((String)orderDetails.get("payment_method"))
-			.orderedAt(((Timestamp)orderDetails.get("created_at")).toLocalDateTime())
-			.digitalContent(digitalContents)
-			.build();
+		return new OrderResponse(
+			((Number)orderDetails.get("id")).longValue(),
+			(String)orderDetails.get("order_number"),
+			(String)orderDetails.get("seller_name"),
+			(String)orderDetails.get("product_type"),
+			(String)orderDetails.get("product_thumbnail"),
+			(String)orderDetails.get("product_title"),
+			orderDetails.get("product_price").toString(),
+			orderDetails.get("quantity").toString(),
+			new BigDecimal(orderDetails.get("total_amount").toString()),
+			(String)orderDetails.get("status"),
+			(String)orderDetails.get("payment_method"),
+			((Timestamp)orderDetails.get("created_at")).toLocalDateTime(),
+			digitalContents
+		);
 	}
 }
 //

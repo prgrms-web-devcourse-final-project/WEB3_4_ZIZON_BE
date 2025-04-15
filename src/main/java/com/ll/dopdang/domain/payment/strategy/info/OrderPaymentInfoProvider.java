@@ -1,4 +1,3 @@
-// Modified OrderPaymentInfoProvider.java
 package com.ll.dopdang.domain.payment.strategy.info;
 
 import java.math.BigDecimal;
@@ -48,7 +47,7 @@ public class OrderPaymentInfoProvider implements PaymentOrderInfoProvider {
 		try {
 			// referenceId는 상품 ID
 			ProductDetailResponse productDetail = productService.getProductById(referenceId);
-			Product product = productService.findById(productDetail.getId());
+			Product product = productService.findById(productDetail.id());
 
 			// 주문 정보 조회 - 먼저 Redis에서 시도
 			PaymentOrderInfo orderInfo;
@@ -72,13 +71,13 @@ public class OrderPaymentInfoProvider implements PaymentOrderInfoProvider {
 				);
 			}
 
-			BigDecimal totalPrice = productDetail.getPrice().multiply(BigDecimal.valueOf(orderInfo.quantity()));
+			BigDecimal totalPrice = productDetail.price().multiply(BigDecimal.valueOf(orderInfo.quantity()));
 
 			// 상품 정보 추가
-			additionalInfo.put("title", productDetail.getTitle());
-			additionalInfo.put("price", productDetail.getPrice());
+			additionalInfo.put("title", productDetail.title());
+			additionalInfo.put("price", productDetail.price());
 			additionalInfo.put("totalPrice", totalPrice);
-			additionalInfo.put("sellerName", productDetail.getExpertName());
+			additionalInfo.put("sellerName", productDetail.expertName());
 			additionalInfo.put("clientId", orderInfo.memberId());
 			additionalInfo.put("expertId", product.getExpert().getId());
 		} catch (ServiceException exception) {

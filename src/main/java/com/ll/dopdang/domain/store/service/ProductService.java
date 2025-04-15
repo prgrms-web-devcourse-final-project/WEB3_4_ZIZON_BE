@@ -48,7 +48,7 @@ public class ProductService {
 	public void createProduct(ProductCreateRequest request, CustomUserDetails userDetails) {
 		Member member = memberUtilService.findMember(userDetails.getId());
 		Expert expert = memberUtilService.validateExpert(member);
-		Category category = categoryService.findById(request.getCategoryId());
+		Category category = categoryService.findById(request.categoryId());
 		validateDigitalProduct(request);
 		Product product = Product.from(request, category, expert);
 		productRepository.save(product);
@@ -79,12 +79,11 @@ public class ProductService {
 			.map(ProductListResponse::of)
 			.toList();
 
-		return ProductListPageResponse.builder()
-			.products(productListResponses)
-			.currentPage(page.getNumber())
-			.pageSize(page.getSize())
-			.hasNext(page.hasNext())
-			.build();
+		return ProductListPageResponse.of(
+			productListResponses,
+			page.getNumber(),
+			page.getSize(),
+			page.hasNext());
 	}
 
 	/**
@@ -146,7 +145,7 @@ public class ProductService {
 	}
 
 	public void validateDigitalProduct(ProductCreateRequest request) {
-		if (ProductType.DIGITAL.equals(request.getProductType()) && (Objects.isEmpty(request.getDigitalContents()))) {
+		if (ProductType.DIGITAL.equals(request.productType()) && (Objects.isEmpty(request.digitalContents()))) {
 			throw new ServiceException(ErrorCode.INVALID_PRODUCT_CONTENT);
 		}
 	}
@@ -196,11 +195,10 @@ public class ProductService {
 			.map(ProductListResponse::of)
 			.toList();
 
-		return ProductListPageResponse.builder()
-			.products(productListResponses)
-			.currentPage(page.getNumber())
-			.pageSize(page.getSize())
-			.hasNext(page.hasNext())
-			.build();
+		return ProductListPageResponse.of(
+			productListResponses,
+			page.getNumber(),
+			page.getSize(),
+			page.hasNext());
 	}
 }

@@ -46,7 +46,7 @@ public class OrderPaymentSaver implements PaymentSaver {
 			referenceId, amount, fee, paymentKey, orderId);
 
 		ProductDetailResponse productDetail = productService.getProductById(referenceId);
-		String title = productDetail.getTitle();
+		String title = productDetail.title();
 
 		PaymentOrderInfo paymentOrderInfo = paymentQueryService.getPaymentOrderInfoByOrderId(orderId);
 		Integer quantity = paymentOrderInfo.quantity();
@@ -74,7 +74,7 @@ public class OrderPaymentSaver implements PaymentSaver {
 			.itemId(referenceId)
 			.itemName(title)
 			.quantity(quantity)
-			.unitPrice(productDetail.getPrice())
+			.unitPrice(productDetail.price())
 			.unitTotalPrice(amount)
 			.feePrice(fee)
 			.build();
@@ -87,7 +87,7 @@ public class OrderPaymentSaver implements PaymentSaver {
 		Order savedOrder = orderRepository.save(order);
 
 		// 주문 아이템 정보 저장
-		OrderItem orderItem = OrderItem.createOrderItem(savedOrder, product, quantity, productDetail.getPrice());
+		OrderItem orderItem = OrderItem.createOrderItem(savedOrder, product, quantity, productDetail.price());
 		orderItemRepository.save(orderItem);
 
 		log.info("주문 정보 저장 완료: orderId={}, productId={}, quantity={}", orderId, referenceId, quantity);
@@ -101,7 +101,7 @@ public class OrderPaymentSaver implements PaymentSaver {
 			referenceId, errorCode, errorMessage, orderId);
 
 		ProductDetailResponse product = productService.getProductById(referenceId);
-		String title = product.getTitle();
+		String title = product.title();
 
 		PaymentOrderInfo paymentOrderInfo = paymentQueryService.getPaymentOrderInfoByOrderId(orderId);
 		Integer quantity = paymentOrderInfo.quantity();
