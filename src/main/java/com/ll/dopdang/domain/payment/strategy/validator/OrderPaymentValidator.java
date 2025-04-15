@@ -32,7 +32,7 @@ public class OrderPaymentValidator implements PaymentAmountValidator {
 
 		// Redis에서 주문 정보 조회하여 수량 가져오기
 		PaymentOrderInfo orderInfo = paymentQueryService.getPaymentOrderInfoByOrderId(orderId);
-		Integer quantity = orderInfo.getQuantity();
+		Integer quantity = orderInfo.quantity();
 
 		// 상품 가격과 수량을 곱한 금액 계산
 		BigDecimal expectedAmount = productPrice.multiply(BigDecimal.valueOf(quantity));

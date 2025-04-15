@@ -3,4 +3,12 @@ common:
     base-url: 'http://3.35.98.202:8080'
 site:
   url:
-    frontend: "http://13.209.49.200:11200"
+    frontend: "https://www.dopdang.shop"
+
+spring:
+
+  datasource:
+    url: ${LIVE_DB_URL}?serverTimezone=Asia/Seoul
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver

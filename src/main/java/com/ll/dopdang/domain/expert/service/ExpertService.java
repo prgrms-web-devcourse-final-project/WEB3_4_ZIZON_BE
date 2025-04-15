@@ -27,6 +27,8 @@ import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.repository.MemberRepository;
 import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
+import com.ll.dopdang.global.exception.ErrorCode;
+import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.domain.review.entity.ReviewStats;
 import com.ll.dopdang.domain.review.repository.ReviewStatsRepository;
 
@@ -118,7 +120,7 @@ public class ExpertService {
 
     	ReviewStats stats = ReviewStats.of(expert, BigDecimal.ZERO, 0);
 		  reviewStatsRepository.save(stats);
-    
+
 		return expert.getId();
 	}
 
@@ -192,6 +194,13 @@ public class ExpertService {
 		// Expert 데이터를 DTO로 변환하여 반환
 		return experts.stream()
 			.map(this::mapToResponseDto)
+			.toList();
+	}
+
+	public List<ExpertResponseDto> getTopRatedExperts(Long categoryId) {
+		List<ReviewStats> statsList = reviewStatsRepository.findTopExpertsByRatingAndCategory(categoryId);
+		return statsList.stream()
+			.map(rs -> mapToResponseDto(rs.getExpert())) // ReviewStats에서 Expert로 매핑
 			.toList();
 	}
 
@@ -305,7 +314,6 @@ public class ExpertService {
 			return mapToDetailResponseDto(existingExpert, existingExpert.getPortfolio());
 		}
 		Expert expert = expertRepository.findById(expertId)
-
 			.orElseThrow(() -> new ServiceException(ErrorCode.EXPERT_NOT_EXISTS,String.valueOf(expertId)));
 		return mapToDetailResponseDto(expert,expert.getPortfolio());
 	}
@@ -314,6 +322,8 @@ public class ExpertService {
 	 * Expert 엔티티를 ExpertResponseDto로 변환합니다.
 	 */
 	private ExpertResponseDto mapToResponseDto(Expert expert) {
+		ReviewStats reviewStats = expert.getReviewStats();
+
 		return ExpertResponseDto.builder()
 			.expertId(expert.getId())
 			.name(expert.getMember().getName()) // Member 이름
@@ -322,6 +332,8 @@ public class ExpertService {
 			.introduction(expert.getIntroduction())
 			.mainCategoryId(expert.getCategory().getId())
 			.profileImage(expert.getMember().getProfileImage())
+			.reviewCounts(reviewStats != null ? reviewStats.getReviewCount() : 0)
+			.averageScore(reviewStats != null ? reviewStats.getAverageScore() : BigDecimal.ZERO)
 			.build();
 	}
 
@@ -352,5 +364,10 @@ public class ExpertService {
 				.map(expertCertificate -> expertCertificate.getCertificate().getName())
 				.toList())
 			.build();
+	}
+
+	public Expert findExpertById(Long expertId) {
+		return expertRepository.findById(expertId)
+			.orElseThrow(() -> new ServiceException(ErrorCode.EXPERT_NOT_FOUND));
 	}
 }

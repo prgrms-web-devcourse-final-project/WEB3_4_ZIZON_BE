@@ -12,6 +12,7 @@ import com.ll.dopdang.domain.expert.category.service.CategoryService;
 import com.ll.dopdang.domain.expert.entity.Expert;
 import com.ll.dopdang.domain.member.entity.Member;
 import com.ll.dopdang.domain.member.service.MemberUtilService;
+import com.ll.dopdang.domain.payment.entity.PaymentType;
 import com.ll.dopdang.domain.store.dto.DigitalContentDetailResponse;
 import com.ll.dopdang.domain.store.dto.ProductCreateRequest;
 import com.ll.dopdang.domain.store.dto.ProductDetailResponse;
@@ -151,11 +152,17 @@ public class ProductService {
 
 	/**
 	 * 상품 재고 감소 메서드
-	 * @param product 상품
+	 * @param referenceId 상품 번호
 	 * @param quantity 감소시킬 수량
 	 * @return 업데이트된 상품
 	 */
-	public synchronized Product decreaseStock(Product product, Integer quantity) {
+	public synchronized Product decreaseStock(PaymentType paymentType, Long referenceId, Integer quantity) {
+		if (!paymentType.equals(PaymentType.ORDER)) {
+			return null;
+		}
+
+		Product product = findById(referenceId);
+
 		if (product.getStock() < quantity) {
 			throw new ServiceException(ErrorCode.INSUFFICIENT_STOCK);
 		}
