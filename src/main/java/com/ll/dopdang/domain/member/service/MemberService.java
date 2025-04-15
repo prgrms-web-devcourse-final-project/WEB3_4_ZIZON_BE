@@ -69,7 +69,7 @@ public class MemberService {
 			.password(passwordEncoder.encode(req.getPassword()))
 			.name(req.getName())
 			.phone(req.getVerifyCodeRequest().getPhone())
-			.profileImage("")
+			.profileImage("https://devcouse4-team16-bucket.s3.ap-northeast-2.amazonaws.com/portfolios/162e07c8-3062-4d3d-8f2e-d92b8b1f5678_test.png")
 			.status(MemberStatus.ACTIVE.toString())
 			.userRole(MemberRole.CLIENT.toString())
 			.memberId(req.getEmail())
