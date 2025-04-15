@@ -78,12 +78,11 @@ public class ProductService {
 			.map(ProductListResponse::of)
 			.toList();
 
-		return ProductListPageResponse.builder()
-			.products(productListResponses)
-			.currentPage(page.getNumber())
-			.pageSize(page.getSize())
-			.hasNext(page.hasNext())
-			.build();
+		return ProductListPageResponse.of(
+			productListResponses,
+			page.getNumber(),
+			page.getSize(),
+			page.hasNext());
 	}
 
 	/**
@@ -189,11 +188,10 @@ public class ProductService {
 			.map(ProductListResponse::of)
 			.toList();
 
-		return ProductListPageResponse.builder()
-			.products(productListResponses)
-			.currentPage(page.getNumber())
-			.pageSize(page.getSize())
-			.hasNext(page.hasNext())
-			.build();
+		return ProductListPageResponse.of(
+			productListResponses,
+			page.getNumber(),
+			page.getSize(),
+			page.hasNext());
 	}
 }
