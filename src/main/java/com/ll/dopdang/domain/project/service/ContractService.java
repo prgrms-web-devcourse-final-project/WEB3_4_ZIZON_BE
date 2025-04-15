@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ll.dopdang.domain.member.entity.Member;
+import com.ll.dopdang.domain.project.dto.ContractCompletedResponse;
 import com.ll.dopdang.domain.project.dto.ContractDetailResponse;
 import com.ll.dopdang.domain.project.dto.ContractSummaryResponse;
 import com.ll.dopdang.domain.project.entity.Contract;
@@ -146,26 +147,21 @@ public class ContractService {
 	}
 
 	@Transactional
-	public void updateContractStatusToAsCompleted(Long contractId, Long clientId) {
-		// 1. 계약 조회 (프로젝트, 클라이언트 fetch join)
+	public ContractCompletedResponse updateContractStatusToAsCompleted(Long contractId, Long clientId) {
 		Contract contract = contractRepository.findByIdWithProjectAndClient(contractId)
 			.orElseThrow(() -> new ServiceException(ErrorCode.CONTRACT_NOT_FOUND));
 
-		// 2. 클라이언트 소유 검증
 		if (!contract.getClient().getId().equals(clientId)) {
 			throw new ServiceException(ErrorCode.UNAUTHORIZED_CONTRACT_ACCESS);
 		}
 
-		// 3. 이미 완료된 상태인지 확인
 		if (contract.getStatus() == Contract.ContractStatus.COMPLETED) {
 			throw new ServiceException(ErrorCode.CONTRACT_ALREADY_COMPLETED);
 		}
 
-		// 4. 상태 변경
 		contract.updateStatus(Contract.ContractStatus.COMPLETED);
 
-		// 5. 프로젝트 상태 변경
-		Project project = contract.getProject();
-		project.updateStatus(ProjectStatus.COMPLETED);
+		// 응답 객체 생성하여 반환
+		return ContractCompletedResponse.of(contractId);
 	}
 }
