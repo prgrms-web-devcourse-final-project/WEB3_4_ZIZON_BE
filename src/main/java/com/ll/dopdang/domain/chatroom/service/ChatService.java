@@ -36,6 +36,7 @@ import com.ll.dopdang.domain.project.dto.ProjectDetailResponse;
 import com.ll.dopdang.domain.project.service.ProjectService;
 import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
+import com.ll.dopdang.standard.util.LogSanitizer;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,14 +46,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ChatService {
 
-	private final ChatRoomRepository chatRoomRepository;
-	private final ChatMessageRepository chatMessageRepository;
-	private final SimpMessagingTemplate messagingTemplate;
-	private final MemberRepository memberRepository;
-	private final RedisTemplate<String, Object> redisTemplate;
-	private final ProjectService projectService;
-	private final ObjectMapper objectMapper;
-
 	private static final int RECENT_MESSAGE_LIMIT = 100;
 	private static final String UNREAD_COUNT_KEY_TEMPLATE = "chat:%s:unread:%s";
 	private static final String CHAT_MESSAGES_KEY_TEMPLATE = "chat:%s:messages";
@@ -61,6 +54,13 @@ public class ChatService {
 	private static final String ACTIVE_ROOMS_KEY = "chat:active_rooms";
 	private static final long CACHE_EXPIRATION = 30;
 	private static final long LOCK_EXPIRATION = 10;
+	private final ChatRoomRepository chatRoomRepository;
+	private final ChatMessageRepository chatMessageRepository;
+	private final SimpMessagingTemplate messagingTemplate;
+	private final MemberRepository memberRepository;
+	private final RedisTemplate<String, Object> redisTemplate;
+	private final ProjectService projectService;
+	private final ObjectMapper objectMapper;
 	private final ExpertRepository expertRepository;
 
 	/**
@@ -167,7 +167,7 @@ public class ChatService {
 				chatRoom.getRoomId(),
 				chatMessage.getSender(),
 				chatMessage.getContent(),
-				(int) updatedUnread
+				(int)updatedUnread
 			);
 			messagingTemplate.convertAndSend("/topic/notice/" + chatMessage.getReceiver(), notification);
 		}
@@ -192,7 +192,8 @@ public class ChatService {
 		if (cachedMessages != null && !cachedMessages.isEmpty()) {
 			log.debug("Redis에서 채팅 메시지를 가져옵니다. roomId: {}", roomId);
 			List<ChatMessage> redisMessages = objectMapper.convertValue(cachedMessages,
-				new TypeReference<List<ChatMessage>>() {});
+				new TypeReference<List<ChatMessage>>() {
+				});
 			return redisMessages;
 		} else {
 			log.debug("DB에서 채팅 메시지를 가져와 Redis에 저장합니다. roomId: {}", roomId);
@@ -209,7 +210,6 @@ public class ChatService {
 			return messages;
 		}
 	}
-
 
 	/**
 	 * sender, receiver를 통해 채팅방 상세 정보를 DTO로 반환
@@ -252,7 +252,8 @@ public class ChatService {
 			String otherEmail = room.getMember1().equalsIgnoreCase(member) ? room.getMember2() : room.getMember1();
 			Member otherUser = memberRepository.findByEmail(otherEmail).orElse(null);
 			// DB에서 최신 메시지 조회 (최대 1건, 내림차순 정렬)
-			List<ChatMessage> messages = chatMessageRepository.findTopMessagesByRoomIdOrderByTimestampDesc(room.getRoomId(), 1);
+			List<ChatMessage> messages = chatMessageRepository.findTopMessagesByRoomIdOrderByTimestampDesc(
+				room.getRoomId(), 1);
 			ChatMessage lastMessage = messages.isEmpty() ? null : messages.get(0);
 			// 만약 DB에서 최신 메시지가 없으면, Redis에서 조회
 			if (lastMessage == null) {
@@ -260,19 +261,23 @@ public class ChatService {
 				List<Object> cachedMessages = redisTemplate.opsForList().range(redisKey, 0, -1);
 				if (cachedMessages != null && !cachedMessages.isEmpty()) {
 					List<ChatMessage> redisMessages = objectMapper.convertValue(cachedMessages,
-						new TypeReference<List<ChatMessage>>() {});
+						new TypeReference<List<ChatMessage>>() {
+						});
 					lastMessage = redisMessages.isEmpty() ? null : redisMessages.get(redisMessages.size() - 1);
 				}
 			}
-			int unreadCount = (int) getUnreadCount(room.getRoomId(), member);
+			int unreadCount = (int)getUnreadCount(room.getRoomId(), member);
 			return ChatRoomResponse.from(room, currentMember, otherUser, lastMessage, unreadCount);
 		}).collect(Collectors.toList());
 		dtoList.sort((a, b) -> {
 			LocalDateTime timeA = a.getLastMessageTime();
 			LocalDateTime timeB = b.getLastMessageTime();
-			if (timeA == null && timeB == null) return 0;
-			if (timeA == null) return 1;
-			if (timeB == null) return -1;
+			if (timeA == null && timeB == null)
+				return 0;
+			if (timeA == null)
+				return 1;
+			if (timeB == null)
+				return -1;
 			return timeB.compareTo(timeA);
 		});
 		return dtoList;
@@ -302,14 +307,15 @@ public class ChatService {
 		String userRedisKey = String.format(CHAT_ROOMS_KEY_TEMPLATE, userEmail);
 		redisTemplate.opsForHash().delete(userRedisKey, roomId);
 
-		log.info("사용자 {}가 채팅방 {}에서 나갔습니다.", userEmail, roomId);
+		log.info("사용자 {}가 채팅방 {}에서 나갔습니다.", LogSanitizer.sanitizeLogInput(userEmail), roomId);
 	}
 
 	/**
 	 * 채팅방 캐시 업데이트 (각 사용자 Redis 해시 갱신)
 	 */
 	private void updateChatRoomCache(String roomId, ChatMessage chatMessage) {
-		if (chatMessage == null) return;
+		if (chatMessage == null)
+			return;
 		ChatRoom room = chatRoomRepository.findByRoomId(roomId)
 			.orElseThrow(() -> new IllegalStateException("채팅방을 찾을 수 없습니다."));
 		Long projectId = room.getProjectId();
@@ -442,17 +448,19 @@ public class ChatService {
 			return;
 		}
 		for (Object roomIdObj : activeRoomIds) {
-			String roomId = (String) roomIdObj;
+			String roomId = (String)roomIdObj;
 			String redisKey = String.format(CHAT_MESSAGES_KEY_TEMPLATE, roomId);
 			String lockKey = "lock:" + redisKey;
-			Boolean acquired = redisTemplate.opsForValue().setIfAbsent(lockKey, "LOCK", LOCK_EXPIRATION, TimeUnit.SECONDS);
+			Boolean acquired = redisTemplate.opsForValue()
+				.setIfAbsent(lockKey, "LOCK", LOCK_EXPIRATION, TimeUnit.SECONDS);
 			if (Boolean.TRUE.equals(acquired)) {
 				try {
 					// 현재 Redis 리스트 전체 데이터를 가져옵니다.
 					List<Object> cachedMessages = redisTemplate.opsForList().range(redisKey, 0, -1);
 					if (cachedMessages != null && !cachedMessages.isEmpty()) {
 						List<ChatMessage> messages = objectMapper.convertValue(cachedMessages,
-							new TypeReference<List<ChatMessage>>() {});
+							new TypeReference<List<ChatMessage>>() {
+							});
 						// 신규 메시지 : DB에 저장되지 않은 메시지 (id가 null인 경우)
 						List<ChatMessage> newMessages = messages.stream()
 							.filter(msg -> msg.getId() == null)
@@ -465,7 +473,8 @@ public class ChatService {
 							log.info("채팅방 {}에 저장할 신규 메시지 없음", roomId);
 						}
 						// flush 후 Redis 캐시 전체를 삭제하고, DB에서 전체 메시지 목록을 재조회하여 Redis에 다시 저장
-						List<ChatMessage> messagesFromDB = chatMessageRepository.findByRoomIdOrderByTimestampAsc(roomId);
+						List<ChatMessage> messagesFromDB = chatMessageRepository.findByRoomIdOrderByTimestampAsc(
+							roomId);
 						redisTemplate.delete(redisKey);
 						for (ChatMessage message : messagesFromDB) {
 							redisTemplate.opsForList().rightPush(redisKey, message);
