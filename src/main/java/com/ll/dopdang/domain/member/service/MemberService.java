@@ -22,6 +22,7 @@ import com.ll.dopdang.global.exception.ServiceException;
 import com.ll.dopdang.global.redis.repository.RedisRepository;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
 import com.ll.dopdang.global.security.jwt.service.TokenManagementService;
+import com.ll.dopdang.standard.util.LogSanitizer;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -68,7 +69,7 @@ public class MemberService {
 			.password(passwordEncoder.encode(req.getPassword()))
 			.name(req.getName())
 			.phone(req.getVerifyCodeRequest().getPhone())
-			.profileImage("")
+			.profileImage("https://devcouse4-team16-bucket.s3.ap-northeast-2.amazonaws.com/portfolios/162e07c8-3062-4d3d-8f2e-d92b8b1f5678_test.png")
 			.status(MemberStatus.ACTIVE.toString())
 			.userRole(MemberRole.CLIENT.toString())
 			.memberId(req.getEmail())
@@ -199,11 +200,11 @@ public class MemberService {
 		if (!Objects.equals(member.getUserRole(), MemberRole.EXPERT.toString())) {
 			throw new ServiceException(ErrorCode.NOT_A_EXPERT_USER);
 		}
-		log.info("현재 사용자의 isClient 값 : {}", member.isClient());
+		log.info("현재 사용자의 isClient 값 : {}", LogSanitizer.sanitizeLogInput(String.valueOf(member.isClient())));
 
 		Member updateMember = Member.toggleUserView(member);
 		memberRepository.save(updateMember);
-		log.info("현재 사용자의 isClient 값 : {}", updateMember.isClient());
+		log.info("현재 사용자의 isClient 값 : {}", LogSanitizer.sanitizeLogInput(String.valueOf(updateMember.isClient())));
 
 		CustomUserDetails updateUserDetails = new CustomUserDetails(updateMember);
 		tokenManagementService.createAndStoreTokens(updateUserDetails, resp);

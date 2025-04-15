@@ -14,6 +14,7 @@ import com.ll.dopdang.domain.payment.repository.PaymentRepository;
 import com.ll.dopdang.domain.payment.util.TossPaymentUtils;
 import com.ll.dopdang.global.exception.ErrorCode;
 import com.ll.dopdang.global.exception.ServiceException;
+import com.ll.dopdang.standard.util.LogSanitizer;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,7 +47,7 @@ public class PaymentCancellationService {
 		String orderId, String cancelReason, BigDecimal cancelAmount) {
 
 		log.info("결제 취소 요청(참조 정보): orderId={}, cancelReason={}, cancelAmount={}",
-			orderId, cancelReason, cancelAmount);
+			orderId, LogSanitizer.sanitizeLogInput(cancelReason), cancelAmount);
 
 		Payment payment = paymentRepository.findByOrderId(orderId)
 			.orElseThrow(() -> new ServiceException(ErrorCode.PAYMENT_NOT_FOUND));
@@ -89,7 +90,8 @@ public class PaymentCancellationService {
 		processCancellation(payment, responseBody, amountToCancel, cancelReason, isFullCancellation);
 
 		log.info("결제 취소 성공: paymentId={}, paymentKey={}, cancelAmount={}, isFullCancellation={}",
-			payment.getId(), payment.getPaymentKey(), amountToCancel, isFullCancellation);
+			payment.getId(), LogSanitizer.sanitizeLogInput(payment.getPaymentKey()), amountToCancel,
+			isFullCancellation);
 
 		return payment;
 	}

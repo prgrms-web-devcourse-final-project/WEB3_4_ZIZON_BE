@@ -90,7 +90,13 @@ public class ProjectService {
 
 		// 6. 이미지가 있다면 ProjectImage 엔티티로 변환 후 저장
 		List<String> imageUrls = request.getImageUrls();
-		if (imageUrls != null && !imageUrls.isEmpty()) {
+
+		if (imageUrls == null || imageUrls.isEmpty()) {
+			// 디폴트 이미지 URL을 지정합니다.
+			imageUrls = List.of("https://devcouse4-team16-bucket.s3.ap-northeast-2.amazonaws.com/portfolios/162e07c8-3062-4d3d-8f2e-d92b8b1f5678_test.png");
+		}
+
+
 			List<ProjectImage> images = new ArrayList<>();
 			int order = 0;
 			for (String url : imageUrls) {
@@ -101,7 +107,7 @@ public class ProjectService {
 					.build());
 			}
 			projectImageRepository.saveAll(images);
-		}
+
 
 		// 7. 최종적으로 프로젝트 ID 반환
 		return savedProject.getId();
@@ -154,7 +160,7 @@ public class ProjectService {
 		List<MyProjectSummaryResponse> summaries = myProjects.getContent().stream()
 			.map(project -> {
 				String thumbnailUrl = thumbnailMap.getOrDefault(project.getId(),
-					"https://devcouse4-team16-bucket.s3.ap-northeast-2.amazonaws.com/projects/1/project_image.jpg");
+					"https://devcouse4-team16-bucket.s3.ap-northeast-2.amazonaws.com/portfolios/162e07c8-3062-4d3d-8f2e-d92b8b1f5678_test.png");
 
 				// 🔍 프로젝트에 연결된 계약이 있는지 확인
 				Optional<Contract> optionalContract = contractRepository.findByProjectId(project.getId());

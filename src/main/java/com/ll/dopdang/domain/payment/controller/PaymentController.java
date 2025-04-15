@@ -21,6 +21,7 @@ import com.ll.dopdang.domain.payment.service.PaymentCancellationService;
 import com.ll.dopdang.domain.payment.service.PaymentCreationService;
 import com.ll.dopdang.domain.payment.service.PaymentProcessingService;
 import com.ll.dopdang.global.security.custom.CustomUserDetails;
+import com.ll.dopdang.standard.util.LogSanitizer;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -55,7 +56,7 @@ public class PaymentController {
 		@RequestBody @Valid OrderIdRequest request,
 		@AuthenticationPrincipal CustomUserDetails userDetails) {
 		log.info("주문 ID 생성 요청: paymentType={}, referenceId={}, quantity={}",
-			request.paymentType(), request.referenceId(), request.quantity());
+			LogSanitizer.sanitizeLogInput(request.paymentType().toString()), request.referenceId(), request.quantity());
 
 		Map<String, Object> response = paymentCreationService.createOrderIdWithInfo(
 			request.paymentType(), request.referenceId(), userDetails.getMember().getId(), request.quantity());
@@ -79,7 +80,8 @@ public class PaymentController {
 		@Parameter(description = "토스페이먼츠 결제 키", example = "pay_abc123") @RequestParam String paymentKey,
 		@Parameter(description = "주문 ID", example = "order_456") @RequestParam String orderId,
 		@Parameter(description = "결제 금액", example = "50000") @RequestParam BigDecimal amount) {
-		log.info("결제 성공 콜백 호출: paymentKey={}, orderId={}, amount={}", paymentKey, orderId, amount);
+		log.info("결제 성공 콜백 호출: paymentKey={}, orderId={}, amount={}", LogSanitizer.sanitizeLogInput(paymentKey),
+			orderId, amount);
 		Payment payment = paymentProcessingService.confirmPayment(paymentKey, orderId, amount);
 		PaymentResultResponse response = paymentProcessingService.createPaymentResultResponse(payment, amount);
 		return ResponseEntity.ok(response);
@@ -100,7 +102,8 @@ public class PaymentController {
 		@Parameter(description = "실패 코드", example = "USER_CANCEL") @RequestParam String code,
 		@Parameter(description = "실패 메시지", example = "사용자에 의해 취소되었습니다.") @RequestParam String message,
 		@Parameter(description = "주문 ID", example = "order_456") @RequestParam String orderId) {
-		log.error("결제 실패: code={}, message={}, orderId={}", code, message, orderId);
+		log.error("결제 실패: code={}, message={}, orderId={}", LogSanitizer.sanitizeLogInput(code),
+			LogSanitizer.sanitizeLogInput(message), orderId);
 		Payment failedPayment = paymentProcessingService.saveFailedPayment(orderId, code, message);
 		PaymentResultResponse response = paymentProcessingService.createFailedPaymentResultResponse(failedPayment,
 			message, code);
@@ -120,7 +123,7 @@ public class PaymentController {
 	public ResponseEntity<?> cancelPayment(
 		@Parameter(description = "결제 취소 요청") @RequestBody @Valid PaymentCancellationRequest request) {
 		log.info("결제 취소 요청: orderId={}, reason={}, amount={}",
-			request.orderId(), request.cancelReason(), request.cancelAmount());
+			request.orderId(), LogSanitizer.sanitizeLogInput(request.cancelReason()), request.cancelAmount());
 
 		Payment payment = paymentCancellationService.cancelPayment(request.orderId(), request.cancelReason(),
 			request.cancelAmount());

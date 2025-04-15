@@ -21,6 +21,7 @@ import com.ll.dopdang.domain.store.entity.Product;
 import com.ll.dopdang.domain.store.repository.OrderItemRepository;
 import com.ll.dopdang.domain.store.repository.OrderRepository;
 import com.ll.dopdang.domain.store.service.ProductService;
+import com.ll.dopdang.standard.util.LogSanitizer;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,7 +44,7 @@ public class OrderPaymentSaver implements PaymentSaver {
 	@Transactional
 	public Payment savePayment(Long referenceId, BigDecimal amount, BigDecimal fee, String paymentKey, String orderId) {
 		log.info("주문 결제 정보 저장: referenceId={}, amount={}, fee={}, paymentKey={}, orderId={}",
-			referenceId, amount, fee, paymentKey, orderId);
+			referenceId, amount, fee, LogSanitizer.sanitizeLogInput(paymentKey), orderId);
 
 		ProductDetailResponse productDetail = productService.getProductById(referenceId);
 		String title = productDetail.title();
@@ -98,7 +99,8 @@ public class OrderPaymentSaver implements PaymentSaver {
 	@Override
 	public Payment saveFailedPayment(Long referenceId, String errorCode, String errorMessage, String orderId) {
 		log.info("주문 결제 실패 정보 저장: referenceId={}, errorCode={}, errorMessage={}, orderId={}",
-			referenceId, errorCode, errorMessage, orderId);
+			referenceId, LogSanitizer.sanitizeLogInput(errorCode), LogSanitizer.sanitizeLogInput(errorMessage),
+			orderId);
 
 		ProductDetailResponse product = productService.getProductById(referenceId);
 		String title = product.title();
