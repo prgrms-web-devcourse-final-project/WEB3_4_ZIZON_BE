@@ -4,3 +4,11 @@ common:
 site:
   url:
     frontend: "https://www.dopdang.shop"
+
+spring:
+
+  datasource:
+    url: ${LIVE_DB_URL}?serverTimezone=Asia/Seoul
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
