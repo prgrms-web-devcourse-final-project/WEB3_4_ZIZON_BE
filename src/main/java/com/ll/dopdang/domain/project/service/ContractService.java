@@ -161,6 +161,10 @@ public class ContractService {
 
 		contract.updateStatus(Contract.ContractStatus.COMPLETED);
 
+		// 5. 프로젝트 상태 변경
+		Project project = contract.getProject();
+		project.updateStatus(ProjectStatus.COMPLETED);
+
 		// 응답 객체 생성하여 반환
 		return ContractCompletedResponse.of(contractId);
 	}
