@@ -197,8 +197,7 @@ public class Member {
 		this.isClient = false;
 	}
 
-	public void updateRoleToExpert(){
-		this.userRole= MemberRole.EXPERT.toString();
-		this.isClient = false;
+	public void updateRoleToExpert() {
+		this.userRole = MemberRole.EXPERT.toString();
 	}
 }
